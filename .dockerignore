@@ -1,0 +1,8 @@
+target
+docker.compose.yml
+.gitignore
+.dockerignore
+.env
+initdb.sql
+Dockerfile
+migrations
