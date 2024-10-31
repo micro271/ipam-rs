@@ -1,7 +1,7 @@
-pub mod error;
 pub mod device;
-pub mod network;
+pub mod error;
 mod models_data_entry;
+pub mod network;
 
 use crate::database::{utils::Repository, PgRepository};
 use crate::models::{utils::TypeTable, *};

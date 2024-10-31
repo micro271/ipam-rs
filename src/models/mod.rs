@@ -71,7 +71,7 @@ pub struct UpdateOffice {
     address: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize, sqlx::Type)]
+#[derive(Debug, Deserialize, Serialize, sqlx::Type, PartialEq)]
 pub enum Status {
     Reserved,
     Unknown,
