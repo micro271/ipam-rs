@@ -34,8 +34,8 @@ CREATE TABLE IF NOT EXISTS devices (
 CREATE TYPE ROLE AS ENUM ('Admin', 'Operator', 'Guest');
 
 CREATE TABLE IF NOT EXISTS users (
-    id UUID,
-    username VARCHAR,
+    id UUID PRIMARY KEY,
+    username VARCHAR UNIQUE,
     password TEXT,
     role ROLE
 );

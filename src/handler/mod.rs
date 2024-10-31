@@ -51,12 +51,12 @@ pub mod auth {
 
         let resp = state
             .get::<'_, user::User>(Some(HashMap::from([("username", user.username.into())])))
-            .await?;
-        let resp = &resp[0];
+            .await?.remove(0);
+        
         match verify_pass(user.password.as_ref(), &resp.password) {
-            Verify::Ok(true) => match create_token(resp) {
+            Verify::Ok(true) => match create_token(&resp) {
                 Ok(e) => Ok(Json(json!({"token":e}))),
-                Err(_) => Err(ResponseError::Unauthorized),
+                Err(_) => Err(ResponseError::ServerError),
             },
             _ => Err(ResponseError::Unauthorized),
         }

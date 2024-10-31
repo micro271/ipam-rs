@@ -1,9 +1,10 @@
 use super::*;
 
+
 pub async fn create(
     State(state): State<RepositoryType>,
     Extension(role): Extension<Role>,
-    Json(netw): Json<Network>,
+    Json(netw): Json<models_data_entry::Network>,
 ) -> Result<impl IntoResponse, ResponseError> {
     if role != Role::Admin {
         return Err(ResponseError::Unauthorized);
@@ -11,7 +12,7 @@ pub async fn create(
 
     let state = state.lock().await;
 
-    Ok(state.insert::<Network>(vec![netw]).await?)
+    Ok(state.insert::<Network>(vec![netw.into()]).await?)
 }
 
 pub async fn get_one(

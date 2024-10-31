@@ -13,7 +13,10 @@ services:
       - ./initdb.sql:/docker-entrypoint-initdb.d/initdb.sql:ro
 
   api_ipam:
-    image: mz/ipam
+    image: mz/ipam_backend
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - 3000:3000
     environment:
@@ -23,5 +26,6 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: ${DB_USER}
+      SECRET_KEY: ${SECRET_KEY}
     depends_on:
       - postgres
