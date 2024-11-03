@@ -1,5 +1,5 @@
 use super::*;
-
+use crate::models::{device::Device, network::*};
 
 pub async fn create(
     State(state): State<RepositoryType>,

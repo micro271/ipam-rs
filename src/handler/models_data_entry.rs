@@ -1,6 +1,9 @@
 use crate::{
     database::utils::QueryResult,
-    models::{self, Credential, Status},
+    models::{
+        device::{self, Credential, Status},
+        network,
+    },
 };
 use axum::{
     http::{self, Response, StatusCode},
@@ -21,10 +24,10 @@ pub struct User {
 pub struct Network {
     pub network: IpNet,
     pub description: Option<String>,
-    pub vlan: Option<models::Vlan>,
+    pub vlan: Option<network::Vlan>,
 }
 
-impl From<Network> for models::Network {
+impl From<Network> for network::Network {
     fn from(value: Network) -> Self {
         let avl = 2_u32.pow(32 - value.network.prefix_len() as u32) - 2;
         Self {
@@ -46,12 +49,12 @@ pub struct Device {
     pub office_id: Option<Uuid>,
     pub rack: Option<String>,
     pub room: Option<String>,
-    pub status: Option<Status>,
+    pub status: Option<device::Status>,
     pub network_id: uuid::Uuid,
     pub credential: Option<Credential>,
 }
 
-impl From<Device> for models::Device {
+impl From<Device> for device::Device {
     fn from(value: Device) -> Self {
         Self {
             status: Status::default(),
@@ -66,13 +69,13 @@ impl From<Device> for models::Device {
     }
 }
 
-pub fn create_all_devices(network: IpNet, id: Uuid) -> Option<Vec<models::Device>> {
+pub fn create_all_devices(network: IpNet, id: Uuid) -> Option<Vec<device::Device>> {
     let mut ips = network.hosts().collect::<Vec<IpAddr>>();
     ips.pop();
     ips.remove(0);
     let mut resp = Vec::new();
     for ip in ips {
-        resp.push(models::Device {
+        resp.push(device::Device {
             ip,
             description: None,
             office_id: None,

@@ -1,7 +1,10 @@
 use super::*;
+use device::*;
 use ipnet::IpNet;
-use std::{net::IpAddr, vec};
-use uuid::Uuid;
+use network::*;
+use office::*;
+use std::collections::HashMap;
+use std::net::IpAddr;
 
 pub trait Table {
     fn name() -> String;
@@ -188,7 +191,7 @@ pub enum TypeTable {
     OptionUuid(Option<Uuid>),
     Uuid(Uuid),
     OptionString(Option<String>),
-    Status(super::Status),
+    Status(Status),
     Int32(i32),
     Role(crate::user::Role),
     Float64(f64),
@@ -285,8 +288,8 @@ impl From<Option<String>> for TypeTable {
     }
 }
 
-impl From<super::Status> for TypeTable {
-    fn from(value: super::Status) -> Self {
+impl From<Status> for TypeTable {
+    fn from(value: Status) -> Self {
         Self::Status(value)
     }
 }

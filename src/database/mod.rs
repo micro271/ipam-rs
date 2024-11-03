@@ -1,4 +1,6 @@
+pub mod entities;
 pub mod utils;
+
 use crate::models::utils::*;
 use futures::stream::StreamExt;
 use sqlx::postgres::{PgPool, PgPoolOptions, PgRow};
