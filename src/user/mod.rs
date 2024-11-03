@@ -36,7 +36,7 @@ pub fn create_token(user: &User) -> Result<String, Error> {
     let secret = std::env::var("SECRET_KEY")?;
 
     Ok(encode(
-        &Header::default(),
+        &Header::new(Algorithm::HS256),
         &Claims::from(user),
         &EncodingKey::from_secret(secret.as_ref()),
     )?)

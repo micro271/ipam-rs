@@ -1,9 +1,10 @@
 use super::*;
 use device::*;
-use ipnet::IpNet;
 use network::*;
 use office::*;
+
 use std::collections::HashMap;
+use ipnet::IpNet;
 use std::net::IpAddr;
 
 pub trait Table {
@@ -35,7 +36,7 @@ impl Table for Device {
     }
 
     fn query_insert() -> String {
-        format!("INSERT INTO {} (ip, network_id, description, office, rack, room, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", Self::name())
+        format!("INSERT INTO {} (ip, network_id, description, office, rack, room, status) VALUES ($1, $2, $3, $4, $5, $6, $7)", Self::name())
     }
 
     fn get_fields(self) -> Vec<TypeTable> {
@@ -62,7 +63,7 @@ impl Table for Network {
 
     fn query_insert() -> String {
         format!(
-            "INSERT INTO {} (network, available, used, total, vlan) VALUES ($1, $2, $3, $4, &5)",
+            "INSERT INTO {} (network, available, used, total, vlan) VALUES ($1, $2, $3, $4, $5)",
             Self::name()
         )
     }
