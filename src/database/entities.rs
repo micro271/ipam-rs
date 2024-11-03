@@ -17,7 +17,7 @@ impl From<PgRow> for Network {
             available: value.get::<'_, i32, &str>("available") as u32,
             used: value.get::<'_, i32, _>("used") as u32,
             total: value.get::<'_, i32, _>("total") as u32,
-            vlan: Some(Vlan(value.get::<'_, i32, _>("vlan") as u16)),
+            vlan: Some(Vlan::new(value.get::<'_, i32, _>("vlan")).unwrap()),
         }
     }
 }

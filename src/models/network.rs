@@ -22,7 +22,32 @@ pub struct Network {
 }
 
 #[derive(Debug)]
-pub struct Vlan(pub u16);
+pub struct Vlan(u16);
+
+impl Vlan {
+    pub fn set_vlan(&mut self, vlan: i32) -> Result<(), VlanError> {
+        if vlan < 1 {
+            Err(VlanError::Invalid)
+        } else if vlan > 4096 {
+            Err(VlanError::Exeded)
+        } else {
+            **self = vlan as u16;
+            Ok(())
+        }
+    }
+
+    pub fn new(vlan: i32) -> Result<Self, VlanError> {
+        let mut v = Self(0);
+        v.set_vlan(vlan)?;
+        Ok(v)
+    }
+}
+
+#[derive(Debug)]
+pub enum VlanError {
+    Invalid,
+    Exeded,
+}
 
 impl Serialize for Vlan {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
