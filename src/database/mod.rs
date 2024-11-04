@@ -37,7 +37,7 @@ impl Repository for PgRepository {
                 let query = T::query_insert();
                 let mut tmp = sqlx::query(&query);
                 let data = T::get_fields(data);
-
+                println!("{:?}", data);
                 for i in data {
                     tmp = match i {
                         TypeTable::String(s) => tmp.bind(s),

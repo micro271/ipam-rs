@@ -1,7 +1,7 @@
 use super::*;
 
 use super::RepositoryType;
-use crate::models::{device::Device, network::*};
+use crate::{models::{device::Device, network::*}, services::network::update_all_ip};
 
 pub async fn create(
     State(state): State<RepositoryType>,
@@ -42,6 +42,11 @@ pub async fn update(
     }
 
     let state = state.lock().await;
+
+    if let Some(e) = network.network.as_ref() {
+        let tmp = update_all_ip(state.get::<Device>(Some(HashMap::from([("network_id", id.into())]))).await?, e.clone());
+        println!("{tmp:?}");
+    }
 
     // Now: Delete all devices that belong to the network
     // Soon: Update all devices

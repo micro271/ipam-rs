@@ -191,6 +191,7 @@ impl<'a> Updatable<'a> for UpdateOffice {
     }
 }
 
+#[derive(Debug)]
 pub enum TypeTable {
     String(String),
     OptionUuid(Option<Uuid>),

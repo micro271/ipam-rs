@@ -65,9 +65,7 @@ impl From<Device> for device::Device {
 }
 
 pub fn create_all_devices(network: IpNet, id: Uuid) -> Option<Vec<device::Device>> {
-    let mut ips = network.hosts().collect::<Vec<IpAddr>>();
-    ips.pop();
-    ips.remove(0);
+    let ips = network.hosts().collect::<Vec<IpAddr>>();
     let mut resp = Vec::new();
     for ip in ips {
         resp.push(device::Device {

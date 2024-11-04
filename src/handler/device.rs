@@ -31,9 +31,11 @@ pub async fn create_all_devices(
         .get::<Network>(Some(HashMap::from([("id", network_id.into())])))
         .await?
         .remove(0);
-
+    
     match models_data_entry::create_all_devices(network.network, network_id) {
-        Some(e) => Ok(state.insert::<Device>(e).await?),
+        Some(e) => {
+            Ok(state.insert::<Device>(e).await?)
+        },
         None => Err(ResponseError::StatusCode(StatusCode::NO_CONTENT)),
     }
 }

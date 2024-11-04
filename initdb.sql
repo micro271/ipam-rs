@@ -3,6 +3,8 @@ CREATE TYPE CREDENTIAL AS (
     password VARCHAR
 );
 
+CREATE TYPE STATUS as ENUM ('Reserved', 'Unknown', 'Online', 'Offline');
+
 CREATE TABLE IF NOT EXISTS networks (
     id UUID PRIMARY KEY,
     network VARCHAR NOT NULL,
@@ -25,7 +27,7 @@ CREATE TABLE IF NOT EXISTS devices (
     office_id UUID,
     rack VARCHAR,
     room VARCHAR,
-    status VARCHAR NOT NULL,
+    status STATUS NOT NULL,
     network_id UUID NOT NULL,
     credential CREDENTIAL,
     PRIMARY KEY (ip, network_id),
