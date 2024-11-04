@@ -57,11 +57,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route(
             "/all/:network_id",
             get(device::get_all)
-                .patch(device::update)
                 .post(device::create_all_devices),
         ) // create, update and get all devices
         .route("/delete", delete(device::delete))
-        .route("/one", get(device::get_one)); //get one device
+        .route("/one", get(device::get_one).patch(device::update)); //get one device
 
     let user = Router::new().route("/", post(auth::create));
 
