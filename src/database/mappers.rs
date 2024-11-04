@@ -28,7 +28,7 @@ impl From<PgRow> for Device {
         Self {
             ip: value.get::<'_, &str, _>("ip").parse().unwrap(),
             description: value.get("description"),
-            office_id: value.get("office_ids"),
+            office_id: value.get("office_id"),
             rack: value.get("rack"),
             credential: {
                 let cred: Option<(String, String)> = value.get("credential");
@@ -36,7 +36,7 @@ impl From<PgRow> for Device {
             },
             room: value.get("room"),
             status: value.get("status"),
-            network_id: Uuid::parse_str(value.get("network_status")).unwrap(),
+            network_id: value.get("network_id"),
         }
     }
 }
