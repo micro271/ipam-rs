@@ -30,10 +30,7 @@ impl From<PgRow> for Device {
             description: value.get("description"),
             office_id: value.get("office_id"),
             rack: value.get("rack"),
-            credential: {
-                let cred: Option<(String, String)> = value.get("credential");
-                cred.map(|(username, password)| Credential { username, password })
-            },
+            credential: value.get("credential"),
             room: value.get("room"),
             status: value.get("status"),
             network_id: value.get("network_id"),

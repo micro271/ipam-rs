@@ -165,13 +165,16 @@ impl Repository for PgRepository {
                 let mut pos_values = HashMap::new();
 
                 let mut pos = 1;
+                let len = pair.len();
                 for i in pair.keys() {
                     if !cols.contains(i) {
                         return Err(RepositoryError::ColumnNotFound(Some(i.to_string())));
                     }
 
                     query.push_str(&format!(" {} = ${}", i, pos));
-
+                    if len > pos {
+                        query.push_str(",");
+                    }
                     pos_values.insert(pos, pair.get(i).unwrap());
                     pos += 1;
                 }
