@@ -91,13 +91,16 @@ impl Repository for PgRepository {
                     let mut data_pos = HashMap::new();
 
                     let mut pos = 1;
+                    let len = col.keys().len();
                     for i in col.keys() {
                         if !cols.contains(i) {
                             return Err(RepositoryError::ColumnNotFound(Some(i.to_string())));
                         }
 
                         query.push_str(&format!(" {} = ${}", i, pos));
-
+                        if len > pos {
+                            query.push_str(" AND");
+                        }
                         data_pos.insert(pos, col.get(i).unwrap());
                         pos += 1;
                     }
@@ -168,8 +171,9 @@ impl Repository for PgRepository {
                     }
 
                     query.push_str(&format!(" {} = ${}", i, pos));
+
                     pos_values.insert(pos, pair.get(i).unwrap());
-                    pos += 1
+                    pos += 1;
                 }
 
                 let condition = match condition {
@@ -180,9 +184,14 @@ impl Repository for PgRepository {
                     None => HashMap::new(),
                 };
 
+                let len = condition.len() + pos - 1;
                 for i in condition.keys() {
                     pos_values.insert(pos, condition.get(i).unwrap());
                     query.push_str(&format!(" {} = ${}", i, pos));
+
+                    if len > pos {
+                        query.push_str(" AND");
+                    }
                     pos += 1;
                 }
 

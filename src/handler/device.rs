@@ -59,13 +59,16 @@ pub async fn get_all(
 pub async fn update(
     State(state): State<RepositoryType>,
     Extension(role): Extension<Role>,
-    Query((ip, network_id)): Query<(IpAddr, Uuid)>,
+    Query(params): Query<ParamsDevice>,
     Json(device): Json<UpdateDevice>,
 ) -> Result<impl IntoResponse, ResponseError> {
     if role != Role::Admin {
         return Err(ResponseError::Unauthorized);
     }
     let state = state.lock().await;
+
+    let ip = params.ip;
+    let network_id = params.network_id;
 
     if device.network_id.is_some() || device.ip.is_some() {
         let ip_to_delete: IpAddr;
