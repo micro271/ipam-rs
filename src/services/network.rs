@@ -51,7 +51,7 @@ pub fn update_all_ip(mut devices_db: Vec<Device>, network: IpNet) -> Result<Vec<
 }
 
 pub fn create_devices() {
-
+    todo!()
 }
 
 pub mod error {
