@@ -47,6 +47,7 @@ pub async fn get_all(
     let devices = state.get::<Device>(Some(condition)).await?;
 
     Ok(Json(json!({
+        "length": devices.len(),
         "devices": devices
     })))
 }

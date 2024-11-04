@@ -8,7 +8,7 @@ use repository::{error::RepositoryError, QueryResult, Repository, ResultReposito
 use sqlx::postgres::{PgPool, PgPoolOptions, PgRow};
 use std::collections::HashMap;
 
-pub struct PgRepository(pub PgPool);
+pub struct PgRepository(PgPool);
 
 impl PgRepository {
     pub async fn new(url: String) -> Result<Self, RepositoryError> {
@@ -27,7 +27,7 @@ impl Repository for PgRepository {
         T: Table + 'a + Send,
     {
         let resp = async {
-            let mut tx = match self.0.begin().await {
+            let mut tx = match self.begin().await {
                 Ok(e) => e,
                 Err(e) => return Err(RepositoryError::Sqlx(e.to_string())),
             };
@@ -119,7 +119,7 @@ impl Repository for PgRepository {
                         };
                     }
 
-                    let mut resp = resp.fetch(&self.0);
+                    let mut resp = resp.fetch(&**self);
                     while let Some(Ok(device)) = resp.next().await {
                         vec_resp.push(T::from(device));
                     }
@@ -131,7 +131,12 @@ impl Repository for PgRepository {
                     }
                 }
                 None => Ok({
-                    vec_resp.push(T::from(sqlx::query(&query).fetch_one(&self.0).await?));
+
+                    let mut aux = sqlx::query(&query).fetch(&**self);
+                    while let Some(Ok(e)) = aux.next().await {
+                        vec_resp.push(T::from(e));
+                    }
+
                     vec_resp
                 }),
                 _ => Err(RepositoryError::ColumnNotFound(None)),
@@ -197,7 +202,7 @@ impl Repository for PgRepository {
                     };
                 }
 
-                match sql.execute(&self.0).await {
+                match sql.execute(&**self).await {
                     Ok(e) => Ok(QueryResult::Update(e.rows_affected())),
                     Err(e) => Err(RepositoryError::Sqlx(e.to_string())),
                 }
@@ -254,13 +259,13 @@ impl Repository for PgRepository {
                         };
                     }
 
-                    match ex.execute(&self.0).await {
+                    match ex.execute(&**self).await {
                         Ok(e) => Ok(QueryResult::Delete(e.rows_affected())),
                         Err(e) => Err(RepositoryError::Sqlx(e.to_string())),
                     }
                 }
 
-                None => match sqlx::query(&query).execute(&self.0).await {
+                None => match sqlx::query(&query).execute(&**self).await {
                     Ok(e) => Ok(QueryResult::Delete(e.rows_affected())),
                     Err(e) => Err(RepositoryError::Sqlx(e.to_string())),
                 },
@@ -269,5 +274,18 @@ impl Repository for PgRepository {
         };
 
         Box::pin(resp)
+    }
+}
+
+impl std::ops::Deref for PgRepository {
+    type Target = PgPool;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl std::ops::DerefMut for PgRepository {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }

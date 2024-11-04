@@ -85,6 +85,7 @@ pub async fn get_all(
     let networks = state.get::<Network>(None).await?;
 
     Ok(Json(json!({
+        "length": networks.len(),
         "networks": networks
     })))
 }

@@ -60,7 +60,7 @@ impl Table for Network {
     }
 
     fn name() -> String {
-        String::from("network")
+        String::from("networks")
     }
 
     fn query_insert() -> String {
