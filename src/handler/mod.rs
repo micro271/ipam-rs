@@ -4,8 +4,8 @@ mod models_data_entry;
 pub mod network;
 
 use crate::database::{utils::Repository, PgRepository};
+use crate::models::user::Role;
 use crate::models::utils::TypeTable;
-use crate::user::Role;
 use axum::{
     extract::{Extension, Json, Path, Query, State},
     http::StatusCode,
@@ -21,13 +21,14 @@ type RepositoryType = Arc<Mutex<PgRepository>>;
 
 pub mod auth {
     use super::*;
+    use crate::models::user::User;
     use crate::user::{self, create_token, encrypt, verify_pass, Verify};
     use axum::{extract::Request, middleware::Next, response::Response};
 
     pub async fn create(
         State(state): State<RepositoryType>,
         Extension(role): Extension<Role>,
-        Json(mut user): Json<user::User>,
+        Json(mut user): Json<User>,
     ) -> Result<impl IntoResponse, ResponseError> {
         if role != Role::Admin {
             return Err(ResponseError::Unauthorized);
@@ -50,7 +51,7 @@ pub mod auth {
         let state = state.lock().await;
 
         let resp = state
-            .get::<'_, user::User>(Some(HashMap::from([("username", user.username.into())])))
+            .get::<'_, User>(Some(HashMap::from([("username", user.username.into())])))
             .await?
             .remove(0);
 

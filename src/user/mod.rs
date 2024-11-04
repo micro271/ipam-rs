@@ -1,18 +1,10 @@
 use std::collections::HashMap;
 
+use crate::models::user::*;
 use crate::{database::utils::Repository, models::utils::*};
 use bcrypt::{hash, verify, DEFAULT_COST};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgRow, Row};
-
-#[derive(Deserialize, Serialize)]
-pub struct User {
-    pub id: uuid::Uuid,
-    pub username: String,
-    pub password: String,
-    pub role: Role,
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -81,17 +73,6 @@ pub async fn create_default_user(db: &impl Repository) -> Result<(), Error> {
     }
 }
 
-impl From<PgRow> for User {
-    fn from(value: PgRow) -> Self {
-        Self {
-            id: value.get("id"),
-            username: value.get("username"),
-            password: value.get("password"),
-            role: value.get("role"),
-        }
-    }
-}
-
 impl From<&User> for Claims {
     fn from(value: &User) -> Self {
         Self {
@@ -144,13 +125,6 @@ impl From<bcrypt::BcryptError> for Error {
     fn from(_value: bcrypt::BcryptError) -> Self {
         Self::Encrypt
     }
-}
-
-#[derive(Deserialize, Serialize, sqlx::Type, Debug, Clone, PartialEq)]
-pub enum Role {
-    Admin,
-    Guest,
-    Operator,
 }
 
 impl Table for User {

@@ -1,4 +1,4 @@
-pub mod entities;
+pub mod mappers;
 pub mod utils;
 
 use crate::models::utils::*;

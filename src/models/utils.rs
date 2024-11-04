@@ -3,8 +3,8 @@ use device::*;
 use network::*;
 use office::*;
 
-use std::collections::HashMap;
 use ipnet::IpNet;
+use std::collections::HashMap;
 use std::net::IpAddr;
 
 pub trait Table {
@@ -194,7 +194,7 @@ pub enum TypeTable {
     OptionString(Option<String>),
     Status(Status),
     Int32(i32),
-    Role(crate::user::Role),
+    Role(super::user::Role),
     Float64(f64),
     OptionVlan(Option<i32>),
 }
@@ -211,8 +211,8 @@ impl From<Uuid> for TypeTable {
     }
 }
 
-impl From<crate::user::Role> for TypeTable {
-    fn from(value: crate::user::Role) -> Self {
+impl From<super::user::Role> for TypeTable {
+    fn from(value: super::user::Role) -> Self {
         Self::Role(value)
     }
 }

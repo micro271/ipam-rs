@@ -3,6 +3,7 @@ use crate::models::{
     {
         device::{Credential, Device},
         network::{Network, Vlan},
+        user::User,
     },
 };
 use sqlx::{postgres::PgRow, Row};
@@ -47,6 +48,17 @@ impl From<PgRow> for Office {
             name: value.get("description"),
             address: value.get("address"),
             description: value.get("description"),
+        }
+    }
+}
+
+impl From<PgRow> for User {
+    fn from(value: PgRow) -> Self {
+        Self {
+            id: value.get("id"),
+            username: value.get("username"),
+            password: value.get("password"),
+            role: value.get("role"),
         }
     }
 }

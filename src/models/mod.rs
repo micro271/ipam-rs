@@ -1,5 +1,6 @@
 pub mod device;
 pub mod network;
+pub mod user;
 pub mod utils;
 
 use serde::{Deserialize, Serialize};
