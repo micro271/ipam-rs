@@ -115,8 +115,8 @@ pub async fn get_one(
 
     let device = state
         .get::<Device>(Some(HashMap::from([
-            ("ip", TypeTable::String(ip.to_string())),
-            ("network_id", TypeTable::String(network_id.to_string())),
+            ("ip", ip.into()),
+            ("network_id", network_id.into()),
         ])))
         .await?;
 

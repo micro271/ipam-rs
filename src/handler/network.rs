@@ -1,4 +1,6 @@
 use super::*;
+
+use super::RepositoryType;
 use crate::models::{device::Device, network::*};
 
 pub async fn create(
