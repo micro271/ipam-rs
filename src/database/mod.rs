@@ -41,6 +41,7 @@ impl Repository for PgRepository {
                 for i in data {
                     tmp = match i {
                         TypeTable::String(s) => tmp.bind(s),
+                        TypeTable::OptionCredential(e) => tmp.bind(e),
                         TypeTable::OptionString(opt) => tmp.bind(opt),
                         TypeTable::OptionVlan(e) => tmp.bind(e),
                         TypeTable::Status(status) => tmp.bind(status),
@@ -106,6 +107,7 @@ impl Repository for PgRepository {
                     for i in 1..pos {
                         resp = match data_pos.get(&i).unwrap() {
                             TypeTable::OptionUuid(e) => resp.bind(e),
+                            TypeTable::OptionCredential(e) => resp.bind(e),
                             TypeTable::OptionVlan(e) => resp.bind(e),
                             TypeTable::Uuid(e) => resp.bind(e),
                             TypeTable::String(s) => resp.bind(s),
@@ -191,6 +193,7 @@ impl Repository for PgRepository {
                         TypeTable::Float64(value) => sql.bind(value),
                         TypeTable::OptionUuid(e) => sql.bind(e),
                         TypeTable::OptionVlan(e) => sql.bind(e),
+                        TypeTable::OptionCredential(e) => sql.bind(e),
                     };
                 }
 
@@ -247,6 +250,7 @@ impl Repository for PgRepository {
                             TypeTable::Role(role) => ex.bind(role),
                             TypeTable::Float64(f) => ex.bind(f),
                             TypeTable::OptionVlan(e) => ex.bind(e),
+                            TypeTable::OptionCredential(e) => ex.bind(e),
                         };
                     }
 

@@ -23,11 +23,12 @@ impl Table for Device {
         vec![
             "ip",
             "description",
-            "office",
+            "office_id",
             "rack",
             "room",
             "status",
             "network_id",
+            "credential",
         ]
     }
 
@@ -36,7 +37,7 @@ impl Table for Device {
     }
 
     fn query_insert() -> String {
-        format!("INSERT INTO {} (ip, network_id, description, office, rack, room, status) VALUES ($1, $2, $3, $4, $5, $6, $7)", Self::name())
+        format!("INSERT INTO {} (ip, network_id, description, office_id, rack, room, status, credential) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", Self::name())
     }
 
     fn get_fields(self) -> Vec<TypeTable> {
@@ -48,13 +49,14 @@ impl Table for Device {
             self.rack.into(),
             self.room.into(),
             self.status.into(),
+            self.credential.into(),
         ]
     }
 }
 
 impl Table for Network {
     fn columns() -> Vec<&'static str> {
-        vec!["id", "network", "description", "available", "used", "total"]
+        vec!["id", "network", "description", "available", "used", "total", "vlan"]
     }
 
     fn name() -> String {
@@ -63,18 +65,20 @@ impl Table for Network {
 
     fn query_insert() -> String {
         format!(
-            "INSERT INTO {} (network, available, used, total, vlan) VALUES ($1, $2, $3, $4, $5)",
+            "INSERT INTO {} (id, network, available, used, total, vlan, description) VALUES ($1, $2, $3, $4, $5, $6, $7)",
             Self::name()
         )
     }
 
     fn get_fields(self) -> Vec<TypeTable> {
         vec![
+            self.id.into(),
             self.network.into(),
             self.available.into(),
             self.used.into(),
             self.total.into(),
             self.vlan.into(),
+            self.description.into(),
         ]
     }
 }
@@ -197,6 +201,7 @@ pub enum TypeTable {
     Role(super::user::Role),
     Float64(f64),
     OptionVlan(Option<i32>),
+    OptionCredential(Option<Credential>),
 }
 
 impl From<Option<Vlan>> for TypeTable {
@@ -268,6 +273,12 @@ impl From<i8> for TypeTable {
 impl From<i16> for TypeTable {
     fn from(value: i16) -> Self {
         Self::Int32(value as i32)
+    }
+}
+
+impl From<Option<Credential>> for TypeTable {
+    fn from(value: Option<Credential>) -> Self {
+        Self::OptionCredential(value)
     }
 }
 
