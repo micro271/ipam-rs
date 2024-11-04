@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::models::user::*;
-use crate::{database::utils::Repository, models::utils::*};
+use crate::{database::repository::Repository, models::utils::*};
 use bcrypt::{hash, verify, DEFAULT_COST};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};

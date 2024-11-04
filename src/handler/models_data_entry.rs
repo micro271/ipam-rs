@@ -1,10 +1,5 @@
-use crate::{
-    database::utils::QueryResult,
-    models::{
-        device::{self, Credential, Status},
-        network,
-    },
-};
+use super::models::{device, network};
+use super::QueryResult;
 use axum::{
     http::{self, Response, StatusCode},
     response::IntoResponse,
@@ -51,13 +46,13 @@ pub struct Device {
     pub room: Option<String>,
     pub status: Option<device::Status>,
     pub network_id: uuid::Uuid,
-    pub credential: Option<Credential>,
+    pub credential: Option<device::Credential>,
 }
 
 impl From<Device> for device::Device {
     fn from(value: Device) -> Self {
         Self {
-            status: Status::default(),
+            status: device::Status::default(),
             ip: value.ip,
             description: value.description,
             office_id: value.office_id,
@@ -81,7 +76,7 @@ pub fn create_all_devices(network: IpNet, id: Uuid) -> Option<Vec<device::Device
             office_id: None,
             rack: None,
             room: None,
-            status: Status::default(),
+            status: device::Status::default(),
             network_id: id,
             credential: None,
         });

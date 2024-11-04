@@ -1,7 +1,7 @@
 mod database;
 mod handler;
 mod models;
-mod user;
+mod services;
 
 use axum::{
     http::Response,
@@ -39,7 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let db = PgRepository::new(database_url).await?;
-    user::create_default_user(&db).await?;
+    services::create_default_user(&db).await?;
 
     let db = Arc::new(Mutex::new(db));
     let network = Router::new()

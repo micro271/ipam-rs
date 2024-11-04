@@ -5,9 +5,13 @@ mod models_data_entry;
 pub mod network;
 
 use crate::{
-    database::{utils::Repository, PgRepository},
-    models::user::Role,
+    database::{
+        repository::{QueryResult, Repository},
+        PgRepository,
+    },
+    models::{self, user::Role},
 };
+
 use axum::{
     extract::{Extension, Json, Path, Query, State},
     http::StatusCode,
