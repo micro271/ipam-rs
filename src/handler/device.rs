@@ -1,3 +1,5 @@
+use models_data_entry::ParamsDevice;
+
 use super::*;
 use crate::models::{device::*, network::Network};
 
@@ -112,14 +114,14 @@ pub async fn update(
 
 pub async fn get_one(
     State(state): State<RepositoryType>,
-    Query((ip, network_id)): Query<(IpAddr, Uuid)>,
+    Query(params): Query<ParamsDevice>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let state = state.lock().await;
 
     let device = state
         .get::<Device>(Some(HashMap::from([
-            ("ip", ip.into()),
-            ("network_id", network_id.into()),
+            ("ip", params.ip.into()),
+            ("network_id", params.network_id.into()),
         ])))
         .await?;
 

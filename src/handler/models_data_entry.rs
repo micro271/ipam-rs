@@ -22,6 +22,12 @@ pub struct Network {
     pub vlan: Option<network::Vlan>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ParamsDevice {
+    pub ip: IpAddr,
+    pub network_id: uuid::Uuid,
+}
+
 impl From<Network> for network::Network {
     fn from(value: Network) -> Self {
         let avl = 2_u32.pow(32 - value.network.prefix_len() as u32) - 2;
