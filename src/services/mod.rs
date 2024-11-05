@@ -1,4 +1,3 @@
-pub mod network;
 use std::collections::HashMap;
 
 use crate::models::user::*;
