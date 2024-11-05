@@ -56,7 +56,15 @@ impl Table for Device {
 
 impl Table for Network {
     fn columns() -> Vec<&'static str> {
-        vec!["id", "network", "description", "available", "used", "total", "vlan"]
+        vec![
+            "id",
+            "network",
+            "description",
+            "available",
+            "used",
+            "total",
+            "vlan",
+        ]
     }
 
     fn name() -> String {
@@ -113,7 +121,8 @@ impl<'a> Updatable<'a> for UpdateDevice {
         }
 
         if let Some(tmp) = self.description {
-            pair.insert("description", tmp.into());
+            let data = if tmp.is_empty() { Some(tmp) } else { None };
+            pair.insert("description", data.into());
         }
 
         if let Some(tmp) = self.network_id {
@@ -121,19 +130,35 @@ impl<'a> Updatable<'a> for UpdateDevice {
         }
 
         if let Some(tmp) = self.office_id {
-            pair.insert("office", tmp.into());
+            let data = if tmp == uuid::Uuid::nil() {
+                None
+            } else {
+                Some(tmp)
+            };
+            pair.insert("office", data.into());
         }
 
         if let Some(tmp) = self.rack {
-            pair.insert("rack", tmp.into());
+            let data = if tmp.is_empty() { None } else { Some(tmp) };
+            pair.insert("rack", data.into());
         }
 
         if let Some(tmp) = self.room {
-            pair.insert("room", tmp.into());
+            let data = if tmp.is_empty() { None } else { Some(tmp) };
+            pair.insert("room", data.into());
         }
 
         if let Some(tmp) = self.status {
             pair.insert("status", tmp.into());
+        }
+
+        if let Some(cred) = self.credential {
+            let data = if cred.password.is_empty() && cred.username.is_empty() {
+                None
+            } else {
+                Some(cred)
+            };
+            pair.insert("credential", data.into());
         }
 
         if !pair.is_empty() {
@@ -149,23 +174,18 @@ impl<'a> Updatable<'a> for UpdateNetwork {
         let mut pair = HashMap::new();
 
         if let Some(tmp) = self.description {
-            pair.insert("description", tmp.into());
+            let data = if tmp.is_empty() { None } else { Some(tmp) };
+            pair.insert("description", data.into());
         }
 
         if let Some(tmp) = self.network {
             pair.insert("network", tmp.into());
         }
 
-        if let Some(tmp) = self.available {
-            pair.insert("available", tmp.into());
-        }
+        if let Some(vlan) = self.vlan {
+            let data = if *vlan == 0 { None } else { Some(vlan) };
 
-        if let Some(tmp) = self.used {
-            pair.insert("used", tmp.into());
-        }
-
-        if let Some(tmp) = self.total {
-            pair.insert("total", tmp.into());
+            pair.insert("vlan", data.into());
         }
 
         if !pair.is_empty() {
@@ -222,12 +242,6 @@ impl From<super::user::Role> for TypeTable {
         Self::Role(value)
     }
 }
-
-// impl From<Uuid> for TypeTable {
-//     fn from(value: Uuid) -> Self {
-//         Self::String(value.to_string())
-//     }
-// }
 
 impl From<Option<Uuid>> for TypeTable {
     fn from(value: Option<Uuid>) -> Self {

@@ -1,13 +1,12 @@
 use crate::models::{
     office::Office,
     {
-        device::{Credential, Device},
+        device::Device,
         network::{Network, Vlan},
         user::User,
     },
 };
 use sqlx::{postgres::PgRow, Row};
-use uuid::Uuid;
 
 impl From<PgRow> for Network {
     fn from(value: PgRow) -> Self {

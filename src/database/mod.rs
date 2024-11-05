@@ -134,7 +134,6 @@ impl Repository for PgRepository {
                     }
                 }
                 None => Ok({
-
                     let mut aux = sqlx::query(&query).fetch(&**self);
                     while let Some(Ok(e)) = aux.next().await {
                         vec_resp.push(T::from(e));
@@ -173,7 +172,7 @@ impl Repository for PgRepository {
 
                     query.push_str(&format!(" {} = ${}", i, pos));
                     if len > pos {
-                        query.push_str(",");
+                        query.push(",");
                     }
                     pos_values.insert(pos, pair.get(i).unwrap());
                     pos += 1;

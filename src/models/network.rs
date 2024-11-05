@@ -5,9 +5,7 @@ use ipnet::IpNet;
 pub struct UpdateNetwork {
     pub network: Option<IpNet>,
     pub description: Option<String>,
-    pub available: Option<u32>,
-    pub used: Option<u32>,
-    pub total: Option<u32>,
+    pub vlan: Option<Vlan>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

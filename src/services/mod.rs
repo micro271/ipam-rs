@@ -77,7 +77,8 @@ pub async fn create_default_user(db: &impl Repository) -> Result<(), Error> {
 impl From<&User> for Claims {
     fn from(value: &User) -> Self {
         Self {
-            exp: (time::OffsetDateTime::now_utc() + time::Duration::hours(2)).unix_timestamp() as usize,
+            exp: (time::OffsetDateTime::now_utc() + time::Duration::hours(2)).unix_timestamp()
+                as usize,
             id: value.id,
             role: value.role.clone(),
         }
