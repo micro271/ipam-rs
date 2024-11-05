@@ -172,7 +172,7 @@ impl Repository for PgRepository {
 
                     query.push_str(&format!(" {} = ${}", i, pos));
                     if len > pos {
-                        query.push(",");
+                        query.push(',');
                     }
                     pos_values.insert(pos, pair.get(i).unwrap());
                     pos += 1;
