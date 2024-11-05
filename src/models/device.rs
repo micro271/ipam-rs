@@ -26,6 +26,7 @@ pub struct Device {
 }
 
 #[derive(Deserialize, Serialize, Debug, sqlx::Type)]
+#[sqlx(type_name = "CREDENTIAL")]
 pub struct Credential {
     pub username: String,
     pub password: String,

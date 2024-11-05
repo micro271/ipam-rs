@@ -1,6 +1,6 @@
 CREATE TYPE CREDENTIAL AS (
-    username VARCHAR,
-    password VARCHAR
+    username TEXT,
+    password TEXT
 );
 
 CREATE TYPE STATUS as ENUM ('Reserved', 'Unknown', 'Online', 'Offline');
