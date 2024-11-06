@@ -6,7 +6,7 @@ mod services;
 use axum::{
     http::Response,
     middleware,
-    routing::{delete, get, post},
+    routing::{delete, get, post, put},
     serve, Router,
 };
 use database::PgRepository;
@@ -43,7 +43,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let db = Arc::new(Mutex::new(db));
     let network = Router::new()
-        .route("/create", post(network::create))
+        .route("/create", put(network::create))
         .route("/all", get(network::get_all)) // crate, update and get (all) networks
         .route(
             "/:id",
@@ -53,10 +53,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ); // get one network
 
     let device = Router::new()
-        .route("/create", post(device::create))
+        .route("/create", put(device::create))
         .route(
             "/all/:network_id",
-            get(device::get_all).post(device::create_all_devices),
+            get(device::get_all).put(device::create_all_devices),
         ) // create, update and get all devices
         .route("/delete", delete(device::delete))
         .route("/one", get(device::get_one).patch(device::update)); //get one device
