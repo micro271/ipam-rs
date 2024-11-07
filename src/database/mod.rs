@@ -1,10 +1,9 @@
 pub mod mappers;
 pub mod repository;
-pub mod utils;
+pub mod entities;
 
-use crate::models::utils::*;
 use futures::stream::StreamExt;
-use repository::{error::RepositoryError, QueryResult, Repository, ResultRepository};
+use repository::{error::RepositoryError, QueryResult, Repository, ResultRepository, TypeTable, Table, Updatable};
 use sqlx::postgres::{PgPool, PgPoolOptions, PgRow};
 use std::collections::HashMap;
 

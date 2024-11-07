@@ -1,5 +1,4 @@
 use models_data_entry::ParamsDevice;
-
 use super::*;
 use crate::models::{device::*, network::Network};
 

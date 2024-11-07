@@ -1,21 +1,30 @@
-use super::*;
-use device::*;
-use network::*;
-use office::*;
+use crate::models::{user::*, network::*, device::*, office::*};
+use super::{Table, TypeTable, Updatable};
+use super::HashMap;
 
-use ipnet::IpNet;
-use std::collections::HashMap;
-use std::net::IpAddr;
+impl Table for User {
+    fn columns() -> Vec<&'static str> {
+        vec!["id", "username", "password", "role"]
+    }
+    fn name() -> String {
+        String::from("USERS")
+    }
 
-pub trait Table {
-    fn name() -> String;
-    fn query_insert() -> String;
-    fn get_fields(self) -> Vec<TypeTable>;
-    fn columns() -> Vec<&'static str>;
-}
+    fn query_insert() -> String {
+        format!(
+            "INSERT INTO {} (id, username, password, role) VALUES ($1, $2, $3, $4)",
+            User::name()
+        )
+    }
 
-pub trait Updatable<'a> {
-    fn get_pair(self) -> Option<HashMap<&'a str, TypeTable>>;
+    fn get_fields(self) -> Vec<TypeTable> {
+        vec![
+            self.id.into(),
+            self.username.into(),
+            self.password.into(),
+            self.role.into(),
+        ]
+    }
 }
 
 impl Table for Device {
@@ -208,121 +217,5 @@ impl<'a> Updatable<'a> for UpdateOffice {
         }
 
         Some(resp)
-    }
-}
-
-#[derive(Debug)]
-pub enum TypeTable {
-    String(String),
-    OptionUuid(Option<Uuid>),
-    Uuid(Uuid),
-    OptionString(Option<String>),
-    Status(Status),
-    Int32(i32),
-    Role(super::user::Role),
-    Float64(f64),
-    OptionVlan(Option<i32>),
-    OptionCredential(Option<Credential>),
-}
-
-impl From<Option<Vlan>> for TypeTable {
-    fn from(value: Option<Vlan>) -> Self {
-        Self::OptionVlan(value.map(|vlan| *vlan as i32))
-    }
-}
-
-impl From<Uuid> for TypeTable {
-    fn from(value: Uuid) -> Self {
-        TypeTable::Uuid(value)
-    }
-}
-
-impl From<super::user::Role> for TypeTable {
-    fn from(value: super::user::Role) -> Self {
-        Self::Role(value)
-    }
-}
-
-impl From<Option<Uuid>> for TypeTable {
-    fn from(value: Option<Uuid>) -> Self {
-        Self::OptionUuid(value)
-    }
-}
-
-impl From<IpAddr> for TypeTable {
-    fn from(value: IpAddr) -> Self {
-        Self::String(value.to_string())
-    }
-}
-
-impl From<IpNet> for TypeTable {
-    fn from(value: IpNet) -> Self {
-        Self::String(value.to_string())
-    }
-}
-
-impl From<u8> for TypeTable {
-    fn from(value: u8) -> Self {
-        Self::Int32(value as i32)
-    }
-}
-
-impl From<u16> for TypeTable {
-    fn from(value: u16) -> Self {
-        Self::Int32(value as i32)
-    }
-}
-
-impl From<u32> for TypeTable {
-    fn from(value: u32) -> Self {
-        Self::Int32(value as i32)
-    }
-}
-
-impl From<i8> for TypeTable {
-    fn from(value: i8) -> Self {
-        Self::Int32(value as i32)
-    }
-}
-
-impl From<i16> for TypeTable {
-    fn from(value: i16) -> Self {
-        Self::Int32(value as i32)
-    }
-}
-
-impl From<Option<Credential>> for TypeTable {
-    fn from(value: Option<Credential>) -> Self {
-        Self::OptionCredential(value)
-    }
-}
-
-impl From<i32> for TypeTable {
-    fn from(value: i32) -> Self {
-        Self::Int32(value)
-    }
-}
-
-impl From<String> for TypeTable {
-    fn from(value: String) -> Self {
-        Self::String(value)
-    }
-}
-
-impl From<Option<String>> for TypeTable {
-    fn from(value: Option<String>) -> Self {
-        Self::OptionString(value)
-    }
-}
-
-impl From<Status> for TypeTable {
-    fn from(value: Status) -> Self {
-        Self::Status(value)
-    }
-}
-
-impl From<f32> for TypeTable {
-    fn from(value: f32) -> Self {
-        Self::Float64(value as f64)
     }
 }
