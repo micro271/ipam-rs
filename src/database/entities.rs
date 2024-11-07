@@ -1,6 +1,6 @@
-use crate::models::{user::*, network::*, device::*, office::*};
-use super::{Table, TypeTable, Updatable};
 use super::HashMap;
+use super::{Table, TypeTable, Updatable};
+use crate::models::{device::*, network::*, office::*, user::*};
 
 impl Table for User {
     fn columns() -> Vec<&'static str> {

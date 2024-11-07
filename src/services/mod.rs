@@ -1,7 +1,10 @@
-use std::collections::HashMap;
-use ipam_backend::authentication::{Claim, encrypt};
-use crate::{models::user::*, database::repository::{Repository, error::RepositoryError}};
+use crate::{
+    database::repository::{error::RepositoryError, Repository},
+    models::user::*,
+};
+use ipam_backend::authentication::{encrypt, Claim};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -24,10 +27,7 @@ pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryE
     let user = User {
         id: uuid::Uuid::new_v4(),
         username: std::env::var("IPAM_USER_ROOT").unwrap_or("admin".into()),
-        password: encrypt(
-            std::env::var("IPAM_PASSWORD_ROOT")
-                .unwrap_or("admin".into()),
-        ).unwrap(),
+        password: encrypt(std::env::var("IPAM_PASSWORD_ROOT").unwrap_or("admin".into())).unwrap(),
         role: Role::Admin,
     };
 

@@ -1,14 +1,17 @@
 use super::PgRow;
-use ipnet::IpNet;
+use crate::models::{
+    device::{Credential, Status},
+    network::Vlan,
+    user::Role,
+};
 use error::RepositoryError;
+use ipnet::IpNet;
 use std::{
-    net::IpAddr,
     collections::HashMap,
+    net::IpAddr,
     {future::Future, pin::Pin},
 };
 use uuid::Uuid;
-use crate::models::{user::Role, device::{Credential, Status}, network::Vlan};
-
 
 pub type ResultRepository<'a, T> =
     Pin<Box<dyn Future<Output = Result<T, RepositoryError>> + 'a + Send>>;
@@ -105,7 +108,6 @@ pub mod error {
         }
     }
 }
-
 
 #[derive(Debug)]
 pub enum TypeTable {

@@ -1,9 +1,11 @@
+pub mod entities;
 pub mod mappers;
 pub mod repository;
-pub mod entities;
 
 use futures::stream::StreamExt;
-use repository::{error::RepositoryError, QueryResult, Repository, ResultRepository, TypeTable, Table, Updatable};
+use repository::{
+    error::RepositoryError, QueryResult, Repository, ResultRepository, Table, TypeTable, Updatable,
+};
 use sqlx::postgres::{PgPool, PgPoolOptions, PgRow};
 use std::collections::HashMap;
 

@@ -185,7 +185,7 @@ pub mod authentication {
         T: Serialize + Claim,
     {
         let secret = std::env::var("SECRET_KEY")?;
-        
+
         Ok(encode(
             &Header::new(*ALGORITHM_JWT),
             &claim,
