@@ -22,6 +22,10 @@ tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 uuid = { version = "1.11.0", features = ["serde", "v4"] }
 
+[lib]
+name = "libipam"
+path = "src/lib.rs"
+
 [[bin]]
 name = "ipam"
 path = "src/main.rs"

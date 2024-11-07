@@ -2,7 +2,7 @@ use crate::{
     database::repository::{error::RepositoryError, Repository},
     models::user::*,
 };
-use ipam_backend::authentication::{encrypt, Claim};
+use libipam::authentication::{encrypt, Claim};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

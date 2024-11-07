@@ -89,7 +89,7 @@ pub mod cookie {
     impl std::fmt::Display for Cookie {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             match self {
-                Self::TOKEN => write!(f, "token"),
+                Self::TOKEN => write!(f, "jwt"),
                 Self::THEME => write!(f, "theme"),
             }
         }
@@ -99,7 +99,7 @@ pub mod cookie {
         type Error = super::error::ParseError;
         fn try_from(value: &str) -> Result<Self, Self::Error> {
             match value {
-                "token" => Ok(Self::TOKEN),
+                "jwt" => Ok(Self::TOKEN),
                 "theme" => Ok(Self::THEME),
                 _ => Err(super::error::ParseError),
             }
@@ -208,7 +208,6 @@ pub mod authentication {
             Err(e) => Err(e.into()),
         }
     }
-
 
     pub mod error {
         #[derive(Debug)]

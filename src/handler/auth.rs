@@ -2,7 +2,7 @@ use super::*;
 use crate::{models::user::User, services::Claims};
 use axum::{extract::Request, middleware::Next, response::Response};
 use cookie::Cookie;
-use ipam_backend::{
+use libipam::{
     authentication::{self, create_token, encrypt, verify_passwd},
     cookie::Cookie::TOKEN,
 };
@@ -26,7 +26,6 @@ pub async fn create(
     Ok(state.insert(vec![user]).await?)
 }
 
-#[axum::debug_handler]
 pub async fn login(
     State(state): State<RepositoryType>,
     Json(user): Json<models_data_entry::User>,
@@ -61,7 +60,7 @@ pub async fn login(
 }
 
 pub async fn verify_token(
-    ipam_backend::Token(token): ipam_backend::Token,
+    libipam::Token(token): libipam::Token,
     mut req: Request,
     next: Next,
 ) -> Result<axum::response::Response, ResponseError> {
