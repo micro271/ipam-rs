@@ -10,6 +10,6 @@ FROM debian
 
 WORKDIR /app
 
-COPY --from=builder /app/target/release/api_ipam .
+COPY --from=builder /app/target/release/ipam .
 
-CMD ["./api_ipam"]
+CMD ["./ipam"]

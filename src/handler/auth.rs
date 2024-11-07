@@ -1,7 +1,8 @@
 use super::*;
 use crate::{models::user::User, services::Claims};
-use ipam_backend::authentication::{encrypt, create_token, verify_passwd, Verify, self};
-use axum::{extract::Request, middleware::Next, response::Response};
+use ipam_backend::{authentication::{encrypt, create_token, verify_passwd, Verify, self}, cookie::Cookie::TOKEN};
+use axum::{extract::Request, response::Response, middleware::Next};
+use cookie::Cookie;
 
 pub async fn create(
     State(state): State<RepositoryType>,
@@ -22,10 +23,11 @@ pub async fn create(
     Ok(state.insert(vec![user]).await?)
 }
 
+#[axum::debug_handler]
 pub async fn login(
     State(state): State<RepositoryType>,
     Json(user): Json<models_data_entry::User>,
-) -> Result<impl IntoResponse, ResponseError> {
+) -> Result<Response, ResponseError> {
     let state = state.lock().await;
 
     let resp = state
@@ -35,14 +37,30 @@ pub async fn login(
 
     match verify_passwd(user.password, &resp.password) {
         Verify::Ok(true) => match create_token(Claims::from(resp)) {
-            Ok(e) => Ok(Json(json!({"token":e}))),
+            Ok(e) => {
+
+                let c = Cookie::build((TOKEN.to_string(),e))
+                    .path("/")
+                    .http_only(true)
+                    .secure(true)
+                    .same_site(cookie::SameSite::None);
+                
+
+                Ok(Response::builder()
+                    .header(axum::http::header::SET_COOKIE, c.to_string())
+                    .status(StatusCode::OK)
+                    .body(().into())
+                    .unwrap_or_default())
+                
+
+            },
             Err(_) => Err(ResponseError::ServerError),
         },
         _ => Err(ResponseError::Unauthorized),
     }
 }
 
-pub async fn verify_token(mut req: Request, next: Next) -> Result<Response, ResponseError> {
+pub async fn verify_token(mut req: Request, next: Next) -> Result<axum::response::Response, ResponseError> {
     match req.headers().get(axum::http::header::AUTHORIZATION) {
         Some(e) => match e.to_str() {
             Ok(e) => match e.split(' ').collect::<Vec<_>>().get(1) {
