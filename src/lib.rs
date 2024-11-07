@@ -169,10 +169,10 @@ pub mod authentication {
 
     pub trait Claim: std::fmt::Debug {}
 
-    pub fn verify_passwd<T: AsRef<[u8]>>(pass: T, pass_db: &str) -> Verify<bool> {
+    pub fn verify_passwd<T: AsRef<[u8]>>(pass: T, pass_db: &str) -> bool {
         match verify(pass.as_ref(), pass_db) {
-            Ok(true) => Verify::Ok(true),
-            _ => Verify::Unauthorized,
+            Ok(true) => true,
+            _ => false,
         }
     }
 
@@ -193,7 +193,7 @@ pub mod authentication {
         )?)
     }
 
-    pub fn verify_token<T, B: AsRef<str>>(token: B) -> Result<Verify<T>, error::Error>
+    pub fn verify_token<T, B: AsRef<str>>(token: B) -> Result<T, error::Error>
     where
         T: DeserializeOwned + Claim,
     {
@@ -204,15 +204,11 @@ pub mod authentication {
             &DecodingKey::from_secret(secret.as_ref()),
             &Validation::new(*ALGORITHM_JWT),
         ) {
-            Ok(e) => Ok(Verify::Ok(e.claims)),
-            Err(_) => Ok(Verify::Unauthorized),
+            Ok(e) => Ok(e.claims),
+            Err(e) => Err(e.into()),
         }
     }
 
-    pub enum Verify<T> {
-        Ok(T),
-        Unauthorized,
-    }
 
     pub mod error {
         #[derive(Debug)]

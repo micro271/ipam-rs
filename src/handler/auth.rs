@@ -3,7 +3,7 @@ use crate::{models::user::User, services::Claims};
 use axum::{extract::Request, middleware::Next, response::Response};
 use cookie::Cookie;
 use ipam_backend::{
-    authentication::{self, create_token, encrypt, verify_passwd, Verify},
+    authentication::{self, create_token, encrypt, verify_passwd},
     cookie::Cookie::TOKEN,
 };
 
@@ -38,8 +38,8 @@ pub async fn login(
         .await?
         .remove(0);
 
-    match verify_passwd(user.password, &resp.password) {
-        Verify::Ok(true) => match create_token(Claims::from(resp)) {
+    if verify_passwd(user.password, &resp.password) {
+        match create_token(Claims::from(resp)) {
             Ok(e) => {
                 let c = Cookie::build((TOKEN.to_string(), e))
                     .path("/")
@@ -54,8 +54,9 @@ pub async fn login(
                     .unwrap_or_default())
             }
             Err(_) => Err(ResponseError::ServerError),
-        },
-        _ => Err(ResponseError::Unauthorized),
+        }
+    } else {
+        Err(ResponseError::Unauthorized)
     }
 }
 
@@ -65,7 +66,7 @@ pub async fn verify_token(
     next: Next,
 ) -> Result<axum::response::Response, ResponseError> {
     match authentication::verify_token::<Claims, _>(token) {
-        Ok(Verify::Ok(e)) => {
+        Ok(e) => {
             req.extensions_mut().insert(e.role);
             Ok(next.run(req).await)
         }
