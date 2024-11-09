@@ -64,8 +64,9 @@ pub async fn verify_token(
     mut req: Request,
     next: Next,
 ) -> Result<axum::response::Response, ResponseError> {
-    match authentication::verify_token::<Claims, _>(token) {
-        Ok(e) => {
+    
+    match token.map(authentication::verify_token::<Claims, _>) {
+        Ok(Ok(e)) => {
             req.extensions_mut().insert(e.role);
             Ok(next.run(req).await)
         }
