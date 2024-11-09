@@ -1,9 +1,9 @@
-use axum::response::{IntoResponse, Redirect, Response};
 use axum::{extract::FromRequestParts, http::StatusCode};
+use error::NotFound;
 use futures::FutureExt;
 use std::convert::Infallible;
 use std::{boxed::Box, future::Future, pin::Pin};
-pub struct Token(pub String);
+pub struct Token(pub Result<String, NotFound>);
 
 pub struct Theme(pub theme::Theme);
 
@@ -11,7 +11,7 @@ impl<S> FromRequestParts<S> for Token
 where
     S: Send,
 {
-    type Rejection = Response;
+    type Rejection = Infallible;
     fn from_request_parts<'a, 'b, 'c>(
         parts: &'a mut axum::http::request::Parts,
         _state: &'b S,
@@ -29,11 +29,11 @@ where
                         cookie.first().map(|x| cookie::Cookie::try_from(*x)),
                         cookie.get(1),
                     ) {
-                        return Ok(Self(value.to_string()));
+                        return Ok(Self(Ok(value.to_string())));
                     }
                 }
             }
-            Err(Redirect::to("/login").into_response())
+            Ok(Self(Err(NotFound{key: cookie::Cookie::TOKEN.to_string() })))
         }
         .boxed()
     }
@@ -140,15 +140,13 @@ pub mod error {
     use axum::response::IntoResponse;
 
     #[derive(Debug)]
-    pub enum Error {
-        KeyNotFound,
+    pub struct NotFound {
+        pub key: String,
     }
 
-    impl IntoResponse for Error {
+    impl IntoResponse for NotFound {
         fn into_response(self) -> axum::response::Response {
-            match self {
-                Self::KeyNotFound => (StatusCode::BAD_REQUEST, "Key not found").into_response(),
-            }
+            (StatusCode::NOT_FOUND, format!("{} not found", self.key)).into_response()
         }
     }
 
