@@ -1,3 +1,4 @@
+use axum::response::{IntoResponse, Redirect, Response};
 use axum::{extract::FromRequestParts, http::StatusCode};
 use futures::FutureExt;
 use std::convert::Infallible;
@@ -10,7 +11,7 @@ impl<S> FromRequestParts<S> for Token
 where
     S: Send,
 {
-    type Rejection = error::Error;
+    type Rejection = Response;
     fn from_request_parts<'a, 'b, 'c>(
         parts: &'a mut axum::http::request::Parts,
         _state: &'b S,
@@ -21,22 +22,18 @@ where
     {
         async {
             let cookies = parts.headers.get(axum::http::header::COOKIE);
-            match cookies.map(|e| e.to_str()) {
-                Some(Ok(e)) => {
-                    let tmp: Vec<_> = e.split(';').collect();
-                    for i in tmp {
-                        let cookie: Vec<_> = i.split("=").collect();
-                        if let (Some(Ok(cookie::Cookie::TOKEN)), Some(value)) = (
-                            cookie.first().map(|x| cookie::Cookie::try_from(*x)),
-                            cookie.get(1),
-                        ) {
-                            return Ok(Self(value.to_string()));
-                        }
+            if let Some(Ok(tmp)) = cookies.map(|e| e.to_str().map(|x| x.split(';').collect::<Vec<_>>())) {
+                for i in tmp {
+                    let cookie: Vec<_> = i.split("=").collect();
+                    if let (Some(Ok(cookie::Cookie::TOKEN)), Some(value)) = (
+                        cookie.first().map(|x| cookie::Cookie::try_from(*x)),
+                        cookie.get(1),
+                    ) {
+                        return Ok(Self(value.to_string()));
                     }
-                    Err(error::Error::KeyNotFound)
                 }
-                _ => Err(error::Error::KeyNotFound),
             }
+            Err(Redirect::to("/login").into_response())
         }
         .boxed()
     }
