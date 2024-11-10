@@ -22,7 +22,9 @@ where
     {
         async {
             let cookies = parts.headers.get(axum::http::header::COOKIE);
-            if let Some(Ok(tmp)) = cookies.map(|e| e.to_str().map(|x| x.split(';').collect::<Vec<_>>())) {
+            if let Some(Ok(tmp)) =
+                cookies.map(|e| e.to_str().map(|x| x.split(';').collect::<Vec<_>>()))
+            {
                 for i in tmp {
                     let cookie: Vec<_> = i.split("=").collect();
                     if let (Some(Ok(cookie::Cookie::TOKEN)), Some(value)) = (
@@ -33,7 +35,9 @@ where
                     }
                 }
             }
-            Ok(Self(Err(NotFound{key: cookie::Cookie::TOKEN.to_string() })))
+            Ok(Self(Err(NotFound {
+                key: cookie::Cookie::TOKEN.to_string(),
+            })))
         }
         .boxed()
     }
@@ -165,10 +169,7 @@ pub mod authentication {
     pub trait Claim: std::fmt::Debug {}
 
     pub fn verify_passwd<T: AsRef<[u8]>>(pass: T, pass_db: &str) -> bool {
-        match verify(pass.as_ref(), pass_db) {
-            Ok(true) => true,
-            _ => false,
-        }
+        verify(pass.as_ref(), pass_db).unwrap_or(false)
     }
 
     pub fn encrypt<T: AsRef<[u8]>>(pass: T) -> Result<String, error::Error> {
@@ -240,6 +241,129 @@ pub mod authentication {
             fn from(_value: bcrypt::BcryptError) -> Self {
                 Self::Encrypt
             }
+        }
+    }
+}
+
+#[allow(dead_code)]
+mod response_error {
+    use axum::{
+        http::StatusCode,
+        response::{IntoResponse, Response},
+    };
+    use serde::{Deserialize, Serialize};
+    use time::OffsetDateTime;
+
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct ResponseError {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        r#type: Option<String>,
+
+        #[serde(skip_serializing_if = "Option::is_none")]
+        title: Option<String>,
+
+        #[serde(skip_serializing_if = "Option::is_none")]
+        status: Option<u16>,
+
+        #[serde(skip_serializing_if = "Option::is_none")]
+        detail: Option<String>,
+
+        #[serde(skip_serializing_if = "Option::is_none")]
+        instance: Option<String>,
+
+        #[serde(skip_serializing_if = "Option::is_none")]
+        timestamp: Option<OffsetDateTime>,
+    }
+
+    impl ResponseError {
+        pub fn new(
+            r#type: String,
+            title: String,
+            status: StatusCode,
+            detail: String,
+            instance: String,
+        ) -> Self {
+            Self {
+                r#type: Some(r#type),
+                title: Some(title),
+                status: Some(status.as_u16()),
+                detail: Some(detail),
+                instance: Some(instance),
+                timestamp: Some(OffsetDateTime::now_utc()),
+            }
+        }
+
+        pub(self) fn create(
+            Builder {
+                r#type,
+                title,
+                status,
+                detail,
+                instance,
+            }: Builder,
+        ) -> ResponseError {
+            Self {
+                r#type,
+                title,
+                status,
+                detail,
+                instance,
+                timestamp: Some(OffsetDateTime::now_utc()),
+            }
+        }
+    }
+
+    impl IntoResponse for ResponseError {
+        fn into_response(self) -> axum::response::Response {
+            Response::builder()
+                .header(axum::http::header::CONTENT_TYPE, "application/problem+json")
+                .status(StatusCode::from_u16(self.status.unwrap()).unwrap())
+                .body(serde_json::json!(self).to_string())
+                .unwrap_or_default()
+                .into_response()
+        }
+    }
+
+    pub struct Builder {
+        pub r#type: Option<String>,
+        pub title: Option<String>,
+        pub status: Option<u16>,
+        pub detail: Option<String>,
+        pub instance: Option<String>,
+    }
+
+    impl Builder {
+        pub fn new(status: StatusCode) -> Self {
+            Self {
+                r#type: None,
+                title: None,
+                status: Some(status.as_u16()),
+                detail: None,
+                instance: None,
+            }
+        }
+        pub fn r#type(mut self, r#type: String) -> Self {
+            self.r#type = Some(r#type);
+            self
+        }
+
+        pub fn title(mut self, title: String) -> Self {
+            self.title = Some(title);
+            self
+        }
+
+        pub fn detail(mut self, detail: String) -> Self {
+            self.detail = Some(detail);
+            self
+        }
+
+        pub fn instance(mut self, instance: String) -> Self {
+            self.instance = Some(instance);
+            self
+        }
+
+        pub fn build(self) -> ResponseError {
+            ResponseError::create(self)
         }
     }
 }
