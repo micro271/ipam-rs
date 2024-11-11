@@ -252,7 +252,7 @@ mod response_error {
         response::{IntoResponse, Response},
     };
     use serde::{Deserialize, Serialize};
-    use time::OffsetDateTime;
+    use time::{OffsetDateTime, UtcOffset};
 
     #[derive(Debug, Serialize, Deserialize)]
     pub struct ResponseError {
@@ -282,6 +282,7 @@ mod response_error {
             status: StatusCode,
             detail: String,
             instance: String,
+            offset: Option<UtcOffset>
         ) -> Self {
             Self {
                 r#type: Some(r#type),
@@ -289,7 +290,7 @@ mod response_error {
                 status: Some(status.as_u16()),
                 detail: Some(detail),
                 instance: Some(instance),
-                timestamp: Some(OffsetDateTime::now_utc()),
+                timestamp: Some(OffsetDateTime::now_utc().to_offset(offset.unwrap_or(UtcOffset::UTC))),
             }
         }
 
@@ -300,6 +301,7 @@ mod response_error {
                 status,
                 detail,
                 instance,
+                offset,
             }: Builder,
         ) -> ResponseError {
             Self {
@@ -308,7 +310,7 @@ mod response_error {
                 status,
                 detail,
                 instance,
-                timestamp: Some(OffsetDateTime::now_utc()),
+                timestamp: Some(OffsetDateTime::now_utc().to_offset(offset.unwrap_or(UtcOffset::UTC))),
             }
         }
     }
@@ -330,6 +332,7 @@ mod response_error {
         pub status: Option<u16>,
         pub detail: Option<String>,
         pub instance: Option<String>,
+        pub offset: Option<UtcOffset>,
     }
 
     impl Builder {
@@ -340,6 +343,7 @@ mod response_error {
                 status: Some(status.as_u16()),
                 detail: None,
                 instance: None,
+                offset: None,
             }
         }
         pub fn r#type(mut self, r#type: String) -> Self {
@@ -359,6 +363,16 @@ mod response_error {
 
         pub fn instance(mut self, instance: String) -> Self {
             self.instance = Some(instance);
+            self
+        }
+
+        pub fn offset(mut self, offset: time::UtcOffset) -> Self {
+            self.offset = Some(offset);
+            self
+        }
+
+        pub fn offset_hms(mut self, (hours, minutes, seconds): (i8, i8, i8))  -> Self {
+            self.offset = UtcOffset::from_hms(hours, minutes, seconds).ok();
             self
         }
 
