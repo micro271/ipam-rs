@@ -282,7 +282,7 @@ mod response_error {
             status: StatusCode,
             detail: String,
             instance: String,
-            offset: Option<UtcOffset>
+            offset: Option<UtcOffset>,
         ) -> Self {
             Self {
                 r#type: Some(r#type),
@@ -290,7 +290,9 @@ mod response_error {
                 status: Some(status.as_u16()),
                 detail: Some(detail),
                 instance: Some(instance),
-                timestamp: Some(OffsetDateTime::now_utc().to_offset(offset.unwrap_or(UtcOffset::UTC))),
+                timestamp: Some(
+                    OffsetDateTime::now_utc().to_offset(offset.unwrap_or(UtcOffset::UTC)),
+                ),
             }
         }
 
@@ -310,7 +312,9 @@ mod response_error {
                 status,
                 detail,
                 instance,
-                timestamp: Some(OffsetDateTime::now_utc().to_offset(offset.unwrap_or(UtcOffset::UTC))),
+                timestamp: Some(
+                    OffsetDateTime::now_utc().to_offset(offset.unwrap_or(UtcOffset::UTC)),
+                ),
             }
         }
     }
@@ -371,7 +375,7 @@ mod response_error {
             self
         }
 
-        pub fn offset_hms(mut self, (hours, minutes, seconds): (i8, i8, i8))  -> Self {
+        pub fn offset_hms(mut self, (hours, minutes, seconds): (i8, i8, i8)) -> Self {
             self.offset = UtcOffset::from_hms(hours, minutes, seconds).ok();
             self
         }
@@ -384,23 +388,156 @@ mod response_error {
 
 #[allow(dead_code)]
 pub mod type_net {
-    pub mod vlan{
+
+    pub mod host_count {
+        use ipnet::IpNet;
+
+        struct HostCount(u32);
+
+        #[derive(Debug, PartialEq)]
+        enum Type {
+            Limited,
+            Unlimited,
+        }
+
+        impl std::fmt::Display for Type {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                match self {
+                    Self::Limited => write!(f, "Limited"),
+                    Self::Unlimited => write!(f, "Unlimited"),
+                }
+            }
+        }
+
+        struct Prefix(u8);
+        #[derive(Debug)]
+        struct InvalidPrefix;
+
+        impl PartialEq for Prefix {
+            fn eq(&self, other: &Self) -> bool {
+                self.0 == other.0
+            }
+        }
+
+        impl<T> PartialEq<T> for Prefix
+        where
+            T: Into<u8> + Copy,
+        {
+            fn eq(&self, other: &T) -> bool {
+                self.0 == T::into(*other)
+            }
+        }
+
+        impl PartialOrd for Prefix {
+            fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+                Some(self.cmp(other))
+            }
+        }
+
+        impl<T> PartialOrd<T> for Prefix
+        where
+            T: Into<u8> + Copy,
+        {
+            fn partial_cmp(&self, other: &T) -> Option<std::cmp::Ordering> {
+                Some(self.cmp(&T::into(*other)))
+            }
+        }
+
+        impl From<&IpNet> for Prefix {
+            fn from(value: &IpNet) -> Self {
+                Self(value.max_prefix_len() - value.prefix_len())
+            }
+        }
+
+        impl TryFrom<u8> for Prefix {
+            type Error = InvalidPrefix;
+            fn try_from(value: u8) -> Result<Self, Self::Error> {
+                if value > 128 {
+                    Err(InvalidPrefix)
+                } else {
+                    Ok(Self(value))
+                }
+            }
+        }
+
+        impl std::ops::Deref for Prefix {
+            type Target = u8;
+            fn deref(&self) -> &Self::Target {
+                &self.0
+            }
+        }
+
+        impl HostCount {
+            pub const MAX: u32 = u32::MAX;
+
+            fn new(prefix: Prefix) -> Self {
+                if prefix > 32 {
+                    Self(Self::MAX)
+                } else {
+                    Self(2u32.pow(*prefix as u32) - 2)
+                }
+            }
+
+            fn unlimited(&self) -> bool {
+                self.0 == Self::MAX
+            }
+
+            fn type_limit(&self, prefix: Prefix) -> Type {
+                if prefix > 32 {
+                    Type::Unlimited
+                } else {
+                    Type::Limited
+                }
+            }
+
+            fn add<T: TryInto<u32>>(&mut self, rhs: T) -> Result<(), CountOfRange> {
+                let val: u32 = T::try_into(rhs).map_err(|_| CountOfRange)?;
+
+                self.0 = match self.0.checked_add(val) {
+                    Some(e) => e,
+                    None => return Err(CountOfRange),
+                };
+                Ok(())
+            }
+
+            fn sub<T: TryInto<u32>>(&mut self, rhs: T) -> Result<(), CountOfRange> {
+                let avl: u32 = T::try_into(rhs).map_err(|_| CountOfRange)?;
+                self.0 = match self.0.checked_sub(avl) {
+                    Some(e) => e,
+                    None => return Err(CountOfRange),
+                };
+                Ok(())
+            }
+        }
+
+        impl std::ops::Deref for HostCount {
+            type Target = u32;
+            fn deref(&self) -> &Self::Target {
+                &self.0
+            }
+        }
+
+        #[derive(Debug)]
+        struct CountOfRange;
+    }
+
+    pub mod vlan {
         use serde::{de::Visitor, Deserialize, Serialize};
 
         pub struct Vlan(u16);
-    
+
         impl Vlan {
             pub const MAX: u16 = 4095;
-    
+
             pub fn vlan_id(id: u16) -> Result<Self, OutOfRange> {
                 Ok(Vlan(Self::vlidate(id)?))
             }
-    
+
             pub fn set_vlan(&mut self, id: u16) -> Result<(), OutOfRange> {
                 self.0 = Self::vlidate(id)?;
                 Ok(())
             }
-    
+
             fn vlidate(id: u16) -> Result<u16, OutOfRange> {
                 if id > Self::MAX {
                     Err(OutOfRange)
@@ -409,17 +546,17 @@ pub mod type_net {
                 }
             }
         }
-    
+
         impl std::ops::Deref for Vlan {
             type Target = u16;
             fn deref(&self) -> &Self::Target {
                 &self.0
             }
         }
-    
+
         #[derive(Debug)]
         pub struct OutOfRange;
-        
+
         impl std::fmt::Display for OutOfRange {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 write!(f, "Out of range")
@@ -429,18 +566,19 @@ pub mod type_net {
 
         impl Serialize for Vlan {
             fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-                where
-                    S: serde::Serializer {
+            where
+                S: serde::Serializer,
+            {
                 serializer.serialize_u16(**self)
             }
         }
-        
+
         struct VlanVisitor;
 
         impl<'de> Deserialize<'de> for Vlan {
             fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-                where
-                    D: serde::Deserializer<'de> 
+            where
+                D: serde::Deserializer<'de>,
             {
                 deserializer.deserialize_any(VlanVisitor)
             }
@@ -452,40 +590,42 @@ pub mod type_net {
                 formatter.write_str("Vlan id expected")
             }
             fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
-                where
-                    E: serde::de::Error, {
+            where
+                E: serde::de::Error,
+            {
                 Self::visit_str(self, &v)
             }
 
             fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-                where
-                    E: serde::de::Error, {
-                match v.parse::<u16>().map_err(|_|OutOfRange).map(|id| Vlan::vlan_id(id)) {
+            where
+                E: serde::de::Error,
+            {
+                match v.parse::<u16>().map(Vlan::vlan_id) {
                     Ok(Ok(e)) => Ok(e),
-                    _ => Err(E::custom(OutOfRange.to_string()),)
+                    _ => Err(E::custom(OutOfRange.to_string())),
                 }
             }
 
             fn visit_u8<E>(self, v: u8) -> Result<Self::Value, E>
-                where
-                    E: serde::de::Error, {
-                match Vlan::vlan_id(v as u16) {
-                    Ok(e) => Ok(e),
-                    _ => Err(E::custom(OutOfRange.to_string()))
-                }
+            where
+                E: serde::de::Error,
+            {
+                Vlan::vlan_id(v as u16).map_err(|_| E::custom(OutOfRange.to_string()))
             }
             fn visit_u16<E>(self, v: u16) -> Result<Self::Value, E>
-                where
-                    E: serde::de::Error, {
+            where
+                E: serde::de::Error,
+            {
                 match Vlan::vlan_id(v) {
                     Ok(e) => Ok(e),
-                    _ => Err(E::custom(OutOfRange.to_string()))
+                    _ => Err(E::custom(OutOfRange.to_string())),
                 }
             }
 
             fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E>
-                where
-                    E: serde::de::Error, {
+            where
+                E: serde::de::Error,
+            {
                 if v > Vlan::MAX as u32 {
                     Err(E::custom(OutOfRange.to_string()))
                 } else {
@@ -494,8 +634,9 @@ pub mod type_net {
             }
 
             fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
-                where
-                    E: serde::de::Error, {
+            where
+                E: serde::de::Error,
+            {
                 if v > Vlan::MAX as u64 {
                     Err(E::custom(OutOfRange.to_string()))
                 } else {
@@ -504,8 +645,9 @@ pub mod type_net {
             }
 
             fn visit_u128<E>(self, v: u128) -> Result<Self::Value, E>
-                where
-                    E: serde::de::Error, {
+            where
+                E: serde::de::Error,
+            {
                 if v > Vlan::MAX as u128 {
                     Err(E::custom(OutOfRange.to_string()))
                 } else {
@@ -514,8 +656,9 @@ pub mod type_net {
             }
 
             fn visit_i8<E>(self, v: i8) -> Result<Self::Value, E>
-                where
-                    E: serde::de::Error, {
+            where
+                E: serde::de::Error,
+            {
                 if v < 0 {
                     Err(E::custom(OutOfRange.to_string()))
                 } else {
@@ -524,8 +667,9 @@ pub mod type_net {
             }
 
             fn visit_i16<E>(self, v: i16) -> Result<Self::Value, E>
-                where
-                    E: serde::de::Error, {
+            where
+                E: serde::de::Error,
+            {
                 if v < 0 {
                     Err(E::custom(OutOfRange.to_string()))
                 } else {
@@ -534,8 +678,9 @@ pub mod type_net {
             }
 
             fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E>
-                where
-                    E: serde::de::Error, {
+            where
+                E: serde::de::Error,
+            {
                 if v < 0 || v > Vlan::MAX as i32 {
                     Err(E::custom(OutOfRange.to_string()))
                 } else {
@@ -544,8 +689,9 @@ pub mod type_net {
             }
 
             fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
-                where
-                    E: serde::de::Error, {
+            where
+                E: serde::de::Error,
+            {
                 if v < 0 || v > Vlan::MAX as i64 {
                     Err(E::custom(OutOfRange.to_string()))
                 } else {
@@ -554,16 +700,15 @@ pub mod type_net {
             }
 
             fn visit_i128<E>(self, v: i128) -> Result<Self::Value, E>
-                where
-                    E: serde::de::Error, {
+            where
+                E: serde::de::Error,
+            {
                 if v < 0 || v > Vlan::MAX as i128 {
                     Err(E::custom(OutOfRange.to_string()))
                 } else {
                     Ok(Vlan::vlan_id(v as u16).unwrap())
                 }
             }
-
         }
-        
     }
 }
