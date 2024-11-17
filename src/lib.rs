@@ -391,11 +391,14 @@ pub mod type_net {
 
     pub mod host_count {
         use ipnet::IpNet;
+        use serde::{Deserialize, Serialize};
 
-        struct HostCount(u32);
+        #[derive(Deserialize, Serialize, Debug)]
+        #[serde(transparent)]
+        pub struct HostCount(u32);
 
         #[derive(Debug, PartialEq)]
-        enum Type {
+        pub enum Type {
             Limited,
             Unlimited,
         }
@@ -409,9 +412,9 @@ pub mod type_net {
             }
         }
 
-        struct Prefix(u8);
+        pub struct Prefix(u8);
         #[derive(Debug)]
-        struct InvalidPrefix;
+        pub struct InvalidPrefix;
 
         impl PartialEq for Prefix {
             fn eq(&self, other: &Self) -> bool {
@@ -470,7 +473,7 @@ pub mod type_net {
         impl HostCount {
             pub const MAX: u32 = u32::MAX;
 
-            fn new(prefix: Prefix) -> Self {
+            pub fn new(prefix: Prefix) -> Self {
                 if prefix > 32 {
                     Self(Self::MAX)
                 } else {
@@ -478,11 +481,11 @@ pub mod type_net {
                 }
             }
 
-            fn unlimited(&self) -> bool {
+            pub fn unlimited(&self) -> bool {
                 self.0 == Self::MAX
             }
 
-            fn type_limit(&self, prefix: Prefix) -> Type {
+            pub fn type_limit(&self, prefix: Prefix) -> Type {
                 if prefix > 32 {
                     Type::Unlimited
                 } else {
@@ -490,22 +493,13 @@ pub mod type_net {
                 }
             }
 
-            fn add<T: TryInto<u32>>(&mut self, rhs: T) -> Result<(), CountOfRange> {
-                let val: u32 = T::try_into(rhs).map_err(|_| CountOfRange)?;
-
-                self.0 = match self.0.checked_add(val) {
-                    Some(e) => e,
-                    None => return Err(CountOfRange),
-                };
+            pub fn add<T: TryInto<u32>>(&mut self, rhs: T) -> Result<(), CountOfRange> {
+                self.0 = self.0.checked_add(T::try_into(rhs).map_err(|_| CountOfRange)?).ok_or(CountOfRange)?;
                 Ok(())
             }
 
-            fn sub<T: TryInto<u32>>(&mut self, rhs: T) -> Result<(), CountOfRange> {
-                let avl: u32 = T::try_into(rhs).map_err(|_| CountOfRange)?;
-                self.0 = match self.0.checked_sub(avl) {
-                    Some(e) => e,
-                    None => return Err(CountOfRange),
-                };
+            pub fn sub<T: TryInto<u32>>(&mut self, rhs: T) -> Result<(), CountOfRange> {
+                self.0 = self.0.checked_sub(T::try_into(rhs).map_err(|_|CountOfRange)?).ok_or(CountOfRange)?;
                 Ok(())
             }
         }
@@ -518,7 +512,7 @@ pub mod type_net {
         }
 
         #[derive(Debug)]
-        struct CountOfRange;
+        pub struct CountOfRange;
     }
 
     pub mod vlan {
