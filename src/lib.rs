@@ -493,13 +493,13 @@ pub mod type_net {
                 }
             }
 
-            pub fn add<T: TryInto<u32>>(&mut self, rhs: T) -> Result<(), CountOfRange> {
-                self.0 = self.0.checked_add(T::try_into(rhs).map_err(|_| CountOfRange)?).ok_or(CountOfRange)?;
+            pub fn add<T: Into<u32>>(&mut self, rhs: T) -> Result<(), CountOfRange> {
+                self.0 = self.0.checked_add(T::into(rhs)).ok_or(CountOfRange)?;
                 Ok(())
             }
 
-            pub fn sub<T: TryInto<u32>>(&mut self, rhs: T) -> Result<(), CountOfRange> {
-                self.0 = self.0.checked_sub(T::try_into(rhs).map_err(|_|CountOfRange)?).ok_or(CountOfRange)?;
+            pub fn sub<T: Into<u32>>(&mut self, rhs: T) -> Result<(), CountOfRange> {
+                self.0 = self.0.checked_sub(T::into(rhs)).ok_or(CountOfRange)?;
                 Ok(())
             }
         }
