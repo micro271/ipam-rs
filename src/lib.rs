@@ -504,12 +504,9 @@ pub mod type_net {
             }
         }
 
-        impl<T> From<T> for HostCount 
-            where 
-                T: Into<u32>
-        {
-            fn from(value: T) -> Self {
-                Self(value.into())
+        impl From<u32> for HostCount {
+            fn from(value: u32) -> Self {
+                Self(value)
             }
         }
 
