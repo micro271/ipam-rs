@@ -418,16 +418,13 @@ pub mod type_net {
 
         impl PartialEq for Prefix {
             fn eq(&self, other: &Self) -> bool {
-                self.0 == other.0
+                &self.0 == &other.0
             }
         }
 
-        impl<T> PartialEq<T> for Prefix
-        where
-            T: Into<u8> + Copy,
-        {
-            fn eq(&self, other: &T) -> bool {
-                self.0 == T::into(*other)
+        impl PartialEq<u8> for Prefix {
+            fn eq(&self, other: &u8) -> bool {
+                &self.0 == other
             }
         }
 
@@ -437,12 +434,9 @@ pub mod type_net {
             }
         }
 
-        impl<T> PartialOrd<T> for Prefix
-        where
-            T: Into<u8> + Copy,
-        {
-            fn partial_cmp(&self, other: &T) -> Option<std::cmp::Ordering> {
-                Some(self.cmp(&T::into(*other)))
+        impl PartialOrd<u8> for Prefix {
+            fn partial_cmp(&self, other: &u8) -> Option<std::cmp::Ordering> {
+                Some(self.cmp(other))
             }
         }
 
