@@ -296,6 +296,10 @@ pub mod response_error {
             }
         }
 
+        pub fn builder() -> Builder {
+            Builder::default()
+        }
+
         pub(self) fn create(
             Builder {
                 r#type,
@@ -359,10 +363,6 @@ pub mod response_error {
     }
 
     impl Builder {
-        pub fn new(status: StatusCode) -> Self {
-            Self::default().status(status)
-        }
-
         pub fn r#type(mut self, r#type: String) -> Self {
             self.r#type = Some(r#type);
             self
@@ -412,11 +412,7 @@ pub mod response_error {
                 status,
                 detail,
                 instance,
-                offset: if let Some(t) = timestamp {
-                    Some(t.offset())
-                } else {
-                    None
-                },
+                offset: timestamp.map(|x| x.offset()),
             }
         }
     }
