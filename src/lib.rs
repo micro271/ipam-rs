@@ -425,7 +425,7 @@ pub mod type_net {
         use ipnet::IpNet;
         use serde::{Deserialize, Serialize};
 
-        #[derive(Deserialize, Serialize, Debug)]
+        #[derive(Deserialize, Serialize, Debug, Clone)]
         #[serde(transparent)]
         pub struct HostCount(u32);
 
