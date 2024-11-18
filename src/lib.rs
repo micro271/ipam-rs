@@ -246,7 +246,7 @@ pub mod authentication {
 }
 
 #[allow(dead_code)]
-mod response_error {
+pub mod response_error {
     use axum::{
         http::StatusCode,
         response::{IntoResponse, Response},
@@ -309,13 +309,19 @@ mod response_error {
             Self {
                 r#type,
                 title,
-                status,
+                status: status.or(Some(400)),
                 detail,
                 instance,
                 timestamp: Some(
                     OffsetDateTime::now_utc().to_offset(offset.unwrap_or(UtcOffset::UTC)),
                 ),
             }
+        }
+    }
+
+    impl From<Builder> for ResponseError {
+        fn from(value: Builder) -> Self {
+            ResponseError::create(value)
         }
     }
 
@@ -331,27 +337,39 @@ mod response_error {
     }
 
     pub struct Builder {
-        pub r#type: Option<String>,
-        pub title: Option<String>,
-        pub status: Option<u16>,
-        pub detail: Option<String>,
-        pub instance: Option<String>,
-        pub offset: Option<UtcOffset>,
+        r#type: Option<String>,
+        title: Option<String>,
+        status: Option<u16>,
+        detail: Option<String>,
+        instance: Option<String>,
+        offset: Option<UtcOffset>,
     }
 
-    impl Builder {
-        pub fn new(status: StatusCode) -> Self {
+    impl std::default::Default for Builder {
+        fn default() -> Self {
             Self {
                 r#type: None,
                 title: None,
-                status: Some(status.as_u16()),
+                status: None,
                 detail: None,
                 instance: None,
                 offset: None,
             }
         }
+    }
+
+    impl Builder {
+        pub fn new(status: StatusCode) -> Self {
+            Self::default().status(status)
+        }
+
         pub fn r#type(mut self, r#type: String) -> Self {
             self.r#type = Some(r#type);
+            self
+        }
+
+        pub fn status(mut self, status: StatusCode) -> Self {
+            self.status = Some(status.as_u16());
             self
         }
 
@@ -382,6 +400,24 @@ mod response_error {
 
         pub fn build(self) -> ResponseError {
             ResponseError::create(self)
+        }
+    }
+
+    impl From<ResponseError> for Builder {
+        fn from(value: ResponseError) -> Self {
+            let ResponseError {r#type, title, status, detail, instance, timestamp} = value;
+            Builder {
+                r#type,
+                title,
+                status,
+                detail,
+                instance,
+                offset: if let Some(t) = timestamp {
+                    Some(t.offset())
+                } else {
+                    None
+                },
+            }
         }
     }
 }
