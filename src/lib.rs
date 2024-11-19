@@ -405,7 +405,14 @@ pub mod response_error {
 
     impl From<ResponseError> for Builder {
         fn from(value: ResponseError) -> Self {
-            let ResponseError {r#type, title, status, detail, instance, timestamp} = value;
+            let ResponseError {
+                r#type,
+                title,
+                status,
+                detail,
+                instance,
+                timestamp,
+            } = value;
             Builder {
                 r#type,
                 title,
@@ -520,12 +527,18 @@ pub mod type_net {
             }
 
             pub fn add<T: TryInto<u32>>(&mut self, rhs: T) -> Result<(), CountOfRange> {
-                self.0 = self.0.checked_add(T::try_into(rhs).map_err(|_| CountOfRange)?).ok_or(CountOfRange)?;
+                self.0 = self
+                    .0
+                    .checked_add(T::try_into(rhs).map_err(|_| CountOfRange)?)
+                    .ok_or(CountOfRange)?;
                 Ok(())
             }
 
             pub fn sub<T: TryInto<u32>>(&mut self, rhs: T) -> Result<(), CountOfRange> {
-                self.0 = self.0.checked_sub(T::try_into(rhs).map_err(|_| CountOfRange)?).ok_or(CountOfRange)?;
+                self.0 = self
+                    .0
+                    .checked_sub(T::try_into(rhs).map_err(|_| CountOfRange)?)
+                    .ok_or(CountOfRange)?;
                 Ok(())
             }
         }
