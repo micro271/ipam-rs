@@ -854,3 +854,48 @@ pub mod type_net {
         }
     }
 }
+
+pub mod ipam_services {
+    use std::net::IpAddr;
+
+
+    pub async fn ping(ip: IpAddr, timeout_ms: u64) -> Ping {
+        let ip = ip.to_string();
+        let duration = std::time::Duration::from_millis(timeout_ms).as_secs_f32().to_string();
+        let ping = tokio::process::Command::new("ping")
+            .args(["-W", &duration, "-c", "1", &ip])
+            .output()
+            .await; 
+
+        match ping {
+            Ok(e) if e.status.code().unwrap_or(1) == 0 => Ping::Pong,
+            _ => Ping::Fail,
+        }
+    }
+
+    #[derive(Debug, PartialEq, PartialOrd)]
+    pub enum Ping {
+        Pong,
+        Fail,
+    }
+
+    #[cfg(test)]
+    mod test {
+        use super::*;
+        use std::sync::LazyLock;
+        use tokio::runtime::Runtime;
+
+        static RUNTIME: LazyLock<Runtime> = std::sync::LazyLock::new(|| {Runtime::new().unwrap()});
+        #[test]
+        fn ping_test_pong() {
+            let resp = RUNTIME.block_on(async {ping("192.168.0.1".parse().unwrap(),1).await });
+            assert_eq!(Ping::Pong, resp);
+        }
+
+        #[test]
+        fn ping_test_fail() {
+            let resp = RUNTIME.block_on(async {ping("192.168.1.50".parse().unwrap(), 1).await });
+            assert_eq!(Ping::Fail, resp);
+        }
+    }
+}
