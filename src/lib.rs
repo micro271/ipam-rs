@@ -858,6 +858,8 @@ pub mod type_net {
 pub mod ipam_services {
     use std::net::IpAddr;
 
+    use axum::{http::{self, Response, StatusCode}, response::IntoResponse};
+
 
     pub async fn ping(ip: IpAddr, timeout_ms: u64) -> Ping {
         let ip = ip.to_string();
@@ -873,10 +875,31 @@ pub mod ipam_services {
         }
     }
 
-    #[derive(Debug, PartialEq, PartialOrd)]
+    #[derive(Debug, PartialEq, PartialOrd, serde::Serialize)]
     pub enum Ping {
         Pong,
         Fail,
+    }
+    impl std::fmt::Display for Ping {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                Self::Pong => write!(f, "Pong"),
+                Self::Fail => write!(f, "Fail"),
+            }
+        }
+    }
+    impl IntoResponse for Ping {
+        fn into_response(self) -> axum::response::Response {
+            Response::builder()
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .status(StatusCode::OK)
+                .body(serde_json::json!({
+                    "status": 200,
+                    "ping": self.to_string()
+                }).to_string())
+                .unwrap_or_default()
+                .into_response()
+        }
     }
 
     #[cfg(test)]
