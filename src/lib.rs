@@ -442,6 +442,9 @@ pub mod type_net {
         }
 
         impl Prefix {
+
+            const MAX: u8 = 128;
+
             pub fn part_host(&self) -> u8 {
                 self.host_part
             }
@@ -858,8 +861,33 @@ pub mod type_net {
 pub mod ipam_services {
     use std::net::IpAddr;
 
-    use axum::{http::{self, Response, StatusCode}, response::IntoResponse};
+    use axum::{http::{Response, StatusCode}, response::IntoResponse};
+    use ipnet::IpNet;
 
+    #[derive(Debug)]
+    pub struct SubnettingError(pub String);
+
+    impl std::fmt::Display for SubnettingError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "Subnneting can't create")
+        }
+    }
+
+    impl std::error::Error for SubnettingError {}
+
+    pub async fn subnetting(ipnet: IpNet, prefix: u8) -> Result<Vec<IpNet>, SubnettingError> {
+        let ip = ipnet.netmask();
+        let mut resp = Vec::new();
+        let sub = 2u32.pow((ipnet.prefix_len() - prefix) as u32);
+        if sub == 0 {
+            return Err(SubnettingError(format!("Subnet {}/{} is not valid for the network {}",ip, sub, prefix)));
+        }
+        let ip = ip.to_string();
+        for _ in 0..sub {
+            resp.push(format!("{}/{}", ip, prefix).parse().map_err(|x: ipnet::AddrParseError| SubnettingError(x.to_string()))?);
+        }
+        Ok(resp)
+    }
 
     pub async fn ping(ip: IpAddr, timeout_ms: u64) -> Ping {
         let ip = ip.to_string();
