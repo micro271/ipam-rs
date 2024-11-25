@@ -878,10 +878,10 @@ pub mod ipam_services {
     pub async fn subnetting(ipnet: IpNet, prefix: u8) -> Result<Vec<IpNet>, SubnettingError> {
         let ip = ipnet.netmask();
         let mut resp = Vec::new();
-        let sub = 2u32.pow((ipnet.prefix_len() - prefix) as u32);
-        if sub == 0 {
-            return Err(SubnettingError(format!("Subnet {}/{} is not valid for the network {}",ip, sub, prefix)));
+        if prefix <= ipnet.prefix_len() || prefix > ipnet.max_prefix_len() {
+            return Err(SubnettingError(format!("Subnet {}/{} is not valid for the network {}",ip, prefix, ipnet)));
         }
+        let sub = 2u32.pow((prefix - ipnet.prefix_len()) as u32);
         let ip = ip.to_string();
         for _ in 0..sub {
             resp.push(format!("{}/{}", ip, prefix).parse().map_err(|x: ipnet::AddrParseError| SubnettingError(x.to_string()))?);
