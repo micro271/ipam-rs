@@ -862,7 +862,7 @@ pub mod ipam_services {
     use std::net::IpAddr;
 
     use axum::{http::{Response, StatusCode}, response::IntoResponse};
-    use ipnet::IpNet;
+    use ipnet::{IpNet, Ipv4Net};
 
     #[derive(Debug)]
     pub struct SubnettingError(pub String);
@@ -875,16 +875,26 @@ pub mod ipam_services {
 
     impl std::error::Error for SubnettingError {}
 
-    pub async fn subnetting(ipnet: IpNet, prefix: u8) -> Result<Vec<IpNet>, SubnettingError> {
-        let ip = ipnet.netmask();
+    pub fn subnetting(ipnet: IpNet, prefix: u8) -> Result<Vec<IpNet>, SubnettingError> {
+        let ip = match ipnet.network() {
+            IpAddr::V4(e) => e,
+            IpAddr::V6(_) => return Err(SubnettingError("we can't create dinamic subnneting for ipv6".to_string())),
+        };
         let mut resp = Vec::new();
+        
         if prefix <= ipnet.prefix_len() || prefix > ipnet.max_prefix_len() {
             return Err(SubnettingError(format!("Subnet {}/{} is not valid for the network {}",ip, prefix, ipnet)));
         }
         let sub = 2u32.pow((prefix - ipnet.prefix_len()) as u32);
-        let ip = ip.to_string();
-        for _ in 0..sub {
-            resp.push(format!("{}/{}", ip, prefix).parse().map_err(|x: ipnet::AddrParseError| SubnettingError(x.to_string()))?);
+        let hosts = 2u32.pow((ipnet.max_prefix_len() - prefix) as u32);
+
+        for i in 0..sub {
+            // this code was stoled, pending the creation of my own algorithm :3
+            let new = u32::from(ip) + i * hosts;
+            let subnet = std::net::Ipv4Addr::from(new);
+            if let Ok(subnet) = Ipv4Net::new(subnet, prefix) {
+                resp.push(ipnet::IpNet::from(subnet));
+            }            
         }
         Ok(resp)
     }
@@ -937,15 +947,86 @@ pub mod ipam_services {
         use tokio::runtime::Runtime;
 
         static RUNTIME: LazyLock<Runtime> = std::sync::LazyLock::new(|| {Runtime::new().unwrap()});
+
+        #[test]
+        fn sub_net_first_prefix_fifty_six() {
+            let ip = "192.168.0.1/24".parse::<IpNet>().unwrap();
+            let subnet = subnetting(ip, 26).unwrap();
+            let mut ip_result = Vec::new();
+            ip_result.push("192.168.0.0/26".parse::<IpNet>().unwrap());
+            ip_result.push("192.168.0.64/26".parse::<IpNet>().unwrap());
+            ip_result.push("192.168.0.128/26".parse::<IpNet>().unwrap());
+            ip_result.push("192.168.0.192/26".parse::<IpNet>().unwrap());
+            assert!(subnet.contains(&ip_result[0]));
+            assert!(subnet.contains(&ip_result[1]));
+            assert!(subnet.contains(&ip_result[2]));
+            assert!(subnet.contains(&ip_result[3]));
+            assert!(subnet.len() == 4)
+        }
+
+        #[test]
+        fn sub_net_first_prefix_fifty_eight() {
+            let ip = "192.168.0.1/24".parse::<IpNet>().unwrap();
+            let subnet = subnetting(ip, 28).unwrap();
+            let mut ip_result = Vec::new();
+            ip_result.push("192.168.0.0/28".parse::<IpNet>().unwrap());
+            ip_result.push("192.168.0.16/28".parse::<IpNet>().unwrap());
+            ip_result.push("192.168.0.32/28".parse::<IpNet>().unwrap());
+            ip_result.push("192.168.0.48/28".parse::<IpNet>().unwrap());
+            ip_result.push("192.168.0.64/28".parse::<IpNet>().unwrap());
+            ip_result.push("192.168.0.80/28".parse::<IpNet>().unwrap());
+            ip_result.push("192.168.0.96/28".parse::<IpNet>().unwrap());
+            ip_result.push("192.168.0.112/28".parse::<IpNet>().unwrap());
+            ip_result.push("192.168.0.128/28".parse::<IpNet>().unwrap());
+            ip_result.push("192.168.0.144/28".parse::<IpNet>().unwrap());
+            ip_result.push("192.168.0.160/28".parse::<IpNet>().unwrap());
+            ip_result.push("192.168.0.176/28".parse::<IpNet>().unwrap());
+            ip_result.push("192.168.0.192/28".parse::<IpNet>().unwrap());
+            ip_result.push("192.168.0.208/28".parse::<IpNet>().unwrap());
+            ip_result.push("192.168.0.224/28".parse::<IpNet>().unwrap());
+            ip_result.push("192.168.0.240/28".parse::<IpNet>().unwrap());
+            assert!(subnet.contains(&ip_result[0]));
+            assert!(subnet.contains(&ip_result[1]));
+            assert!(subnet.contains(&ip_result[2]));
+            assert!(subnet.contains(&ip_result[3]));
+            assert!(subnet.contains(&ip_result[4]));
+            assert!(subnet.contains(&ip_result[5]));
+            assert!(subnet.contains(&ip_result[6]));
+            assert!(subnet.contains(&ip_result[7]));
+            assert!(subnet.contains(&ip_result[8]));
+            assert!(subnet.contains(&ip_result[9]));
+            assert!(subnet.contains(&ip_result[10]));
+            assert!(subnet.contains(&ip_result[11]));
+            assert!(subnet.contains(&ip_result[12]));
+            assert!(subnet.contains(&ip_result[13]));
+            assert!(subnet.contains(&ip_result[14]));
+            assert!(subnet.contains(&ip_result[15]));
+            assert!(subnet.len() == 16);
+        }
+
+        #[test]
+        fn sub_net_first_prefix_fifty_four_above_twenty_one() {
+            let ip = "192.168.0.1/21".parse::<IpNet>().unwrap();
+            let subnet = subnetting(ip, 24).unwrap();
+            assert!(subnet.len() == 8);
+        }
+
+        #[test]
+        fn sub_net_first_prefix_fifteen_above_twenty_four() {
+            let ip = "192.168.0.1/15".parse::<IpNet>().unwrap();
+            let subnet = subnetting(ip, 24).unwrap();
+            assert!(subnet.len() == 512);
+        }
+
         #[test]
         fn ping_test_pong() {
-            let resp = RUNTIME.block_on(async {ping("192.168.0.1".parse().unwrap(),1).await });
+            let resp = RUNTIME.block_on(async {ping("192.168.0.1".parse().unwrap(),100).await });
             assert_eq!(Ping::Pong, resp);
         }
 
         #[test]
         fn ping_test_fail() {
-            let resp = RUNTIME.block_on(async {ping("192.168.1.50".parse().unwrap(), 1).await });
+            let resp = RUNTIME.block_on(async {ping("192.168.1.50".parse().unwrap(), 100).await });
             assert_eq!(Ping::Fail, resp);
         }
     }
