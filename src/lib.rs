@@ -420,10 +420,9 @@ pub mod type_net {
     pub mod port {
         use serde::{Deserialize, Serialize};
 
-        
         #[derive(Debug, Clone, Deserialize, Serialize)]
         pub struct Port(u16);
-        
+
         impl std::ops::Deref for Port {
             type Target = u16;
             fn deref(&self) -> &Self::Target {
@@ -442,7 +441,7 @@ pub mod type_net {
                 Port(port)
             }
         }
-        
+
         impl std::cmp::PartialEq for Port {
             fn eq(&self, other: &Self) -> bool {
                 self.0 == other.0
@@ -476,7 +475,6 @@ pub mod type_net {
                 let port = Port::new(10);
                 assert!(port == 10);
             }
-
         }
     }
 
@@ -484,28 +482,12 @@ pub mod type_net {
         use ipnet::IpNet;
         use serde::{Deserialize, Serialize};
 
-        #[derive(Debug, PartialEq)]
-        pub enum Type {
-            Limited,
-            Unlimited,
-        }
-
-        impl std::fmt::Display for Type {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                match self {
-                    Self::Limited => write!(f, "Limited"),
-                    Self::Unlimited => write!(f, "Unlimited"),
-                }
-            }
-        }
-
-        pub struct Prefix{
+        pub struct Prefix {
             host_part: u8,
             network_part: u8,
         }
 
         impl Prefix {
-
             const MAX: u8 = 128;
 
             pub fn part_host(&self) -> u8 {
@@ -515,7 +497,7 @@ pub mod type_net {
                 *self = Prefix::from(network);
             }
             pub fn set_from_prefix(&mut self, prefix: &Prefix) {
-                *self = Self{..*prefix};
+                *self = Self { ..*prefix };
             }
         }
         #[derive(Debug)]
@@ -547,9 +529,9 @@ pub mod type_net {
 
         impl From<&IpNet> for Prefix {
             fn from(value: &IpNet) -> Self {
-                Self{
+                Self {
                     host_part: value.max_prefix_len() - value.prefix_len(),
-                    network_part: value.prefix_len()
+                    network_part: value.prefix_len(),
                 }
             }
         }
@@ -562,11 +544,10 @@ pub mod type_net {
         }
 
         #[derive(Deserialize, Serialize, Debug, Clone)]
-        #[serde(transparent)]
         pub struct HostCount(u32);
 
         impl HostCount {
-            pub const MAX: u32 = u32::MAX;
+            pub const MAX: u32 = 0x00FFFFFF;
 
             pub fn new(prefix: Prefix) -> Self {
                 if prefix > 32 {
@@ -576,32 +557,32 @@ pub mod type_net {
                 }
             }
 
-            pub fn unlimited(&self) -> bool {
-                self.0 == Self::MAX
-            }
-
-            pub fn type_limit(&self, prefix: Prefix) -> Type {
-                if prefix > 32 {
-                    Type::Unlimited
-                } else {
-                    Type::Limited
+            pub fn add(&mut self, value: u32) -> Result<(), CountOfRange> {
+                let tmp = self.0.checked_add(value);
+                match tmp {
+                    Some(e) if e <= Self::MAX => {
+                        self.0 = e;
+                        Ok(())
+                    }
+                    _ => {
+                        self.0 = Self::MAX;
+                        Err(CountOfRange)
+                    }
                 }
             }
 
-            pub fn add<T: Into<u32>>(&mut self, rhs: T) -> Result<(), CountOfRange> {
-                self.0 = self
-                    .0
-                    .checked_add(T::into(rhs))
-                    .ok_or(CountOfRange)?;
-                Ok(())
-            }
-
-            pub fn sub<T: Into<u32>>(&mut self, rhs: T) -> Result<(), CountOfRange> {
-                self.0 = self
-                    .0
-                    .checked_sub(T::into(rhs))
-                    .ok_or(CountOfRange)?;
-                Ok(())
+            pub fn sub(&mut self, value: u32) -> Result<(), CountOfRange> {
+                let tmp = self.0.checked_sub(value);
+                match tmp {
+                    Some(e) => {
+                        self.0 = e;
+                        Ok(())
+                    }
+                    None => {
+                        self.0 = 0;
+                        Err(CountOfRange)
+                    }
+                }
             }
         }
 
@@ -631,10 +612,10 @@ pub mod type_net {
             fn test_prefix_instance_exit() {
                 let ipnet: IpNet = "172.30.0.30/24".parse().unwrap();
                 let pref = Prefix::from(&ipnet);
-                
+
                 let ipnet: IpNet = "172.30.0.30/16".parse().unwrap();
                 let pref_2 = Prefix::from(&ipnet);
-                assert_eq!(24,*pref);
+                assert_eq!(24, *pref);
                 assert_eq!(16, *pref_2);
             }
 
@@ -642,10 +623,10 @@ pub mod type_net {
             fn test_prefix_instance_fail() {
                 let ipnet: IpNet = "172.30.0.30/25".parse().unwrap();
                 let pref = Prefix::from(&ipnet);
-                
+
                 let ipnet: IpNet = "172.30.0.30/13".parse().unwrap();
                 let pref_2 = Prefix::from(&ipnet);
-                assert_ne!(16,*pref);
+                assert_ne!(16, *pref);
                 assert_ne!(24, *pref_2);
             }
 
@@ -653,14 +634,14 @@ pub mod type_net {
             fn test_prefix_partial_eq_with_prefix() {
                 let ipnet: IpNet = "172.30.0.30/25".parse().unwrap();
                 let pref = Prefix::from(&ipnet);
-                
+
                 let ipnet: IpNet = "172.30.0.30/25".parse().unwrap();
                 let pref_2 = Prefix::from(&ipnet);
                 assert!(pref_2 == pref);
             }
 
             #[test]
-            fn test_prefix_partial_eq_with_integer() {                
+            fn test_prefix_partial_eq_with_integer() {
                 let ipnet: IpNet = "172.30.0.30/25".parse().unwrap();
                 let pref_2 = Prefix::from(&ipnet);
                 assert!(pref_2 == 25);
@@ -696,35 +677,22 @@ pub mod type_net {
             }
             #[test]
             fn host_counter_instance_from_u32() {
-                let pref:HostCount = 10.into();
+                let pref: HostCount = 10.into();
                 assert_eq!(*pref, 10);
                 assert_ne!(15, *pref);
             }
 
             #[test]
-            fn host_counter_subtract_ok() {
-                let mut pref:HostCount = 10.into();
-                assert!(pref.sub(9u8).is_ok());
-                assert!(pref.sub(1u8).is_ok());
-            }
-
-            #[test]
-            fn host_counter_subtract_err() {
-                let mut pref:HostCount = 10.into();
-                assert!(pref.sub(1u8).is_ok());
-                assert!(pref.sub(10u8).is_err());
-            }
-            #[test]
-            fn host_counter_addition_ok() {
-                let mut pref:HostCount = 10.into();
-                assert!(pref.add(9u8).is_ok());
-                assert!(pref.add(1u8).is_ok());
-            }
-
-            #[test]
-            fn host_counter_addition_err() {
-                let mut pref:HostCount = 10.into();
+            fn host_counter_addition_is_err() {
+                let mut pref: HostCount = 10.into();
                 assert!(pref.add(HostCount::MAX).is_err());
+            }
+
+            #[test]
+            fn host_counter_addition_overflow() {
+                let mut pref: HostCount = HostCount::MAX.into();
+                assert!(pref.add(20).is_err());
+                assert_eq!(HostCount::MAX, *pref);
             }
         }
     }
@@ -924,7 +892,10 @@ pub mod type_net {
 pub mod ipam_services {
     use std::net::IpAddr;
 
-    use axum::{http::{Response, StatusCode}, response::IntoResponse};
+    use axum::{
+        http::{Response, StatusCode},
+        response::IntoResponse,
+    };
     use ipnet::{IpNet, Ipv4Net};
 
     #[derive(Debug)]
@@ -941,12 +912,19 @@ pub mod ipam_services {
     pub fn subnetting(ipnet: IpNet, prefix: u8) -> Result<Vec<IpNet>, SubnettingError> {
         let ip = match ipnet.network() {
             IpAddr::V4(e) => e,
-            IpAddr::V6(_) => return Err(SubnettingError("we can't create dinamic subnneting for ipv6".to_string())),
+            IpAddr::V6(_) => {
+                return Err(SubnettingError(
+                    "we can't create dinamic subnneting for ipv6".to_string(),
+                ))
+            }
         };
         let mut resp = Vec::new();
-        
+
         if prefix <= ipnet.prefix_len() || prefix > ipnet.max_prefix_len() {
-            return Err(SubnettingError(format!("Subnet {}/{} is not valid for the network {}",ip, prefix, ipnet)));
+            return Err(SubnettingError(format!(
+                "Subnet {}/{} is not valid for the network {}",
+                ip, prefix, ipnet
+            )));
         }
         let sub = 2u32.pow((prefix - ipnet.prefix_len()) as u32);
         let hosts = 2u32.pow((ipnet.max_prefix_len() - prefix) as u32);
@@ -957,18 +935,20 @@ pub mod ipam_services {
             let subnet = std::net::Ipv4Addr::from(new);
             if let Ok(subnet) = Ipv4Net::new(subnet, prefix) {
                 resp.push(ipnet::IpNet::from(subnet));
-            }            
+            }
         }
         Ok(resp)
     }
 
     pub async fn ping(ip: IpAddr, timeout_ms: u64) -> Ping {
         let ip = ip.to_string();
-        let duration = std::time::Duration::from_millis(timeout_ms).as_secs_f32().to_string();
+        let duration = std::time::Duration::from_millis(timeout_ms)
+            .as_secs_f32()
+            .to_string();
         let ping = tokio::process::Command::new("ping")
             .args(["-W", &duration, "-c", "1", &ip])
             .output()
-            .await; 
+            .await;
 
         match ping {
             Ok(e) if e.status.code().unwrap_or(1) == 0 => Ping::Pong,
@@ -994,10 +974,13 @@ pub mod ipam_services {
             Response::builder()
                 .header(axum::http::header::CONTENT_TYPE, "application/json")
                 .status(StatusCode::OK)
-                .body(serde_json::json!({
-                    "status": 200,
-                    "ping": self.to_string()
-                }).to_string())
+                .body(
+                    serde_json::json!({
+                        "status": 200,
+                        "ping": self.to_string()
+                    })
+                    .to_string(),
+                )
                 .unwrap_or_default()
                 .into_response()
         }
@@ -1009,7 +992,7 @@ pub mod ipam_services {
         use std::sync::LazyLock;
         use tokio::runtime::Runtime;
 
-        static RUNTIME: LazyLock<Runtime> = std::sync::LazyLock::new(|| {Runtime::new().unwrap()});
+        static RUNTIME: LazyLock<Runtime> = std::sync::LazyLock::new(|| Runtime::new().unwrap());
 
         #[test]
         fn sub_net_first_prefix_fifty_six() {
@@ -1083,13 +1066,13 @@ pub mod ipam_services {
 
         #[test]
         fn ping_test_pong() {
-            let resp = RUNTIME.block_on(async {ping("192.168.0.1".parse().unwrap(),100).await });
+            let resp = RUNTIME.block_on(async { ping("192.168.0.1".parse().unwrap(), 100).await });
             assert_eq!(Ping::Pong, resp);
         }
 
         #[test]
         fn ping_test_fail() {
-            let resp = RUNTIME.block_on(async {ping("192.168.1.50".parse().unwrap(), 100).await });
+            let resp = RUNTIME.block_on(async { ping("192.168.1.50".parse().unwrap(), 100).await });
             assert_eq!(Ping::Fail, resp);
         }
     }
