@@ -550,7 +550,7 @@ pub mod type_net {
             pub const MAX: u32 = 0x00FFFFFF;
 
             pub fn new(prefix: Prefix) -> Self {
-                if prefix > 32 {
+                if prefix.part_host() >= 24 {
                     Self(Self::MAX)
                 } else {
                     Self(2u32.pow(prefix.part_host().into()) - 2)
