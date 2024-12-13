@@ -2,11 +2,12 @@ use crate::models::{
     office::Office,
     {
         device::Device,
-        network::{Network, Vlan},
+        network::Network,
         user::User,
     },
 };
 use sqlx::{postgres::PgRow, Row};
+use libipam::type_net::{vlan::Vlan, host_count::HostCount};
 
 impl From<PgRow> for Network {
     fn from(value: PgRow) -> Self {
@@ -14,10 +15,10 @@ impl From<PgRow> for Network {
             id: value.get("id"),
             description: value.get("description"),
             network: value.get::<'_, &str, _>("network").parse().unwrap(),
-            available: value.get::<'_, i32, &str>("available") as u32,
-            used: value.get::<'_, i32, _>("used") as u32,
-            total: value.get::<'_, i32, _>("total") as u32,
-            vlan: Some(Vlan::new(value.get::<'_, i32, _>("vlan")).unwrap()),
+            available: HostCount::from(value.get::<'_, i64, &str>("available") as u32),
+            used: HostCount::from(value.get::<'_, i64, &str>("available") as u32),
+            free: HostCount::from(value.get::<'_, i64, &str>("available") as u32),
+            vlan: Some(Vlan::new(value.get::<'_, i32, _>("vlan") as u16)),
         }
     }
 }

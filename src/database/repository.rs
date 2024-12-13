@@ -1,46 +1,51 @@
 use super::PgRow;
 use crate::models::{
     device::{Credential, Status},
-    network::Vlan,
     user::Role,
 };
+use libipam::type_net::{host_count::HostCount, vlan::Vlan};
+use serde::Serialize;
+use serde_json::json;
 use error::RepositoryError;
 use ipnet::IpNet;
 use std::{
     collections::HashMap,
     net::IpAddr,
     {future::Future, pin::Pin},
+    fmt::Debug,
+    clone::Clone,
 };
+use axum::{response::{IntoResponse, Response}, http::StatusCode};
 use uuid::Uuid;
 
 pub type ResultRepository<'a, T> =
     Pin<Box<dyn Future<Output = Result<T, RepositoryError>> + 'a + Send>>;
 
-pub trait Repository {
-    fn get<'a, T>(
-        &'a self,
-        primary_key: Option<HashMap<&'a str, TypeTable>>,
-    ) -> ResultRepository<'a, Vec<T>>
-    where
-        T: Table + From<PgRow> + 'a + Send;
-    fn insert<'a, T>(&'a self, data: Vec<T>) -> ResultRepository<'a, QueryResult>
-    where
-        T: Table + 'a + Send;
-    fn update<'a, T, U>(
-        &'a self,
-        updater: U,
-        condition: Option<HashMap<&'a str, TypeTable>>,
-    ) -> ResultRepository<'a, QueryResult>
-    where
-        T: Table + 'a + Send,
-        U: Updatable<'a> + Send + 'a;
-    fn delete<'a, T>(
-        &'a self,
-        condition: Option<HashMap<&'a str, TypeTable>>,
-    ) -> ResultRepository<'a, QueryResult>
-    where
-        T: Table + 'a + Send;
-}
+    pub trait Repository {
+        fn get<'a, T>(
+            &'a self,
+            primary_key: Option<HashMap<&'a str, TypeTable>>,
+        ) -> ResultRepository<'a, Vec<T>>
+        where
+            T: Table + From<PgRow> + 'a + Send + Debug + Clone;
+        fn insert<'a, T>(&'a self, data: Vec<T>) -> ResultRepository<'a, QueryResult<T>>
+        where
+            T: Table + 'a + Send + Debug + Clone;
+        fn update<'a, T, U>(
+            &'a self,
+            updater: U,
+            condition: Option<HashMap<&'a str, TypeTable>>,
+        ) -> ResultRepository<'a, QueryResult<T>>
+        where
+            T: Table + 'a + Send + Debug + Clone,
+            U: Updatable<'a> + Send + 'a + Debug;
+        fn delete<'a, T>(
+            &'a self,
+            condition: Option<HashMap<&'a str, TypeTable>>,
+        ) -> ResultRepository<'a, QueryResult<T>>
+        where
+            T: Table + 'a + Send + Debug + Clone;
+    }
 
 pub trait Table {
     fn name() -> String;
@@ -53,19 +58,59 @@ pub trait Updatable<'a> {
     fn get_pair(self) -> Option<HashMap<&'a str, TypeTable>>;
 }
 
-pub enum QueryResult {
-    Insert(u64),
+pub enum QueryResult<T> {
+    Insert { row_affect: u64, data: Vec<T> },
     Update(u64),
     Delete(u64),
+    Select(Vec<T>),
 }
 
-impl QueryResult {
-    pub fn unwrap(self) -> u64 {
-        match self {
-            QueryResult::Insert(e) => e,
-            QueryResult::Update(e) => e,
-            QueryResult::Delete(e) => e,
-        }
+impl<S> IntoResponse for QueryResult<S>
+where
+    S: serde::Serialize,
+{
+    fn into_response(self) -> axum::response::Response {
+        let (body, status) = match self {
+            Self::Insert { row_affect, data } => (
+                json!({
+                    "status": 201,
+                    "row_affect": row_affect,
+                    "data": data
+                }),
+                StatusCode::CREATED,
+            ),
+            Self::Update(e) | Self::Delete(e) => (
+                json!({
+                    "status": 200,
+                    "row_affect": e
+                }),
+                StatusCode::OK,
+            ),
+            Self::Select(elements) => (
+                json!({
+                    "status": 200,
+                    "length": elements.len(),
+                    "data": elements,
+                }),
+                StatusCode::OK,
+            ),
+        };
+
+        Response::builder()
+            .status(status)
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .body::<String>(body.to_string())
+            .unwrap_or_default()
+            .into_response()
+    }
+}
+
+impl<T> From<Vec<T>> for QueryResult<T>
+where
+    T: Table + Serialize,
+{
+    fn from(value: Vec<T>) -> Self {
+        Self::Select(value)
     }
 }
 
@@ -109,23 +154,29 @@ pub mod error {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum TypeTable {
     String(String),
     OptionUuid(Option<Uuid>),
     Uuid(Uuid),
     OptionString(Option<String>),
     Status(Status),
-    Int32(i32),
     Role(Role),
-    Float64(f64),
     OptionVlan(Option<i32>),
     OptionCredential(Option<Credential>),
+    I64(i64),
+    Null,
 }
 
 impl From<Option<Vlan>> for TypeTable {
     fn from(value: Option<Vlan>) -> Self {
         Self::OptionVlan(value.map(|vlan| *vlan as i32))
+    }
+}
+
+impl From<HostCount> for TypeTable{
+    fn from(value: HostCount) -> Self {
+        Self::I64(*value as i64)
     }
 }
 
@@ -159,47 +210,12 @@ impl From<IpNet> for TypeTable {
     }
 }
 
-impl From<u8> for TypeTable {
-    fn from(value: u8) -> Self {
-        Self::Int32(value as i32)
-    }
-}
-
-impl From<u16> for TypeTable {
-    fn from(value: u16) -> Self {
-        Self::Int32(value as i32)
-    }
-}
-
-impl From<u32> for TypeTable {
-    fn from(value: u32) -> Self {
-        Self::Int32(value as i32)
-    }
-}
-
-impl From<i8> for TypeTable {
-    fn from(value: i8) -> Self {
-        Self::Int32(value as i32)
-    }
-}
-
-impl From<i16> for TypeTable {
-    fn from(value: i16) -> Self {
-        Self::Int32(value as i32)
-    }
-}
-
 impl From<Option<Credential>> for TypeTable {
     fn from(value: Option<Credential>) -> Self {
         Self::OptionCredential(value)
     }
 }
 
-impl From<i32> for TypeTable {
-    fn from(value: i32) -> Self {
-        Self::Int32(value)
-    }
-}
 
 impl From<String> for TypeTable {
     fn from(value: String) -> Self {
@@ -219,8 +235,3 @@ impl From<Status> for TypeTable {
     }
 }
 
-impl From<f32> for TypeTable {
-    fn from(value: f32) -> Self {
-        Self::Float64(value as f64)
-    }
-}

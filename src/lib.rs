@@ -698,28 +698,32 @@ pub mod type_net {
     }
 
     pub mod vlan {
-        use serde::{de::Visitor, Deserialize, Serialize};
+        use serde::{Deserialize, Serialize};
 
+        #[derive(Debug, Deserialize, Serialize, Clone)]
         pub struct Vlan(u16);
 
         impl Vlan {
             pub const MAX: u16 = 4095;
 
-            pub fn vlan_id(id: u16) -> Result<Self, OutOfRange> {
-                Ok(Vlan(Self::vlidate(id)?))
+            pub fn new(value: u16) -> Self {
+                value.into()
             }
 
-            pub fn set_vlan(&mut self, id: u16) -> Result<(), OutOfRange> {
-                self.0 = Self::vlidate(id)?;
-                Ok(())
+            pub fn set_vlan(&mut self, id: u16) {
+                self.0 = id;
             }
+        }
 
-            fn vlidate(id: u16) -> Result<u16, OutOfRange> {
-                if id > Self::MAX {
-                    Err(OutOfRange)
-                } else {
-                    Ok(id)
-                }
+        impl From<u16> for Vlan {
+            fn from(value: u16) -> Self {
+                Self(value)
+            }
+        }
+
+        impl std::default::Default for Vlan {
+            fn default() -> Self {
+                Self(1)
             }
         }
 
@@ -740,152 +744,6 @@ pub mod type_net {
         }
         impl std::error::Error for OutOfRange {}
 
-        impl Serialize for Vlan {
-            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: serde::Serializer,
-            {
-                serializer.serialize_u16(**self)
-            }
-        }
-
-        struct VlanVisitor;
-
-        impl<'de> Deserialize<'de> for Vlan {
-            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                deserializer.deserialize_any(VlanVisitor)
-            }
-        }
-
-        impl<'de> Visitor<'de> for VlanVisitor {
-            type Value = Vlan;
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("Vlan id expected")
-            }
-            fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                Self::visit_str(self, &v)
-            }
-
-            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                match v.parse::<u16>().map(Vlan::vlan_id) {
-                    Ok(Ok(e)) => Ok(e),
-                    _ => Err(E::custom(OutOfRange.to_string())),
-                }
-            }
-
-            fn visit_u8<E>(self, v: u8) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                Vlan::vlan_id(v as u16).map_err(|_| E::custom(OutOfRange.to_string()))
-            }
-            fn visit_u16<E>(self, v: u16) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                match Vlan::vlan_id(v) {
-                    Ok(e) => Ok(e),
-                    _ => Err(E::custom(OutOfRange.to_string())),
-                }
-            }
-
-            fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                if v > Vlan::MAX as u32 {
-                    Err(E::custom(OutOfRange.to_string()))
-                } else {
-                    Ok(Vlan::vlan_id(v as u16).unwrap())
-                }
-            }
-
-            fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                if v > Vlan::MAX as u64 {
-                    Err(E::custom(OutOfRange.to_string()))
-                } else {
-                    Ok(Vlan::vlan_id(v as u16).unwrap())
-                }
-            }
-
-            fn visit_u128<E>(self, v: u128) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                if v > Vlan::MAX as u128 {
-                    Err(E::custom(OutOfRange.to_string()))
-                } else {
-                    Ok(Vlan::vlan_id(v as u16).unwrap())
-                }
-            }
-
-            fn visit_i8<E>(self, v: i8) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                if v < 0 {
-                    Err(E::custom(OutOfRange.to_string()))
-                } else {
-                    Ok(Vlan::vlan_id(v as u16).unwrap())
-                }
-            }
-
-            fn visit_i16<E>(self, v: i16) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                if v < 0 {
-                    Err(E::custom(OutOfRange.to_string()))
-                } else {
-                    Ok(Vlan::vlan_id(v as u16).unwrap())
-                }
-            }
-
-            fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                if v < 0 || v > Vlan::MAX as i32 {
-                    Err(E::custom(OutOfRange.to_string()))
-                } else {
-                    Ok(Vlan::vlan_id(v as u16).unwrap())
-                }
-            }
-
-            fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                if v < 0 || v > Vlan::MAX as i64 {
-                    Err(E::custom(OutOfRange.to_string()))
-                } else {
-                    Ok(Vlan::vlan_id(v as u16).unwrap())
-                }
-            }
-
-            fn visit_i128<E>(self, v: i128) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                if v < 0 || v > Vlan::MAX as i128 {
-                    Err(E::custom(OutOfRange.to_string()))
-                } else {
-                    Ok(Vlan::vlan_id(v as u16).unwrap())
-                }
-            }
-        }
     }
 }
 

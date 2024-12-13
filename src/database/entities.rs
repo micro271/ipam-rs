@@ -93,7 +93,7 @@ impl Table for Network {
             self.network.into(),
             self.available.into(),
             self.used.into(),
-            self.total.into(),
+            self.free.into(),
             self.vlan.into(),
             self.description.into(),
         ]

@@ -6,7 +6,7 @@ pub mod network;
 
 use crate::{
     database::{
-        repository::{QueryResult, Repository},
+        repository::Repository,
         PgRepository,
     },
     models::{self, user::Role},

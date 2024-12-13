@@ -13,7 +13,7 @@ pub struct UpdateDevice {
     pub credential: Option<Credential>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Device {
     pub ip: IpAddr,
     pub description: Option<String>,
@@ -25,14 +25,14 @@ pub struct Device {
     pub credential: Option<Credential>,
 }
 
-#[derive(Deserialize, Serialize, Debug, sqlx::Type)]
+#[derive(Deserialize, Serialize, Debug, sqlx::Type, PartialEq, Clone)]
 #[sqlx(type_name = "CREDENTIAL")]
 pub struct Credential {
     pub username: String,
     pub password: String,
 }
 
-#[derive(Debug, Deserialize, Serialize, sqlx::Type, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, sqlx::Type, PartialEq, Clone)]
 pub enum Status {
     Reserved,
     Unknown,

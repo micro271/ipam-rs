@@ -1,9 +1,5 @@
 use super::models::{device, network};
-use super::QueryResult;
-use axum::{
-    http::{self, Response, StatusCode},
-    response::IntoResponse,
-};
+use libipam::type_net::vlan::Vlan;
 use ipnet::IpNet;
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
@@ -19,7 +15,7 @@ pub struct User {
 pub struct Network {
     pub network: IpNet,
     pub description: Option<String>,
-    pub vlan: Option<network::Vlan>,
+    pub vlan: Option<Vlan>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -35,9 +31,9 @@ impl From<Network> for network::Network {
             id: Uuid::new_v4(),
             network: value.network,
             description: value.description,
-            available: avl,
-            used: 0,
-            total: 0,
+            available: avl.into(),
+            used: 0.into(),
+            free: avl.into(),
             vlan: value.vlan,
         }
     }
@@ -93,22 +89,3 @@ pub fn create_all_devices(network: IpNet, id: Uuid) -> Option<Vec<device::Device
     }
 }
 
-impl IntoResponse for QueryResult {
-    fn into_response(self) -> axum::response::Response {
-        let status = match &self {
-            QueryResult::Insert(_) => StatusCode::CREATED,
-            _ => StatusCode::OK,
-        };
-        let body = serde_json::json!({
-            "rows_affects":self.unwrap()
-        })
-        .to_string();
-
-        Response::builder()
-            .header(http::header::CONTENT_TYPE, "application/json")
-            .status(status)
-            .body(body)
-            .unwrap_or_default()
-            .into_response()
-    }
-}
