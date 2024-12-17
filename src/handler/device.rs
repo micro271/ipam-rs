@@ -1,6 +1,5 @@
 use super::*;
 use crate::models::{device::*, network::Network};
-use hyper::Uri;
 use models_data_entry::ParamsDevice;
 
 use std::net::IpAddr;
@@ -31,7 +30,7 @@ pub async fn create_all_devices(
 
     match models_data_entry::create_all_devices(network.network, network_id) {
         Some(e) => Ok(state.insert::<Device>(e).await?),
-        None => Err(ResponseError::StatusCode(StatusCode::NO_CONTENT)),
+        None => Err(ResponseError::builder().status(StatusCode::NO_CONTENT).build()),
     }
 }
 
@@ -78,12 +77,12 @@ pub async fn update(
 
         if let Some(ip) = device.ip {
             if !netw_new.network.contains(&ip) {
-                return Err(ResponseError::StatusCode(StatusCode::BAD_REQUEST));
+                return Err(ResponseError::builder().status(StatusCode::BAD_REQUEST).build());
             }
             ip_to_delete = ip;
         } else {
             if !netw_new.network.contains(&ip) {
-                return Err(ResponseError::StatusCode(StatusCode::CONFLICT));
+                return Err(ResponseError::builder().status(StatusCode::CONFLICT).build());
             }
             ip_to_delete = ip;
         }
@@ -127,12 +126,9 @@ pub async fn get_one(
 
 pub async fn delete(
     State(state): State<RepositoryType>,
-    Extension(role): Extension<Role>,
+    _: IsAdministrator,
     Query((ip, network_id)): Query<(IpAddr, Uuid)>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    if role != Role::Admin {
-        return Err(ResponseError::Unauthorized);
-    }
 
     let state = state.lock().await;
 

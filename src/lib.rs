@@ -292,7 +292,7 @@ pub mod response_error {
                 detail: Some(detail),
                 instance: Some(instance),
                 timestamp: Some(
-                    OffsetDateTime::now_utc().to_offset(offset.unwrap_or(UtcOffset::UTC)),
+                    OffsetDateTime::now_utc().to_offset(offset.unwrap_or(UtcOffset::from_hms(-3, 0, 0).unwrap())),
                 ),
             }
         }

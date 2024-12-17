@@ -2,11 +2,9 @@ mod database;
 mod handler;
 mod models;
 mod services;
-mod middleware;
 
 use axum::{
     http::Response,
-    middleware,
     routing::{delete, get, post, put},
     serve, Router,
 };
@@ -69,7 +67,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .nest("/network", network)
         .nest("/device", device)
         .nest("/user", user)
-        .layer(middleware::from_fn(auth::verify_token))
+        .layer(axum::middleware::from_fn(auth::verify_token))
         .route("/login", post(auth::login))
         .with_state(db.clone())
         .layer(ServiceBuilder::new().layer(CorsLayer::permissive()));

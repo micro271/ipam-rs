@@ -9,18 +9,16 @@ use libipam::{
 
 pub async fn create(
     State(state): State<RepositoryType>,
-    Extension(role): Extension<Role>,
+    uri: Uri,
+    _: IsAdministrator,
     Json(mut user): Json<User>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    if role != Role::Admin {
-        return Err(ResponseError::Unauthorized);
-    }
 
     let state = state.lock().await;
 
     user.password = match encrypt(user.password) {
         Ok(e) => e,
-        Err(_) => return Err(ResponseError::ServerError),
+        Err(e) => return Err(ResponseError::builder().detail(e.to_string()).title("Encrypting error".to_string()).status(StatusCode::INTERNAL_SERVER_ERROR).instance(uri.to_string()).build()),
     };
 
     Ok(state.insert(vec![user]).await?)
@@ -28,6 +26,7 @@ pub async fn create(
 
 pub async fn login(
     State(state): State<RepositoryType>,
+    uri: Uri,
     Json(user): Json<models_data_entry::User>,
 ) -> Result<Response, ResponseError> {
     let state = state.lock().await;
@@ -52,10 +51,10 @@ pub async fn login(
                     .body(().into())
                     .unwrap_or_default())
             }
-            Err(_) => Err(ResponseError::ServerError),
+            Err(_) => Err(ResponseError::builder().status(StatusCode::INTERNAL_SERVER_ERROR).build()),
         }
     } else {
-        Err(ResponseError::Unauthorized)
+        Err(ResponseError::unauthorized(&uri, Some("invalid username or password".to_string())))
     }
 }
 
@@ -69,6 +68,8 @@ pub async fn verify_token(
             req.extensions_mut().insert(e.role);
             Ok(next.run(req).await)
         }
-        _ => Err(ResponseError::Unauthorized),
+        _ => {
+            Err(ResponseError::unauthorized(req.uri(), Some("invalid username o password".to_string())))
+        },
     }
 }

@@ -1,6 +1,5 @@
-use hyper::StatusCode;
 use libipam::response_error::ResponseError;
-
+use axum::http::StatusCode;
 use crate::database::repository::error::RepositoryError;
 
 impl From<RepositoryError> for ResponseError {
@@ -22,7 +21,7 @@ impl From<RepositoryError> for ResponseError {
             RepositoryError::ColumnNotFound(e) => {
                 builder
                     .status(StatusCode::BAD_REQUEST)
-                    .title("Column not found".to_string())
+                    .title(e.to_string())
             }
         };
 
