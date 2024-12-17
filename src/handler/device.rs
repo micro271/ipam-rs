@@ -1,17 +1,16 @@
 use super::*;
 use crate::models::{device::*, network::Network};
+use hyper::Uri;
 use models_data_entry::ParamsDevice;
 
 use std::net::IpAddr;
 
 pub async fn create(
     State(state): State<RepositoryType>,
-    Extension(role): Extension<Role>,
+    _: IsAdministrator,
     Json(device): Json<models_data_entry::Device>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    if role != Role::Admin {
-        return Err(ResponseError::Unauthorized);
-    }
+    
 
     let state = state.lock().await;
 
@@ -20,12 +19,9 @@ pub async fn create(
 
 pub async fn create_all_devices(
     State(state): State<RepositoryType>,
-    Extension(role): Extension<Role>,
+    _: IsAdministrator,
     Path(network_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    if role != Role::Admin {
-        return Err(ResponseError::Unauthorized);
-    }
 
     let state = state.lock().await;
     let network = state
@@ -55,13 +51,12 @@ pub async fn get_all(
 
 pub async fn update(
     State(state): State<RepositoryType>,
-    Extension(role): Extension<Role>,
+    _: IsAdministrator,
     Query(params): Query<ParamsDevice>,
     Json(device): Json<UpdateDevice>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    if role != Role::Admin {
-        return Err(ResponseError::Unauthorized);
-    }
+    
+
     let state = state.lock().await;
 
     let ip = params.ip;

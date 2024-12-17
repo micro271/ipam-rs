@@ -5,7 +5,7 @@ use crate::models::{device::Device, network::*};
 
 pub async fn create(
     State(state): State<RepositoryType>,
-    Extension(role): Extension<Role>,
+    _: IsAdministrator,
     Json(netw): Json<models_data_entry::Network>,
 ) -> Result<impl IntoResponse, ResponseError> {
     unimplemented!()
@@ -20,7 +20,7 @@ pub async fn get_one(
 
 pub async fn update(
     State(state): State<RepositoryType>,
-    Extension(role): Extension<Role>,
+    _: IsAdministrator,
     Path(id): Path<Uuid>,
     Json(network): Json<UpdateNetwork>,
 ) -> Result<impl IntoResponse, ResponseError> {
@@ -35,7 +35,7 @@ pub async fn get_all(
 
 pub async fn delete(
     State(state): State<RepositoryType>,
-    Extension(role): Extension<Role>,
+    _: IsAdministrator,
     Path(id): Path<Uuid>,
 ) -> Result<impl IntoResponse, ResponseError> {
     todo!()

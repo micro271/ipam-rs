@@ -2,6 +2,7 @@ mod database;
 mod handler;
 mod models;
 mod services;
+mod middleware;
 
 use axum::{
     http::Response,

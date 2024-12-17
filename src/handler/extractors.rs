@@ -1,24 +1,9 @@
-use axum::{extract::FromRequestParts, http::request::Parts, response::Response, routing::get};
-use libipam::response_error::ResponseError;
-use std::{convert::Infallible, future::Future, marker::Send, pin::Pin};
-use super::*;
+use axum::{extract::FromRequestParts, http::request::Parts};
+use std::{pin::Pin, future::Future};
+use super::{ResponseError, Role};
 
-#[derive(Deserialize, Serialize)]
-pub struct User {
-    pub id: uuid::Uuid,
-    pub username: String,
-    pub password: String,
-    pub role: Role,
-}
 
-#[derive(Deserialize, Serialize, sqlx::Type, Debug, Clone, PartialEq)]
-pub enum Role {
-    Admin,
-    Guest,
-    Operator,
-}
-
-struct IsAdministrator;
+pub struct IsAdministrator;
 
 impl<S> FromRequestParts<S> for IsAdministrator {
     

@@ -100,7 +100,7 @@ impl Repository for PgRepository {
                     let len = col.len();
                     for i in col.keys() {
                         if !cols.contains(i) {
-                            return Err(RepositoryError::ColumnNotFound(Some(i.to_string())));
+                            return Err(RepositoryError::ColumnNotFound(i.to_string()));
                         }
                         if col.get(i).unwrap() == &TypeTable::Null {
                             query.push_str(&format!(" {} IS NULL", i));
@@ -151,7 +151,7 @@ impl Repository for PgRepository {
 
                     vec_resp
                 }),
-                _ => Err(RepositoryError::ColumnNotFound(None)),
+                _ => Err(RepositoryError::ColumnNotFound("".to_string())),
             }
         })
     }
@@ -182,7 +182,7 @@ impl Repository for PgRepository {
                 let len = pair.len();
                 for i in pair.keys() {
                     if !cols.contains(i) {
-                        return Err(RepositoryError::ColumnNotFound(Some(i.to_string())));
+                        return Err(RepositoryError::ColumnNotFound(i.to_string()));
                     }
 
                     query.push_str(&format!(" {} = ${}", i, pos));
@@ -232,7 +232,7 @@ impl Repository for PgRepository {
                     Err(e) => Err(RepositoryError::Sqlx(e.to_string())),
                 }
             } else {
-                Err(RepositoryError::ColumnNotFound(None))
+                Err(RepositoryError::ColumnNotFound("".to_string()))
             }
         };
         Box::pin(tmp)
@@ -260,7 +260,7 @@ impl Repository for PgRepository {
                     let len = condition.len();
                     for t in condition.keys() {
                         if !columns.contains(t) {
-                            return Err(RepositoryError::ColumnNotFound(Some(t.to_string())));
+                            return Err(RepositoryError::ColumnNotFound(t.to_string()));
                         }
 
                         query.push_str(&format!(" {} = ${}", t, pos));
@@ -298,7 +298,7 @@ impl Repository for PgRepository {
                     Ok(e) => Ok(QueryResult::Delete(e.rows_affected())),
                     Err(e) => Err(RepositoryError::Sqlx(e.to_string())),
                 },
-                _ => Err(RepositoryError::ColumnNotFound(None)),
+                _ => Err(RepositoryError::ColumnNotFound("".to_string())),
             }
         };
 

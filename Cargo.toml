@@ -10,6 +10,8 @@ bincode = "1.3.3"
 cookie = "0.18.1"
 dotenv = "0.15.0"
 futures = "0.3.31"
+http-body-util = "0.1.2"
+hyper = "1.5.1"
 ipnet = { version = "2.10.1", features = ["serde"] }
 jsonwebtoken = "9.3.0"
 serde = { version = "1.0.210", features = ["derive"] }

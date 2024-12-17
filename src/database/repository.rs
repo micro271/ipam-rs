@@ -115,28 +115,20 @@ where
 }
 
 pub mod error {
-
     #[derive(Debug)]
     pub enum RepositoryError {
         Sqlx(String),
         RowNotFound,
         //    Unauthorized(String),
-        ColumnNotFound(Option<String>),
+        ColumnNotFound(String),
     }
 
     impl std::fmt::Display for RepositoryError {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             match self {
                 RepositoryError::Sqlx(txt) => write!(f, "Sqlx error: {}", txt),
-                Self::RowNotFound => write!(f, "Row doesn't exist"),
-                Self::ColumnNotFound(e) => match e {
-                    Some(e) => {
-                        write!(f, "The column {} didn't find", e)
-                    }
-                    None => {
-                        write!(f, "Undefined collumn")
-                    }
-                },
+                Self::RowNotFound => write!(f, "Row not found"),
+                Self::ColumnNotFound(e) =>write!(f, "The column {} is invalid", e),
             }
         }
     }
@@ -146,8 +138,7 @@ pub mod error {
     impl From<sqlx::Error> for RepositoryError {
         fn from(value: sqlx::Error) -> Self {
             match value {
-                sqlx::Error::RowNotFound => Self::RowNotFound,
-                sqlx::Error::ColumnNotFound(e) => Self::ColumnNotFound(Some(e)),
+                sqlx::Error::ColumnNotFound(e) => Self::ColumnNotFound(e),
                 e => Self::Sqlx(e.to_string()),
             }
         }

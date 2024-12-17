@@ -300,6 +300,17 @@ pub mod response_error {
         pub fn builder() -> Builder {
             Builder::default()
         }
+        
+        pub fn unauthorized(uri: &axum::http::Uri, detail: Option<String>) -> Self {
+            Self {
+                r#type: None,
+                title: Some(StatusCode::UNAUTHORIZED.to_string()),
+                status: Some(StatusCode::UNAUTHORIZED.as_u16()),
+                detail,
+                instance: Some(uri.to_string()),
+                timestamp: Some(time::OffsetDateTime::now_utc().to_offset(time::UtcOffset::from_hms(-3, 0, 0).unwrap())),
+            }
+        }
 
         pub(self) fn create(
             Builder {

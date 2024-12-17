@@ -3,6 +3,7 @@ pub mod device;
 pub mod error;
 mod models_data_entry;
 pub mod network;
+pub mod extractors;
 
 use crate::{
     database::{
@@ -17,10 +18,11 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use error::ResponseError;
+use libipam::response_error::ResponseError;
 use serde_json::json;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
 use uuid::Uuid;
+use extractors::IsAdministrator;
 
 type RepositoryType = Arc<Mutex<PgRepository>>;
