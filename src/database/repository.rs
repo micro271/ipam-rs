@@ -8,7 +8,6 @@ use serde::Serialize;
 use serde_json::json;
 use error::RepositoryError;
 use ipnet::IpNet;
-use sqlx::Type;
 use std::{
     collections::HashMap,
     net::IpAddr,

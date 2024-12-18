@@ -431,7 +431,7 @@ pub mod type_net {
     pub mod port {
         use serde::{Deserialize, Serialize};
 
-        #[derive(Debug, Clone, Deserialize, Serialize)]
+        #[derive(Debug, Clone, Deserialize, Serialize, sqlx::Type)]
         pub struct Port(u16);
 
         impl std::ops::Deref for Port {
@@ -554,7 +554,7 @@ pub mod type_net {
             }
         }
 
-        #[derive(Deserialize, Serialize, Debug, Clone)]
+        #[derive(Deserialize, Serialize, Debug, Clone, sqlx::Type)]
         pub struct HostCount(u32);
 
         impl HostCount {
@@ -711,7 +711,7 @@ pub mod type_net {
     pub mod vlan {
         use serde::{Deserialize, Serialize};
 
-        #[derive(Debug, Deserialize, Serialize, Clone)]
+        #[derive(Debug, Deserialize, Serialize, Clone, sqlx::Type)]
         pub struct Vlan(u16);
 
         impl Vlan {

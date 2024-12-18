@@ -1,42 +1,52 @@
 use super::*;
-
+use params::network::QueryNetwork;
 use super::RepositoryType;
-use crate::models::{device::Device, network::*};
+use crate::{database::repository::QueryResult, models::network::*};
 
 pub async fn create(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
     Json(netw): Json<models_data_entry::Network>,
-) -> Result<impl IntoResponse, ResponseError> {
-    unimplemented!()
+) -> Result<QueryResult<Network>, ResponseError> {
+    let state = state.lock().await;
+
+    Ok(
+        state.insert::<Network>(vec![netw.into()]).await?
+    )
 }
 
-pub async fn get_one(
+pub async fn get(
     State(state): State<RepositoryType>,
-    Path(id): Path<Uuid>,
-) -> Result<impl IntoResponse, ResponseError> {
-    todo!()
+    Query(param): Query<QueryNetwork>,
+) -> Result<QueryResult<Network>, ResponseError> {
+    let state = state.lock().await;
+
+    Ok(
+        state.get::<Network>(param.get_condition()).await?.into()
+    )
 }
 
 pub async fn update(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
-    Path(id): Path<Uuid>,
-    Json(network): Json<UpdateNetwork>,
-) -> Result<impl IntoResponse, ResponseError> {
-    todo!()
-}
+    Query(id): Query<Uuid>,
+    Json(updater): Json<UpdateNetwork>,
+) -> Result<QueryResult<Network>, ResponseError> {
+    let state = state.lock().await;
 
-pub async fn get_all(
-    State(state): State<RepositoryType>,
-) -> Result<impl IntoResponse, ResponseError> {
-    todo!()
+    Ok(
+        state.update::<'_, Network, _>(updater, Some(HashMap::from([("id", id.into())]))).await?
+    )
 }
 
 pub async fn delete(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
-    Path(id): Path<Uuid>,
-) -> Result<impl IntoResponse, ResponseError> {
-    todo!()
+    Query(id): Query<Uuid>,
+) -> Result<QueryResult<Network>, ResponseError> {
+    let state = state.lock().await;
+
+    Ok(
+        state.delete::<Network>(Some(HashMap::from([("id", id.into())]))).await?
+    )
 }

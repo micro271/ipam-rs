@@ -41,15 +41,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     services::create_default_user(&db).await?;
 
     let db = Arc::new(Mutex::new(db));
+
     let network = Router::new()
         .route("/create", put(network::create))
-        .route("/all", get(network::get_all)) // crate, update and get (all) networks
-        .route(
-            "/:id",
-            get(network::get_one)
+        .route("/", 
+            get(network::get)
+                .delete(network::delete)
                 .patch(network::update)
-                .delete(network::delete),
-        ); // get one network
+        );
 
     let device = Router::new()
         .route("/create", put(device::create))

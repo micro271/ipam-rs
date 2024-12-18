@@ -4,6 +4,7 @@ pub mod error;
 mod models_data_entry;
 pub mod network;
 pub mod extractors;
+mod params;
 
 use crate::{
     database::{
@@ -14,7 +15,7 @@ use crate::{
 };
 
 use axum::{
-    extract::{Extension, Json, Path, Query, State},
+    extract::{Json, Path, Query, State},
     http::{StatusCode, Uri},
     response::IntoResponse,
 };
