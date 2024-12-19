@@ -42,13 +42,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let db = Arc::new(Mutex::new(db));
 
-    let network = Router::new()
-        .route("/create", put(network::create))
-        .route("/", 
-            get(network::get)
-                .delete(network::delete)
-                .patch(network::update)
-        );
+    let network = Router::new().route("/create", put(network::create)).route(
+        "/",
+        get(network::get)
+            .delete(network::delete)
+            .patch(network::update),
+    );
 
     let device = Router::new()
         .route("/create", put(device::create))

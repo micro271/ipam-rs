@@ -1,4 +1,3 @@
-
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -11,8 +10,8 @@ pub enum Ordering {
 pub mod network {
     use std::collections::HashMap;
 
-    use ipnet::IpNet;
     use crate::database::repository::TypeTable;
+    use ipnet::IpNet;
 
     use super::*;
 
@@ -37,7 +36,7 @@ pub mod network {
             if let Some(network) = self.network {
                 resp.insert("id", network.into());
             }
-            
+
             if resp.is_empty() {
                 None
             } else {

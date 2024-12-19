@@ -1,6 +1,6 @@
 use super::models::{device, network};
-use libipam::type_net::vlan::Vlan;
 use ipnet::IpNet;
+use libipam::type_net::vlan::Vlan;
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
 use uuid::Uuid;
@@ -88,4 +88,3 @@ pub fn create_all_devices(network: IpNet, id: Uuid) -> Option<Vec<device::Device
         None
     }
 }
-

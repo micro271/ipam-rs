@@ -9,8 +9,6 @@ pub async fn create(
     _: IsAdministrator,
     Json(device): Json<models_data_entry::Device>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    
-
     let state = state.lock().await;
 
     Ok(state.insert::<Device>(vec![device.into()]).await?)
@@ -21,7 +19,6 @@ pub async fn create_all_devices(
     _: IsAdministrator,
     Path(network_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, ResponseError> {
-
     let state = state.lock().await;
     let network = state
         .get::<Network>(Some(HashMap::from([("id", network_id.into())])))
@@ -30,7 +27,9 @@ pub async fn create_all_devices(
 
     match models_data_entry::create_all_devices(network.network, network_id) {
         Some(e) => Ok(state.insert::<Device>(e).await?),
-        None => Err(ResponseError::builder().status(StatusCode::NO_CONTENT).build()),
+        None => Err(ResponseError::builder()
+            .status(StatusCode::NO_CONTENT)
+            .build()),
     }
 }
 
@@ -54,8 +53,6 @@ pub async fn update(
     Query(params): Query<ParamsDevice>,
     Json(device): Json<UpdateDevice>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    
-
     let state = state.lock().await;
 
     let ip = params.ip;
@@ -77,12 +74,16 @@ pub async fn update(
 
         if let Some(ip) = device.ip {
             if !netw_new.network.contains(&ip) {
-                return Err(ResponseError::builder().status(StatusCode::BAD_REQUEST).build());
+                return Err(ResponseError::builder()
+                    .status(StatusCode::BAD_REQUEST)
+                    .build());
             }
             ip_to_delete = ip;
         } else {
             if !netw_new.network.contains(&ip) {
-                return Err(ResponseError::builder().status(StatusCode::CONFLICT).build());
+                return Err(ResponseError::builder()
+                    .status(StatusCode::CONFLICT)
+                    .build());
             }
             ip_to_delete = ip;
         }
@@ -129,7 +130,6 @@ pub async fn delete(
     _: IsAdministrator,
     Query((ip, network_id)): Query<(IpAddr, Uuid)>,
 ) -> Result<impl IntoResponse, ResponseError> {
-
     let state = state.lock().await;
 
     Ok(state

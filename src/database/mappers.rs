@@ -1,13 +1,9 @@
 use crate::models::{
     office::Office,
-    {
-        device::Device,
-        network::Network,
-        user::User,
-    },
+    {device::Device, network::Network, user::User},
 };
+use libipam::type_net::{host_count::HostCount, vlan::Vlan};
 use sqlx::{postgres::PgRow, Row};
-use libipam::type_net::{vlan::Vlan, host_count::HostCount};
 
 impl From<PgRow> for Network {
     fn from(value: PgRow) -> Self {

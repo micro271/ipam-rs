@@ -1,6 +1,7 @@
 pub mod entities;
 pub mod mappers;
 pub mod repository;
+pub mod transaction;
 
 use futures::stream::StreamExt;
 use repository::{
@@ -8,7 +9,7 @@ use repository::{
 };
 use sqlx::postgres::{PgPool, PgPoolOptions, PgRow};
 use std::collections::HashMap;
-use std::{fmt::Debug, clone::Clone};
+use std::{clone::Clone, fmt::Debug};
 
 pub struct PgRepository(PgPool);
 

@@ -1,6 +1,6 @@
 use super::*;
 use ipnet::IpNet;
-use libipam::type_net::{vlan::Vlan, host_count::HostCount};
+use libipam::type_net::{host_count::HostCount, vlan::Vlan};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct UpdateNetwork {

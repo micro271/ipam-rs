@@ -292,7 +292,8 @@ pub mod response_error {
                 detail: Some(detail),
                 instance: Some(instance),
                 timestamp: Some(
-                    OffsetDateTime::now_utc().to_offset(offset.unwrap_or(UtcOffset::from_hms(-3, 0, 0).unwrap())),
+                    OffsetDateTime::now_utc()
+                        .to_offset(offset.unwrap_or(UtcOffset::from_hms(-3, 0, 0).unwrap())),
                 ),
             }
         }
@@ -300,7 +301,7 @@ pub mod response_error {
         pub fn builder() -> Builder {
             Builder::default()
         }
-        
+
         pub fn unauthorized(uri: &axum::http::Uri, detail: Option<String>) -> Self {
             Self {
                 r#type: None,
@@ -308,7 +309,10 @@ pub mod response_error {
                 status: Some(StatusCode::UNAUTHORIZED.as_u16()),
                 detail,
                 instance: Some(uri.to_string()),
-                timestamp: Some(time::OffsetDateTime::now_utc().to_offset(time::UtcOffset::from_hms(-3, 0, 0).unwrap())),
+                timestamp: Some(
+                    time::OffsetDateTime::now_utc()
+                        .to_offset(time::UtcOffset::from_hms(-3, 0, 0).unwrap()),
+                ),
             }
         }
 
@@ -754,7 +758,6 @@ pub mod type_net {
             }
         }
         impl std::error::Error for OutOfRange {}
-
     }
 }
 

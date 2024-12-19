@@ -3,49 +3,52 @@ use crate::models::{
     device::{Credential, Status},
     user::Role,
 };
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
+use error::RepositoryError;
+use ipnet::IpNet;
 use libipam::type_net::{host_count::HostCount, vlan::Vlan};
 use serde::Serialize;
 use serde_json::json;
-use error::RepositoryError;
-use ipnet::IpNet;
 use std::{
+    clone::Clone,
     collections::HashMap,
+    fmt::Debug,
     net::IpAddr,
     {future::Future, pin::Pin},
-    fmt::Debug,
-    clone::Clone,
 };
-use axum::{response::{IntoResponse, Response}, http::StatusCode};
 use uuid::Uuid;
 
 pub type ResultRepository<'a, T> =
     Pin<Box<dyn Future<Output = Result<T, RepositoryError>> + 'a + Send>>;
 
-    pub trait Repository {
-        fn get<'a, T>(
-            &'a self,
-            primary_key: Option<HashMap<&'a str, TypeTable>>,
-        ) -> ResultRepository<'a, Vec<T>>
-        where
-            T: Table + From<PgRow> + 'a + Send + Debug + Clone;
-        fn insert<'a, T>(&'a self, data: Vec<T>) -> ResultRepository<'a, QueryResult<T>>
-        where
-            T: Table + 'a + Send + Debug + Clone;
-        fn update<'a, T, U>(
-            &'a self,
-            updater: U,
-            condition: Option<HashMap<&'a str, TypeTable>>,
-        ) -> ResultRepository<'a, QueryResult<T>>
-        where
-            T: Table + 'a + Send + Debug + Clone,
-            U: Updatable<'a> + Send + 'a + Debug;
-        fn delete<'a, T>(
-            &'a self,
-            condition: Option<HashMap<&'a str, TypeTable>>,
-        ) -> ResultRepository<'a, QueryResult<T>>
-        where
-            T: Table + 'a + Send + Debug + Clone;
-    }
+pub trait Repository {
+    fn get<'a, T>(
+        &'a self,
+        primary_key: Option<HashMap<&'a str, TypeTable>>,
+    ) -> ResultRepository<'a, Vec<T>>
+    where
+        T: Table + From<PgRow> + 'a + Send + Debug + Clone;
+    fn insert<'a, T>(&'a self, data: Vec<T>) -> ResultRepository<'a, QueryResult<T>>
+    where
+        T: Table + 'a + Send + Debug + Clone;
+    fn update<'a, T, U>(
+        &'a self,
+        updater: U,
+        condition: Option<HashMap<&'a str, TypeTable>>,
+    ) -> ResultRepository<'a, QueryResult<T>>
+    where
+        T: Table + 'a + Send + Debug + Clone,
+        U: Updatable<'a> + Send + 'a + Debug;
+    fn delete<'a, T>(
+        &'a self,
+        condition: Option<HashMap<&'a str, TypeTable>>,
+    ) -> ResultRepository<'a, QueryResult<T>>
+    where
+        T: Table + 'a + Send + Debug + Clone;
+}
 
 pub trait Table {
     fn name() -> String;
@@ -127,7 +130,7 @@ pub mod error {
             match self {
                 RepositoryError::Sqlx(txt) => write!(f, "Sqlx error: {}", txt),
                 Self::RowNotFound => write!(f, "Row not found"),
-                Self::ColumnNotFound(e) =>write!(f, "The column {} is invalid", e),
+                Self::ColumnNotFound(e) => write!(f, "The column {} is invalid", e),
             }
         }
     }
@@ -164,7 +167,7 @@ impl From<Option<Vlan>> for TypeTable {
     }
 }
 
-impl From<HostCount> for TypeTable{
+impl From<HostCount> for TypeTable {
     fn from(value: HostCount) -> Self {
         Self::I64(*value as i64)
     }
@@ -205,7 +208,6 @@ impl From<Option<Credential>> for TypeTable {
         Self::OptionCredential(value)
     }
 }
-
 
 impl From<String> for TypeTable {
     fn from(value: String) -> Self {

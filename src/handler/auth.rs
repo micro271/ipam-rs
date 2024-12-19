@@ -13,12 +13,18 @@ pub async fn create(
     _: IsAdministrator,
     Json(mut user): Json<User>,
 ) -> Result<impl IntoResponse, ResponseError> {
-
     let state = state.lock().await;
 
     user.password = match encrypt(user.password) {
         Ok(e) => e,
-        Err(e) => return Err(ResponseError::builder().detail(e.to_string()).title("Encrypting error".to_string()).status(StatusCode::INTERNAL_SERVER_ERROR).instance(uri.to_string()).build()),
+        Err(e) => {
+            return Err(ResponseError::builder()
+                .detail(e.to_string())
+                .title("Encrypting error".to_string())
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .instance(uri.to_string())
+                .build())
+        }
     };
 
     Ok(state.insert(vec![user]).await?)
@@ -51,10 +57,15 @@ pub async fn login(
                     .body(().into())
                     .unwrap_or_default())
             }
-            Err(_) => Err(ResponseError::builder().status(StatusCode::INTERNAL_SERVER_ERROR).build()),
+            Err(_) => Err(ResponseError::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .build()),
         }
     } else {
-        Err(ResponseError::unauthorized(&uri, Some("invalid username or password".to_string())))
+        Err(ResponseError::unauthorized(
+            &uri,
+            Some("invalid username or password".to_string()),
+        ))
     }
 }
 
@@ -68,8 +79,9 @@ pub async fn verify_token(
             req.extensions_mut().insert(e.role);
             Ok(next.run(req).await)
         }
-        _ => {
-            Err(ResponseError::unauthorized(req.uri(), Some("invalid username o password".to_string())))
-        },
+        _ => Err(ResponseError::unauthorized(
+            req.uri(),
+            Some("invalid username o password".to_string()),
+        )),
     }
 }
