@@ -1,5 +1,4 @@
 use super::{repository::error::RepositoryError, Table, TypeTable, Updatable};
-use futures::FutureExt;
 use sqlx::{Postgres, Transaction as SqlxTransaction};
 use std::{
     collections::HashMap,
@@ -30,7 +29,6 @@ enum FutureState {
     Update,
     Insert,
     Delete,
-    Fail,
     Success,
 }
 
@@ -52,7 +50,7 @@ impl<'b> BuilderPgTransaction<'b> {
         let transaction = self.transaction.clone();
 
         self.to_insert = Some(
-            async move {
+            Box::pin(async move {
                 let mut transaction = transaction.lock().await;
                 let q_insert = T::query_insert();
                 for i in data {
@@ -75,8 +73,7 @@ impl<'b> BuilderPgTransaction<'b> {
                     let _ = sql.execute(&mut **transaction).await;
                 }
                 Ok(())
-            }
-            .boxed(),
+            }),
         );
         self
     }
@@ -120,7 +117,7 @@ impl<'b> std::future::Future for BuilderPgTransaction<'b> {
                     if let Poll::Ready(resp) = future.as_mut().poll(cx) {
                         match resp {
                             Ok(_) => this._state = FutureState::Update,
-                            Err(e) => this._state = FutureState::Fail,
+                            Err(e) => return Poll::Ready(Err(e)),
                         }
                     }
                 } else {
@@ -133,7 +130,7 @@ impl<'b> std::future::Future for BuilderPgTransaction<'b> {
                     if let Poll::Ready(resp) = future.as_mut().poll(cx) {
                         match resp {
                             Ok(_) => this._state = FutureState::Delete,
-                            Err(e) => this._state = FutureState::Fail,
+                            Err(e) => return Poll::Ready(Err(e)),
                         }
                     }
                 } else {
@@ -148,9 +145,7 @@ impl<'b> std::future::Future for BuilderPgTransaction<'b> {
                             Ok(_) => {
                                 this._state = FutureState::Success;
                             }
-                            Err(_) => {
-                                this._state = FutureState::Fail;
-                            }
+                            Err(e) => return Poll::Ready(Err(e)),
                         }
 
                         Poll::Pending
@@ -162,7 +157,6 @@ impl<'b> std::future::Future for BuilderPgTransaction<'b> {
                     Poll::Pending
                 }
             }
-            FutureState::Fail => Poll::Ready(Err(RepositoryError::RowNotFound)),
             FutureState::Success => Poll::Ready(Ok(())),
         }
     }

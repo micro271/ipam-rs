@@ -32,11 +32,12 @@ pub async fn update(
     Json(updater): Json<UpdateNetwork>,
 ) -> Result<QueryResult<Network>, ResponseError> {
     let state = state.lock().await;
-    let state = Arc::new(Mutex::new(state.begin().await.unwrap()));
-
+    let tr = state.begin().await.unwrap();
+    let state = Arc::new(Mutex::new(tr));
     let tmp = BuilderPgTransaction::new(state.clone()).await;
-    let state = Arc::into_inner(state).map(|x| x.into_inner()).unwrap();
-    state.commit().await.unwrap();
+    println!("{:?}", Arc::strong_count(&state));
+    let tr = Arc::try_unwrap(state).unwrap().into_inner();
+    tr.commit().await.unwrap();
     Ok(QueryResult::Update(50))
 }
 
