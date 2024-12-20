@@ -1,53 +1,42 @@
-use super::{repository::{error::RepositoryError, QueryResult}, Table, TypeTable, Updatable};
+use super::{repository::error::RepositoryError, Table, TypeTable, Updatable};
 use sqlx::{Postgres, Transaction as SqlxTransaction};
 use std::{
-    collections::HashMap,
-    future::Future,
-    pin::Pin,
-    sync::Arc,
-    task::{Context, Poll},
+    collections::HashMap, future::Future, pin::Pin, sync::Arc, task::{Context, Poll}
 };
 use tokio::sync::Mutex;
 
-
-type ResultTransaction<'a> = Pin<Box<dyn Future<Output = Result<(), RepositoryError>> + 'a + Send>>;
-
 pub struct BuilderPgTransaction<'a> {
     transaction: Arc<Mutex<SqlxTransaction<'a, Postgres>>>,
-    to_update: Vec<ResultTransaction<'a>>,
-    to_insert: Vec<ResultTransaction<'a>>,
-    to_delete: Vec<ResultTransaction<'a>>,
+    futures: Vec<TransactionTask<'a>>,
     _state: FutureState,
     pos: usize,
+    result: T,
 }
 
 #[derive(Debug, Clone)]
 enum FutureState {
-    Update,
-    Insert,
-    Delete,
+    Start,
+    Running,
+    Terminated,
 }
 
 impl<'b> BuilderPgTransaction<'b> {
     pub async fn new(transaction: Arc<Mutex<SqlxTransaction<'b, Postgres>>>) -> Self {
         Self {
             transaction,
-            to_update: Vec::new(),
-            to_insert: Vec::new(),
-            to_delete: Vec::new(),
-            _state: FutureState::Insert,
+            futures: Vec::with_capacity(6),
+            _state: FutureState::Start,
             pos: 0,
         }
     }
 
-    pub fn insert<T>(&mut self, data: Vec<T>)
+    pub fn insert<T>(&'b mut self, data: Vec<T>)
     where
         T: Table + Send + std::fmt::Debug + Clone + 'b,
     {
         let transaction = self.transaction.clone();
 
-        self.to_insert.push(
-            Box::pin(async move {
+        self.futures.push( TransactionTask::new(async move {
                 let mut transaction = transaction.lock().await;
                 let q_insert = T::query_insert();
                 for i in data {
@@ -85,7 +74,7 @@ impl<'b> BuilderPgTransaction<'b> {
     {
         let transaction = self.transaction.clone();
 
-        self.to_update.push(Box::pin(async move {
+        self.futures.push(TransactionTask::new( async move {
 
             if let Some(pair) = updater.get_pair() {
                 let mut transaction = transaction.lock().await;
@@ -161,7 +150,7 @@ impl<'b> BuilderPgTransaction<'b> {
     {
 
         let transaction = self.transaction.clone();
-        self.to_delete.push(Box::pin(async move {
+        self.futures.push(TransactionTask::new(async move {
             let mut query = format!("DELETE FROM {}", T::name());
             let mut transaction = transaction.lock().await;
             match condition {
@@ -225,50 +214,46 @@ impl<'b> std::future::Future for BuilderPgTransaction<'b> {
         let this = self.get_mut();
 
         loop {
-            println!("Ingresamos al loop");
             match this._state {
-                FutureState::Insert => {
-                    if let Some(future) = this.to_insert.get_mut(this.pos) {
-                        if let Poll::Ready(resp) = future.as_mut().poll(cx) {
-                            match resp {
-                                Ok(_) => this.pos += 1,
-                                Err(e) => return Poll::Ready(Err(e)),
-                            }
-                        } else {
-                            return Poll::Pending
-                        }
+                FutureState::Start => {
+                    this._state = FutureState::Running;
+                }
+                FutureState::Running => {
+                    if let Some(future) = this.futures.get_mut(this.pos) {
+                        let future = unsafe { Pin::new_unchecked(future) };
+                        return future.poll(cx);
                     } else {
-                        this.pos = 0;
-                        this._state = FutureState::Update;
+                        this._state = FutureState::Terminated;
                     }
                 }
-                FutureState::Update => {
-                    if let Some(future) = this.to_update.get_mut(this.pos) {
-                        if let Poll::Ready(resp) = future.as_mut().poll(cx) {
-                            match resp {
-                                Ok(_) => this.pos += 1,
-                                Err(e) => return Poll::Ready(Err(e)),
-                            }
-                        } else {
-                            return Poll::Pending;
-                        }
-                    } else {
-                        this.pos = 0;
-                        this._state = FutureState::Delete;
-                    }
-                }
-                FutureState::Delete => {
-                    if let Some(future) = this.to_delete.get_mut(this.pos) {
-                        return if let Poll::Ready(resp) = future.as_mut().poll(cx) {
-                            Poll::Ready(resp)
-                        } else {
-                            Poll::Pending
-                        };
-                    } else {
-                        return Poll::Ready(Ok(()))
-                    }
+                FutureState::Terminated => {
+                    return Poll::Ready(Ok(()))
                 }
             }
         }
     }
+}
+
+struct TransactionTask<'a> {
+    inner: Pin<Box<dyn Future<Output = Result<(), RepositoryError>> + 'a + Send>>,
+}
+
+impl<'a> TransactionTask<'a> {
+    fn new<F>(future: F) -> Self
+        where 
+            F: Future<Output = Result<(), RepositoryError>> + 'a + Send,
+    {
+        Self {
+            inner: Box::pin(future)
+        }
+    }
+}
+
+impl<'a> Future for TransactionTask<'a> {
+    type Output = Result<(), RepositoryError>;
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let this = self.get_mut();
+        this.inner.as_mut().poll(cx)
+    }
+    
 }
