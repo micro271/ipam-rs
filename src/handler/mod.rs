@@ -7,7 +7,7 @@ pub mod network;
 mod params;
 
 use crate::{
-    database::{repository::Repository, PgRepository},
+    database::{repository::Repository, RepositoryInjection},
     models::{self, user::Role},
 };
 
@@ -23,4 +23,4 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-type RepositoryType = Arc<Mutex<PgRepository>>;
+type RepositoryType = Arc<Mutex<RepositoryInjection<sqlx::postgres::Postgres>>>;

@@ -7,13 +7,15 @@ use futures::stream::StreamExt;
 use repository::{
     error::RepositoryError, QueryResult, Repository, ResultRepository, Table, TypeTable, Updatable,
 };
-use sqlx::postgres::{PgPool, PgPoolOptions, PgRow};
+use sqlx::{postgres::{PgPool, PgPoolOptions, PgRow}, Database, Pool, Postgres};
 use std::collections::HashMap;
 use std::{clone::Clone, fmt::Debug};
 
-pub struct PgRepository(PgPool);
+pub struct RepositoryInjection<DB> (Pool<DB>)
+where
+    DB: Database;
 
-impl PgRepository {
+impl RepositoryInjection<Postgres> {
     pub async fn new(url: String) -> Result<Self, RepositoryError> {
         Ok(Self(
             PgPoolOptions::new()
@@ -24,7 +26,7 @@ impl PgRepository {
     }
 }
 
-impl Repository for PgRepository {
+impl Repository for RepositoryInjection<Postgres> {
     fn insert<'a, T>(&'a self, data: Vec<T>) -> ResultRepository<'a, QueryResult<T>>
     where
         T: Table + 'a + Send + Debug + Clone,
@@ -307,14 +309,14 @@ impl Repository for PgRepository {
     }
 }
 
-impl std::ops::Deref for PgRepository {
+impl std::ops::Deref for RepositoryInjection<Postgres> {
     type Target = PgPool;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl std::ops::DerefMut for PgRepository {
+impl std::ops::DerefMut for RepositoryInjection<Postgres> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

@@ -8,7 +8,7 @@ use axum::{
     routing::{delete, get, post, put},
     serve, Router,
 };
-use database::PgRepository;
+use database::RepositoryInjection;
 use dotenv::dotenv;
 use handler::*;
 use std::env;
@@ -37,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         db_user, db_pass, db_host, db_port, db_name
     );
 
-    let db = PgRepository::new(database_url).await?;
+    let db = RepositoryInjection::new(database_url).await?;
     services::create_default_user(&db).await?;
 
     let db = Arc::new(Mutex::new(db));
@@ -65,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .nest("/network", network)
         .nest("/device", device)
         .nest("/user", user)
-        .layer(axum::middleware::from_fn(auth::verify_token))
+        // .layer(axum::middleware::from_fn(auth::verify_token))
         .route("/login", post(auth::login))
         .with_state(db.clone())
         .layer(ServiceBuilder::new().layer(CorsLayer::permissive()));
