@@ -10,23 +10,38 @@ pub struct BuilderPgTransaction<'a> {
     futures: Vec<TransactionTask<'a>>,
     _state: FutureState,
     pos: usize,
-    result: T,
 }
 
 #[derive(Debug, Clone)]
 enum FutureState {
     Start,
     Running,
-    Terminated,
+    Ready,
 }
 
 impl<'b> BuilderPgTransaction<'b> {
-    pub async fn new(transaction: Arc<Mutex<SqlxTransaction<'b, Postgres>>>) -> Self {
+    pub fn new(transaction: Arc<Mutex<SqlxTransaction<'b, Postgres>>>) -> Self {
         Self {
             transaction,
             futures: Vec::with_capacity(6),
             _state: FutureState::Start,
             pos: 0,
+        }
+    }
+
+    pub async fn execute(self) -> Result<(), RepositoryError> {
+        let transaction = self.transaction.clone();
+        let tmp = self.await;
+        let transaction = Arc::try_unwrap(transaction).unwrap().into_inner();
+        match tmp {
+            Ok(()) => {
+                let _ = transaction.commit().await;
+                Ok(())
+            }
+            Err(e) => {
+                let _ = transaction.rollback().await;
+                Err(e)
+            }
         }
     }
 
@@ -223,10 +238,10 @@ impl<'b> std::future::Future for BuilderPgTransaction<'b> {
                         let future = unsafe { Pin::new_unchecked(future) };
                         return future.poll(cx);
                     } else {
-                        this._state = FutureState::Terminated;
+                        this._state = FutureState::Ready;
                     }
                 }
-                FutureState::Terminated => {
+                FutureState::Ready => {
                     return Poll::Ready(Ok(()))
                 }
             }
