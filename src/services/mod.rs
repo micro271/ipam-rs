@@ -23,7 +23,7 @@ pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryE
     {
         return Ok(());
     }
-    
+
     let user = User {
         id: uuid::Uuid::new_v4(),
         username: std::env::var("IPAM_USER_ROOT").unwrap_or("admin".into()),

@@ -55,16 +55,16 @@ pub trait Table {
     fn query_insert() -> String;
     fn get_fields(self) -> Vec<TypeTable>;
     fn columns() -> Vec<&'static str>;
-    fn query_update() -> String 
-        where 
-            Self: Table,
+    fn query_update() -> String
+    where
+        Self: Table,
     {
         format!("UPDATE {} SET", <Self as Table>::name())
     }
 
     fn query_delete() -> String
-        where 
-            Self: Table,
+    where
+        Self: Table,
     {
         format!("DELETE FROM {}", <Self as Table>::name())
     }

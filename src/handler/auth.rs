@@ -13,8 +13,6 @@ pub async fn create(
     _: IsAdministrator,
     Json(mut user): Json<User>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    
-
     user.password = match encrypt(user.password) {
         Ok(e) => e,
         Err(e) => {
@@ -35,8 +33,6 @@ pub async fn login(
     uri: Uri,
     Json(user): Json<models_data_entry::User>,
 ) -> Result<Response, ResponseError> {
-    
-
     let resp = state
         .get::<'_, User>(Some(HashMap::from([("username", user.username.into())])))
         .await?

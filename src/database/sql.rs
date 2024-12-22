@@ -1,14 +1,13 @@
-use sqlx::{postgres::PgArguments, Postgres, query::Query};
-use std::collections::HashMap;
 use super::repository::{Table, TypeTable};
-
+use sqlx::{postgres::PgArguments, query::Query, Postgres};
+use std::collections::HashMap;
 
 pub struct SqlOperations;
 
 impl SqlOperations {
-    pub fn insert<'a, T>(data: T, query: &'a str) -> Query<'a, Postgres, PgArguments>
-        where 
-            T: Table + std::fmt::Debug + Clone,
+    pub fn insert<T>(data: T, query: &str) -> Query<'_, Postgres, PgArguments>
+    where
+        T: Table + std::fmt::Debug + Clone,
     {
         let mut sql = sqlx::query(query);
         let fields = data.get_fields();
@@ -29,13 +28,12 @@ impl SqlOperations {
 
         sql
     }
-    
+
     pub fn update<'a>(
         pair_updater: &'a HashMap<&'_ str, TypeTable>,
         condition: Option<&'a HashMap<&'_ str, TypeTable>>,
         query: &'a mut String,
     ) -> Query<'a, Postgres, PgArguments> {
-
         let mut pos_values = HashMap::new();
 
         let mut pos = 1;
@@ -84,7 +82,6 @@ impl SqlOperations {
         condition: Option<&'a HashMap<&'_ str, TypeTable>>,
         query: &'a mut String,
     ) -> Query<'a, Postgres, PgArguments> {
-
         if let Some(condition) = condition {
             query.push_str(" WHERE");
 
@@ -93,7 +90,6 @@ impl SqlOperations {
 
             let len = condition.len();
             for t in condition.keys() {
-
                 query.push_str(&format!(" {} = ${}", t, pos));
                 pos_column.insert(pos, condition.get(t).unwrap());
                 if pos < len {
@@ -123,5 +119,4 @@ impl SqlOperations {
             sqlx::query(query)
         }
     }
-    
 }

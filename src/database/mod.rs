@@ -1,18 +1,21 @@
 pub mod entities;
 pub mod mappers;
 pub mod repository;
-pub mod transaction;
 pub mod sql;
+pub mod transaction;
 
-use transaction::{BuilderPgTransaction, Transaction};
 use futures::stream::StreamExt;
 use repository::{
     error::RepositoryError, QueryResult, Repository, ResultRepository, Table, TypeTable, Updatable,
 };
-use sqlx::{postgres::{PgPool, PgPoolOptions, PgRow}, Database, Pool, Postgres};
-use std::{collections::HashMap, clone::Clone, fmt::Debug};
+use sqlx::{
+    postgres::{PgPool, PgPoolOptions, PgRow},
+    Database, Pool, Postgres,
+};
+use std::{clone::Clone, collections::HashMap, fmt::Debug};
+use transaction::{BuilderPgTransaction, Transaction};
 
-pub struct RepositoryInjection<DB> (Pool<DB>)
+pub struct RepositoryInjection<DB>(Pool<DB>)
 where
     DB: Database;
 
@@ -323,11 +326,16 @@ impl std::ops::DerefMut for RepositoryInjection<Postgres> {
     }
 }
 
-
 impl<'a> Transaction<'a> for RepositoryInjection<Postgres> {
-    fn transaction(&'a self) -> std::pin::Pin<Box<dyn std::future::Future<Output= Result<BuilderPgTransaction<'_>, RepositoryError>> + '_ + Send>> {
-        Box::pin(async {            
-            Ok(BuilderPgTransaction::new(self.0.begin().await?))
-        })
+    fn transaction(
+        &'a self,
+    ) -> std::pin::Pin<
+        Box<
+            dyn std::future::Future<Output = Result<BuilderPgTransaction<'_>, RepositoryError>>
+                + '_
+                + Send,
+        >,
+    > {
+        Box::pin(async { Ok(BuilderPgTransaction::new(self.0.begin().await?)) })
     }
 }

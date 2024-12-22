@@ -13,7 +13,6 @@ use dotenv::dotenv;
 use handler::*;
 use std::env;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 

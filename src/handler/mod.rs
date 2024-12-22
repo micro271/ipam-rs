@@ -20,7 +20,6 @@ use extractors::IsAdministrator;
 use libipam::response_error::ResponseError;
 use serde_json::json;
 use std::{collections::HashMap, sync::Arc};
-use tokio::sync::Mutex;
 use uuid::Uuid;
 
 type RepositoryType = Arc<RepositoryInjection<sqlx::postgres::Postgres>>;

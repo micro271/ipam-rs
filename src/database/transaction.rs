@@ -1,5 +1,7 @@
 use super::{
-    repository::{error::RepositoryError, Repository}, sql::SqlOperations, Table, TypeTable, Updatable
+    repository::{error::RepositoryError, Repository},
+    sql::SqlOperations,
+    Table, TypeTable, Updatable,
 };
 use sqlx::{Postgres, Transaction as SqlxTransaction};
 use std::{
@@ -33,7 +35,7 @@ impl<'b> BuilderPgTransaction<'b> {
     pub async fn commit(self) -> Result<(), RepositoryError> {
         // TODO: We have to create an error that informs that there are some transactions without finishing
         let tmp = self;
-        
+
         let transaction = Arc::try_unwrap(tmp.transaction).unwrap().into_inner();
         transaction.commit().await?;
         Ok(())
@@ -42,7 +44,7 @@ impl<'b> BuilderPgTransaction<'b> {
     pub async fn rollback(self) -> Result<(), RepositoryError> {
         // TODO: We have to create an error that informs that there are some transactions without finishing
         let tmp = self;
-                
+
         let transaction = Arc::try_unwrap(tmp.transaction).unwrap().into_inner();
         transaction.rollback().await?;
         Ok(())
@@ -72,7 +74,7 @@ impl<'b> BuilderPgTransaction<'b> {
         U: Updatable<'static> + Send + std::fmt::Debug + 'static,
     {
         let transaction = self.transaction.clone();
-        
+
         TransactionTask::new(async move {
             let pair = updater.get_pair().unwrap();
             let mut query = T::query_update();
