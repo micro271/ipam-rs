@@ -1,6 +1,6 @@
 use sqlx::{postgres::PgArguments, Postgres, query::Query};
 use std::collections::HashMap;
-use super::repository::{Table, TypeTable, Updatable};
+use super::repository::{Table, TypeTable};
 
 
 pub struct SqlOperations;
@@ -30,14 +30,11 @@ impl SqlOperations {
         sql
     }
     
-    pub fn update<'a, U>(
-        pair_updater: &'a HashMap<&'a str, TypeTable>,
-        condition: Option<&'a HashMap<&'a str, TypeTable>>,
+    pub fn update<'a>(
+        pair_updater: &'a HashMap<&'_ str, TypeTable>,
+        condition: Option<&'a HashMap<&'_ str, TypeTable>>,
         query: &'a mut String,
-    ) -> Query<'a, Postgres, PgArguments>
-    where
-        U: Updatable<'a> + Send + std::fmt::Debug + 'a,
-    {
+    ) -> Query<'a, Postgres, PgArguments> {
 
         let mut pos_values = HashMap::new();
 
@@ -84,7 +81,7 @@ impl SqlOperations {
     }
 
     pub fn delete<'a>(
-        condition: Option<&'a HashMap<&'a str, TypeTable>>,
+        condition: Option<&'a HashMap<&'_ str, TypeTable>>,
         query: &'a mut String,
     ) -> Query<'a, Postgres, PgArguments> {
 
