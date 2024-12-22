@@ -1,9 +1,12 @@
+use std::net::IpAddr;
+
 use super::RepositoryType;
 use super::*;
 use crate::{
-    database::{repository::QueryResult, transaction::BuilderPgTransaction},
+    database::{repository::QueryResult, transaction::Transaction},
     models::network::*,
 };
+use models::device::Device;
 use params::network::QueryNetwork;
 
 pub async fn create(
@@ -32,12 +35,35 @@ pub async fn update(
     Json(updater): Json<UpdateNetwork>,
 ) -> Result<QueryResult<Network>, ResponseError> {
     let state = state.lock().await;
-    let tr = state.begin().await.unwrap();
-    let state = Arc::new(Mutex::new(tr));
-    let tmp = BuilderPgTransaction::new(state.clone()).await;
-    println!("{:?}", Arc::strong_count(&state));
-    let tr = Arc::try_unwrap(state).unwrap().into_inner();
-    tr.commit().await.unwrap();
+    let network_current = state
+        .get::<Network>(Some(HashMap::from([("id", id.into())])))
+        .await?
+        .remove(0);
+
+    let mut transaction = state.transaction().await.unwrap();
+    let network = updater.network.clone();
+
+    transaction
+        .update::<Network, _>(updater, Some(HashMap::from([("id", id.into())])))
+        .await;
+
+    if network.is_some_and(|x| x != network_current.network) {
+        let tmp = network.unwrap();
+        let mut devices = state
+            .get::<Device>(Some(HashMap::from([(
+                "network_id",
+                network_current.network.into(),
+            )])))
+            .await?;
+        devices.sort_by_key(|x| x.ip);
+        let host = tmp.hosts().map(|x| x).collect::<Vec<IpAddr>>();
+        for (pos, h) in host.into_iter().enumerate() {
+            transaction
+                .update::<Device, _>(h, Some(HashMap::from([("ip", devices[pos].ip.into())])))
+                .await;
+        }
+    }
+
     Ok(QueryResult::Update(50))
 }
 

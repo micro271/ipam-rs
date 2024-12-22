@@ -3,13 +3,13 @@ pub mod mappers;
 pub mod repository;
 pub mod transaction;
 
+use transaction::{BuilderPgTransaction, Transaction};
 use futures::stream::StreamExt;
 use repository::{
     error::RepositoryError, QueryResult, Repository, ResultRepository, Table, TypeTable, Updatable,
 };
 use sqlx::{postgres::{PgPool, PgPoolOptions, PgRow}, Database, Pool, Postgres};
-use std::collections::HashMap;
-use std::{clone::Clone, fmt::Debug};
+use std::{collections::HashMap, clone::Clone, fmt::Debug};
 
 pub struct RepositoryInjection<DB> (Pool<DB>)
 where
@@ -319,5 +319,14 @@ impl std::ops::Deref for RepositoryInjection<Postgres> {
 impl std::ops::DerefMut for RepositoryInjection<Postgres> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
+    }
+}
+
+
+impl<'a> Transaction<'a> for RepositoryInjection<Postgres> {
+    fn transaction(&'a self) -> std::pin::Pin<Box<dyn std::future::Future<Output= Result<BuilderPgTransaction<'_>, RepositoryError>> + '_ + Send>> {
+        Box::pin(async {            
+            Ok(BuilderPgTransaction::new(self.0.begin().await?))
+        })
     }
 }

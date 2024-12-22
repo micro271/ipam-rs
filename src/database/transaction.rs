@@ -1,96 +1,94 @@
-use super::{repository::error::RepositoryError, Table, TypeTable, Updatable};
+use super::{
+    repository::{error::RepositoryError, Repository},
+    Table, TypeTable, Updatable,
+};
 use sqlx::{Postgres, Transaction as SqlxTransaction};
 use std::{
-    collections::HashMap, future::Future, pin::Pin, sync::Arc, task::{Context, Poll}
+    collections::HashMap,
+    future::Future,
+    pin::Pin,
+    sync::Arc,
+    task::{Context, Poll},
 };
 use tokio::sync::Mutex;
 
-pub struct BuilderPgTransaction<'a> {
-    transaction: Arc<Mutex<SqlxTransaction<'a, Postgres>>>,
-    futures: Vec<TransactionTask<'a>>,
-    _state: FutureState,
-    pos: usize,
+pub trait Transaction<'a>: Repository {
+    fn transaction(
+        &'a self,
+    ) -> Pin<Box<dyn Future<Output = Result<BuilderPgTransaction<'a>, RepositoryError>> + 'a + Send>>;
 }
 
-#[derive(Debug, Clone)]
-enum FutureState {
-    Start,
-    Running,
-    Ready,
+pub struct BuilderPgTransaction<'a> {
+    pub(super) transaction: Arc<Mutex<SqlxTransaction<'a, Postgres>>>,
 }
 
 impl<'b> BuilderPgTransaction<'b> {
-    pub fn new(transaction: Arc<Mutex<SqlxTransaction<'b, Postgres>>>) -> Self {
+    pub fn new(transaction: SqlxTransaction<'b, Postgres>) -> Self {
         Self {
-            transaction,
-            futures: Vec::with_capacity(6),
-            _state: FutureState::Start,
-            pos: 0,
+            transaction: Arc::new(Mutex::new(transaction)),
         }
     }
 
-    pub async fn execute(self) -> Result<(), RepositoryError> {
-        let transaction = self.transaction.clone();
-        let tmp = self.await;
-        let transaction = Arc::try_unwrap(transaction).unwrap().into_inner();
-        match tmp {
-            Ok(()) => {
-                let _ = transaction.commit().await;
-                Ok(())
-            }
-            Err(e) => {
-                let _ = transaction.rollback().await;
-                Err(e)
-            }
-        }
+    pub async fn commit(self) -> Result<(), RepositoryError> {
+        // TODO: We have to create an error that informs that there are some transactions without finishing
+        let tmp = self;
+        
+        let transaction = Arc::try_unwrap(tmp.transaction).unwrap().into_inner();
+        transaction.commit().await?;
+        Ok(())
     }
 
-    pub fn insert<T>(&'b mut self, data: Vec<T>)
+    pub async fn rollback(self) -> Result<(), RepositoryError> {
+        // TODO: We have to create an error that informs that there are some transactions without finishing
+        let tmp = self;
+                
+        let transaction = Arc::try_unwrap(tmp.transaction).unwrap().into_inner();
+        transaction.rollback().await?;
+        Ok(())
+    }
+
+    pub fn insert<T>(&mut self, data: T) -> TransactionTask<'_>
     where
         T: Table + Send + std::fmt::Debug + Clone + 'b,
     {
         let transaction = self.transaction.clone();
 
-        self.futures.push( TransactionTask::new(async move {
-                let mut transaction = transaction.lock().await;
-                let q_insert = T::query_insert();
-                for i in data {
-                    let mut sql = sqlx::query(&q_insert);
-                    let fields = i.get_fields();
-                    for element in fields {
-                        sql = match element {
-                            TypeTable::String(value) => sql.bind(value),
-                            TypeTable::OptionUuid(value) => sql.bind(value),
-                            TypeTable::Uuid(value) => sql.bind(value),
-                            TypeTable::OptionString(value) => sql.bind(value),
-                            TypeTable::Status(value) => sql.bind(value),
-                            TypeTable::Role(value) => sql.bind(value),
-                            TypeTable::OptionVlan(value) => sql.bind(value),
-                            TypeTable::OptionCredential(value) => sql.bind(value),
-                            TypeTable::I64(value) => sql.bind(value),
-                            TypeTable::Null => sql,
-                        };
-                    }
-                    let _ = sql.execute(&mut **transaction).await;
-                }
-                Ok(())
-            }),
-        );
+        TransactionTask::new(async move {
+            let mut transaction = transaction.lock().await;
+            let q_insert = T::query_insert();
+            let mut sql = sqlx::query(&q_insert);
+            let fields = data.get_fields();
+            for element in fields {
+                sql = match element {
+                    TypeTable::String(value) => sql.bind(value),
+                    TypeTable::OptionUuid(value) => sql.bind(value),
+                    TypeTable::Uuid(value) => sql.bind(value),
+                    TypeTable::OptionString(value) => sql.bind(value),
+                    TypeTable::Status(value) => sql.bind(value),
+                    TypeTable::Role(value) => sql.bind(value),
+                    TypeTable::OptionVlan(value) => sql.bind(value),
+                    TypeTable::OptionCredential(value) => sql.bind(value),
+                    TypeTable::I64(value) => sql.bind(value),
+                    TypeTable::Null => sql,
+                };
+            }
+            let _ = sql.execute(&mut **transaction).await;
+            Ok(())
+        })
     }
 
     pub fn update<T, U>(
         &mut self,
         updater: U,
         condition: Option<HashMap<&'static str, TypeTable>>,
-    )
+    ) -> TransactionTask<'_>
     where
         T: Table + std::fmt::Debug + Clone,
         U: Updatable<'b> + Send + std::fmt::Debug + 'static,
     {
         let transaction = self.transaction.clone();
 
-        self.futures.push(TransactionTask::new( async move {
-
+        TransactionTask::new(async move {
             if let Some(pair) = updater.get_pair() {
                 let mut transaction = transaction.lock().await;
                 let cols = T::columns();
@@ -153,19 +151,18 @@ impl<'b> BuilderPgTransaction<'b> {
             } else {
                 Err(RepositoryError::ColumnNotFound("".to_string()))
             }
-        }));
+        })
     }
 
     pub fn delete<T>(
         &mut self,
         condition: Option<HashMap<&'static str, TypeTable>>,
-    )
+    ) -> TransactionTask<'_>
     where
         T: Table + 'b + Send + std::fmt::Debug + Clone,
     {
-
         let transaction = self.transaction.clone();
-        self.futures.push(TransactionTask::new(async move {
+        TransactionTask::new(async move {
             let mut query = format!("DELETE FROM {}", T::name());
             let mut transaction = transaction.lock().await;
             match condition {
@@ -215,51 +212,24 @@ impl<'b> BuilderPgTransaction<'b> {
                 None => {
                     let _ = sqlx::query(&query).execute(&mut **transaction).await;
                     Ok(())
-                },
+                }
                 _ => Err(RepositoryError::ColumnNotFound("".to_string())),
             }
-        }));
+        })
     }
 }
 
-impl<'b> std::future::Future for BuilderPgTransaction<'b> {
-    type Output = Result<(), RepositoryError>;
-
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> std::task::Poll<Self::Output> {
-        let this = self.get_mut();
-
-        loop {
-            match this._state {
-                FutureState::Start => {
-                    this._state = FutureState::Running;
-                }
-                FutureState::Running => {
-                    if let Some(future) = this.futures.get_mut(this.pos) {
-                        let future = unsafe { Pin::new_unchecked(future) };
-                        return future.poll(cx);
-                    } else {
-                        this._state = FutureState::Ready;
-                    }
-                }
-                FutureState::Ready => {
-                    return Poll::Ready(Ok(()))
-                }
-            }
-        }
-    }
-}
-
-struct TransactionTask<'a> {
+pub struct TransactionTask<'a> {
     inner: Pin<Box<dyn Future<Output = Result<(), RepositoryError>> + 'a + Send>>,
 }
 
 impl<'a> TransactionTask<'a> {
     fn new<F>(future: F) -> Self
-        where 
-            F: Future<Output = Result<(), RepositoryError>> + 'a + Send,
+    where
+        F: Future<Output = Result<(), RepositoryError>> + 'a + Send,
     {
         Self {
-            inner: Box::pin(future)
+            inner: Box::pin(future),
         }
     }
 }
@@ -270,5 +240,4 @@ impl<'a> Future for TransactionTask<'a> {
         let this = self.get_mut();
         this.inner.as_mut().poll(cx)
     }
-    
 }

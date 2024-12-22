@@ -1,6 +1,7 @@
 use super::HashMap;
 use super::{Table, TypeTable, Updatable};
 use crate::models::{device::*, network::*, office::*, user::*};
+use std::net::IpAddr;
 
 impl Table for User {
     fn columns() -> Vec<&'static str> {
@@ -217,5 +218,11 @@ impl<'a> Updatable<'a> for UpdateOffice {
         }
 
         Some(resp)
+    }
+}
+
+impl<'a> Updatable<'a> for IpAddr {
+    fn get_pair(self) -> Option<HashMap<&'a str, TypeTable>> {
+        Some(HashMap::from([("ip", self.into())]))
     }
 }
