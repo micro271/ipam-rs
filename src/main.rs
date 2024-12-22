@@ -40,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db = RepositoryInjection::new(database_url).await?;
     services::create_default_user(&db).await?;
 
-    let db = Arc::new(Mutex::new(db));
+    let db = Arc::new(db);
 
     let network = Router::new().route("/create", put(network::create)).route(
         "/",

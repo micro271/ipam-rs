@@ -1,8 +1,7 @@
 use super::{
-    repository::{error::RepositoryError, Repository},
-    Table, TypeTable, Updatable,
+    repository::{error::RepositoryError, Repository}, sql::SqlOperations, Table, TypeTable, Updatable
 };
-use sqlx::{Postgres, Transaction as SqlxTransaction};
+use sqlx::{Executor, Postgres, Transaction as SqlxTransaction};
 use std::{
     collections::HashMap,
     future::Future,
@@ -52,27 +51,11 @@ impl<'b> BuilderPgTransaction<'b> {
         T: Table + Send + std::fmt::Debug + Clone + 'b,
     {
         let transaction = self.transaction.clone();
-
         TransactionTask::new(async move {
             let mut transaction = transaction.lock().await;
             let q_insert = T::query_insert();
-            let mut sql = sqlx::query(&q_insert);
-            let fields = data.get_fields();
-            for element in fields {
-                sql = match element {
-                    TypeTable::String(value) => sql.bind(value),
-                    TypeTable::OptionUuid(value) => sql.bind(value),
-                    TypeTable::Uuid(value) => sql.bind(value),
-                    TypeTable::OptionString(value) => sql.bind(value),
-                    TypeTable::Status(value) => sql.bind(value),
-                    TypeTable::Role(value) => sql.bind(value),
-                    TypeTable::OptionVlan(value) => sql.bind(value),
-                    TypeTable::OptionCredential(value) => sql.bind(value),
-                    TypeTable::I64(value) => sql.bind(value),
-                    TypeTable::Null => sql,
-                };
-            }
-            let _ = sql.execute(&mut **transaction).await;
+            let query = SqlOperations::insert(data, &q_insert);
+            let _ = query.execute(&mut **transaction).await;
             Ok(())
         })
     }
@@ -224,7 +207,7 @@ pub struct TransactionTask<'a> {
 }
 
 impl<'a> TransactionTask<'a> {
-    fn new<F>(future: F) -> Self
+    pub fn new<F>(future: F) -> Self
     where
         F: Future<Output = Result<(), RepositoryError>> + 'a + Send,
     {

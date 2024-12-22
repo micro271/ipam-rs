@@ -9,7 +9,6 @@ pub async fn create(
     _: IsAdministrator,
     Json(device): Json<models_data_entry::Device>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    let state = state.lock().await;
 
     Ok(state.insert::<Device>(vec![device.into()]).await?)
 }
@@ -19,7 +18,7 @@ pub async fn create_all_devices(
     _: IsAdministrator,
     Path(network_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    let state = state.lock().await;
+
     let network = state
         .get::<Network>(Some(HashMap::from([("id", network_id.into())])))
         .await?
@@ -37,7 +36,7 @@ pub async fn get_all(
     State(state): State<RepositoryType>,
     Path(network_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    let state = state.lock().await;
+    
     let condition = HashMap::from([("network_id", network_id.into())]);
     let devices = state.get::<Device>(Some(condition)).await?;
 
@@ -53,7 +52,7 @@ pub async fn update(
     Query(params): Query<ParamsDevice>,
     Json(device): Json<UpdateDevice>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    let state = state.lock().await;
+    
 
     let ip = params.ip;
     let network_id = params.network_id;
@@ -111,7 +110,7 @@ pub async fn get_one(
     State(state): State<RepositoryType>,
     Query(params): Query<ParamsDevice>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    let state = state.lock().await;
+    
 
     let device = state
         .get::<Device>(Some(HashMap::from([
@@ -130,7 +129,7 @@ pub async fn delete(
     _: IsAdministrator,
     Query((ip, network_id)): Query<(IpAddr, Uuid)>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    let state = state.lock().await;
+    
 
     Ok(state
         .delete::<Device>(Some(HashMap::from([

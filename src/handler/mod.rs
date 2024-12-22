@@ -23,4 +23,4 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-type RepositoryType = Arc<Mutex<RepositoryInjection<sqlx::postgres::Postgres>>>;
+type RepositoryType = Arc<RepositoryInjection<sqlx::postgres::Postgres>>;

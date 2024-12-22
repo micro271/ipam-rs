@@ -2,6 +2,7 @@ pub mod entities;
 pub mod mappers;
 pub mod repository;
 pub mod transaction;
+pub mod sql;
 
 use transaction::{BuilderPgTransaction, Transaction};
 use futures::stream::StreamExt;
