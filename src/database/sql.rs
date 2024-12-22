@@ -30,17 +30,17 @@ impl SqlOperations {
     }
 
     pub fn update<'a>(
-        pair_updater: &'a HashMap<&'_ str, TypeTable>,
-        condition: Option<&'a HashMap<&'_ str, TypeTable>>,
+        pair_updater: HashMap<&'_ str, TypeTable>,
+        condition: Option<HashMap<&'_ str, TypeTable>>,
         query: &'a mut String,
     ) -> Query<'a, Postgres, PgArguments> {
         let mut pos_values = HashMap::new();
 
         let mut pos = 1;
-        let len = pair_updater.len();
-        for i in pair_updater.keys() {
-            query.push_str(&format!(" {} = ${}", i, pos));
-            pos_values.insert(pos, pair_updater.get(i).unwrap());
+        let len: usize = pair_updater.len();
+        for (key, value) in pair_updater {
+            query.push_str(&format!(" {} = ${}", key, pos));
+            pos_values.insert(pos, value);
             if len > pos {
                 query.push(',');
             }
@@ -49,9 +49,9 @@ impl SqlOperations {
 
         if let Some(condition) = condition {
             let len = condition.len() + pos - 1;
-            for i in condition.keys() {
-                pos_values.insert(pos, condition.get(i).unwrap());
-                query.push_str(&format!(" {} = ${}", i, pos));
+            for (key, value) in condition {
+                pos_values.insert(pos, value);
+                query.push_str(&format!(" {} = ${}", key, pos));
                 if pos < len {
                     query.push_str(" AND");
                 }
@@ -61,7 +61,7 @@ impl SqlOperations {
 
         let mut sql = sqlx::query(query);
         for i in 1..pos {
-            sql = match pos_values.get(&i).unwrap() {
+            sql = match pos_values.remove(&i).unwrap() {
                 TypeTable::OptionCredential(e) => sql.bind(e),
                 TypeTable::OptionVlan(e) => sql.bind(e),
                 TypeTable::String(s) => sql.bind(s),
@@ -79,7 +79,7 @@ impl SqlOperations {
     }
 
     pub fn delete<'a>(
-        condition: Option<&'a HashMap<&'_ str, TypeTable>>,
+        condition: Option<HashMap<&'_ str, TypeTable>>,
         query: &'a mut String,
     ) -> Query<'a, Postgres, PgArguments> {
         if let Some(condition) = condition {
@@ -89,9 +89,9 @@ impl SqlOperations {
             let mut pos = 1;
 
             let len = condition.len();
-            for t in condition.keys() {
-                query.push_str(&format!(" {} = ${}", t, pos));
-                pos_column.insert(pos, condition.get(t).unwrap());
+            for (key, value) in condition {
+                query.push_str(&format!(" {} = ${}", key, pos));
+                pos_column.insert(pos, value);
                 if pos < len {
                     query.push_str(" AND");
                 }
@@ -101,7 +101,7 @@ impl SqlOperations {
             let mut sql = sqlx::query(query);
 
             for i in 1..pos {
-                sql = match pos_column.get(&i).unwrap() {
+                sql = match pos_column.remove(&i).unwrap() {
                     TypeTable::OptionCredential(e) => sql.bind(e),
                     TypeTable::OptionVlan(e) => sql.bind(e),
                     TypeTable::OptionUuid(e) => sql.bind(e),

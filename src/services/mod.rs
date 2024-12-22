@@ -1,5 +1,5 @@
 use crate::{
-    database::repository::{error::RepositoryError, Repository},
+    database::{repository::{error::RepositoryError, Repository}, transaction::Transaction, RepositoryInjection},
     models::user::*,
 };
 use libipam::authentication::{encrypt, Claim};
@@ -15,7 +15,7 @@ pub struct Claims {
 
 impl Claim for Claims {}
 
-pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryError> {
+pub async fn create_default_user<'a>(db: &impl Repository) -> Result<(), RepositoryError> {
     if db
         .get::<User>(Some(HashMap::from([("role", Role::Admin.into())])))
         .await
@@ -23,14 +23,13 @@ pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryE
     {
         return Ok(());
     }
-
+    
     let user = User {
         id: uuid::Uuid::new_v4(),
         username: std::env::var("IPAM_USER_ROOT").unwrap_or("admin".into()),
         password: encrypt(std::env::var("IPAM_PASSWORD_ROOT").unwrap_or("admin".into())).unwrap(),
         role: Role::Admin,
     };
-
     db.insert::<User>(vec![user]).await?;
     Ok(())
 }

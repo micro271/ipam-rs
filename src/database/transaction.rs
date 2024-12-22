@@ -76,9 +76,8 @@ impl<'b> BuilderPgTransaction<'b> {
         let transaction = self.transaction.clone();
 
         TransactionTask::new(async move {
-            let pair = updater.get_pair().unwrap();
             let mut query = T::query_update();
-            let sql = SqlOperations::update(&pair, condition.as_ref(), &mut query);
+            let sql = SqlOperations::update(updater.get_pair().unwrap(), condition, &mut query);
 
             let mut transaction = transaction.lock().await;
             let _ = sql.execute(&mut **transaction).await;
@@ -96,7 +95,7 @@ impl<'b> BuilderPgTransaction<'b> {
         let transaction = self.transaction.clone();
         TransactionTask::new(async move {
             let mut query = T::query_delete();
-            let sql = SqlOperations::delete(condition.as_ref(), &mut query);
+            let sql = SqlOperations::delete(condition, &mut query);
             let mut transaction = transaction.lock().await;
             sql.execute(&mut **transaction).await?;
             Ok(())
