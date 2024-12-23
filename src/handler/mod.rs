@@ -1,10 +1,9 @@
 pub mod auth;
 pub mod device;
+mod entries;
 pub mod error;
 pub mod extractors;
-mod models_data_entry;
 pub mod network;
-mod params;
 
 use crate::{
     database::{repository::Repository, RepositoryInjection},

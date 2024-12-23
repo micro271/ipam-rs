@@ -1,3 +1,4 @@
+pub mod error;
 use super::{
     repository::{error::RepositoryError, Repository},
     sql::SqlOperations,
@@ -104,7 +105,7 @@ impl<'b> BuilderPgTransaction<'b> {
 }
 
 pub struct TransactionTask<'a> {
-    inner: Pin<Box<dyn Future<Output = TransactionTaskResult> + 'a + Send>>,
+    future: Pin<Box<dyn Future<Output = TransactionTaskResult> + 'a + Send>>,
 }
 
 impl<'a> TransactionTask<'a> {
@@ -113,7 +114,7 @@ impl<'a> TransactionTask<'a> {
         F: Future<Output = TransactionTaskResult> + 'a + Send,
     {
         Self {
-            inner: Box::pin(future),
+            future: Box::pin(future),
         }
     }
 }
@@ -122,6 +123,6 @@ impl<'a> Future for TransactionTask<'a> {
     type Output = TransactionTaskResult;
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.get_mut();
-        this.inner.as_mut().poll(cx)
+        this.future.as_mut().poll(cx)
     }
 }

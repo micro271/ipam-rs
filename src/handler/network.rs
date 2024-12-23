@@ -4,15 +4,14 @@ use super::RepositoryType;
 use super::*;
 use crate::{
     database::{repository::QueryResult, transaction::Transaction},
-    models::network::*,
+    models::{device::Device, network::*},
 };
-use models::device::Device;
-use params::network::QueryNetwork;
+use entries::{params::QueryNetwork, models};
 
 pub async fn create(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
-    Json(netw): Json<models_data_entry::Network>,
+    Json(netw): Json<models::Network>,
 ) -> Result<QueryResult<Network>, ResponseError> {
     Ok(state.insert::<Network>(vec![netw.into()]).await?)
 }

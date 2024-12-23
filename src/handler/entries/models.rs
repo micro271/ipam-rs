@@ -1,4 +1,4 @@
-use super::models::{device, network};
+use super::super::models::{device, network};
 use ipnet::IpNet;
 use libipam::type_net::vlan::Vlan;
 use serde::{Deserialize, Serialize};
@@ -16,12 +16,6 @@ pub struct Network {
     pub network: IpNet,
     pub description: Option<String>,
     pub vlan: Option<Vlan>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ParamsDevice {
-    pub ip: IpAddr,
-    pub network_id: uuid::Uuid,
 }
 
 impl From<Network> for network::Network {

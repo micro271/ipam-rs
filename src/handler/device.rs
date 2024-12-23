@@ -1,13 +1,13 @@
 use super::*;
 use crate::models::{device::*, network::Network};
-use models_data_entry::ParamsDevice;
+use entries::{models, params::ParamsDevice};
 
 use std::net::IpAddr;
 
 pub async fn create(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
-    Json(device): Json<models_data_entry::Device>,
+    Json(device): Json<models::Device>,
 ) -> Result<impl IntoResponse, ResponseError> {
     Ok(state.insert::<Device>(vec![device.into()]).await?)
 }
@@ -22,7 +22,7 @@ pub async fn create_all_devices(
         .await?
         .remove(0);
 
-    match models_data_entry::create_all_devices(network.network, network_id) {
+    match models::create_all_devices(network.network, network_id) {
         Some(e) => Ok(state.insert::<Device>(e).await?),
         None => Err(ResponseError::builder()
             .status(StatusCode::NO_CONTENT)

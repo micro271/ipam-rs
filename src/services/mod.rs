@@ -1,5 +1,9 @@
 use crate::{
-    database::{repository::{error::RepositoryError, Repository}, transaction::Transaction, RepositoryInjection},
+    database::{
+        repository::{error::RepositoryError, Repository},
+        transaction::Transaction,
+        RepositoryInjection,
+    },
     models::user::*,
 };
 use libipam::authentication::{encrypt, Claim};
@@ -23,7 +27,7 @@ pub async fn create_default_user<'a>(db: &impl Repository) -> Result<(), Reposit
     {
         return Ok(());
     }
-    
+
     let user = User {
         id: uuid::Uuid::new_v4(),
         username: std::env::var("IPAM_USER_ROOT").unwrap_or("admin".into()),

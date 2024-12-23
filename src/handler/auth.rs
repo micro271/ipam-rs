@@ -31,7 +31,7 @@ pub async fn create(
 pub async fn login(
     State(state): State<RepositoryType>,
     uri: Uri,
-    Json(user): Json<models_data_entry::User>,
+    Json(user): Json<entries::models::User>,
 ) -> Result<Response, ResponseError> {
     let resp = state
         .get::<'_, User>(Some(HashMap::from([("username", user.username.into())])))
