@@ -11,13 +11,6 @@ impl Table for User {
         String::from("USERS")
     }
 
-    fn query_insert() -> String {
-        format!(
-            "INSERT INTO {} (id, username, password, role) VALUES ($1, $2, $3, $4)",
-            User::name()
-        )
-    }
-
     fn get_fields(self) -> Vec<TypeTable> {
         vec![
             self.id.into(),
@@ -44,10 +37,6 @@ impl Table for Device {
 
     fn name() -> String {
         String::from("devices")
-    }
-
-    fn query_insert() -> String {
-        format!("INSERT INTO {} (ip, network_id, description, office_id, rack, room, status, credential) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", Self::name())
     }
 
     fn get_fields(self) -> Vec<TypeTable> {
@@ -81,13 +70,6 @@ impl Table for Network {
         String::from("networks")
     }
 
-    fn query_insert() -> String {
-        format!(
-            "INSERT INTO {} (id, network, available, used, total, vlan, description) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-            Self::name()
-        )
-    }
-
     fn get_fields(self) -> Vec<TypeTable> {
         vec![
             self.id.into(),
@@ -104,13 +86,6 @@ impl Table for Network {
 impl Table for Office {
     fn name() -> String {
         String::from("offices")
-    }
-
-    fn query_insert() -> String {
-        format!(
-            "INSERT INTO {} (id, description, address) VALUES ($1, $2, $3)",
-            Office::name()
-        )
     }
 
     fn get_fields(self) -> Vec<TypeTable> {

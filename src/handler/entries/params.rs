@@ -5,12 +5,6 @@ use std::{collections::HashMap, net::IpAddr};
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
-pub enum Ordering {
-    Ascending,
-    Descending,
-}
-
-#[derive(Debug, Deserialize)]
 pub struct ParamsDevice {
     pub ip: IpAddr,
     pub network_id: uuid::Uuid,
@@ -21,7 +15,6 @@ pub struct QueryNetwork {
     pub id: Option<Uuid>,
     pub description: Option<String>,
     pub network: Option<IpNet>,
-    pub order: Option<Ordering>,
 }
 
 impl QueryNetwork {

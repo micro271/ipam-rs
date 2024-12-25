@@ -162,9 +162,8 @@ pub mod authentication {
     use bcrypt::{hash, verify, DEFAULT_COST};
     use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
     use serde::{de::DeserializeOwned, Serialize};
-    use std::sync::LazyLock;
 
-    static ALGORITHM_JWT: LazyLock<Algorithm> = LazyLock::new(|| Algorithm::HS256);
+    const ALGORITHM_JWT: Algorithm = Algorithm::HS256;
 
     pub trait Claim: std::fmt::Debug {}
 
@@ -183,7 +182,7 @@ pub mod authentication {
         let secret = std::env::var("SECRET_KEY")?;
 
         Ok(encode(
-            &Header::new(*ALGORITHM_JWT),
+            &Header::new(ALGORITHM_JWT),
             &claim,
             &EncodingKey::from_secret(secret.as_ref()),
         )?)
@@ -198,7 +197,7 @@ pub mod authentication {
         match decode(
             token.as_ref(),
             &DecodingKey::from_secret(secret.as_ref()),
-            &Validation::new(*ALGORITHM_JWT),
+            &Validation::new(ALGORITHM_JWT),
         ) {
             Ok(e) => Ok(e.claims),
             Err(e) => Err(e.into()),

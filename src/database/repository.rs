@@ -52,9 +52,25 @@ pub trait Repository {
 
 pub trait Table {
     fn name() -> String;
-    fn query_insert() -> String;
+    
+    fn query_insert() -> String 
+        where 
+            Self: Table,
+    {
+        let columns = Self::columns();
+        format!("INSERT INTO {} ({}) VALUES ({})", 
+            Self::name(), {
+              columns.join(", ")  
+            }, {
+                (1..=columns.len()).into_iter().map(|x| format!("${}", x)).collect::<Vec<String>>().join(", ")
+            },
+        )
+    }
+
     fn get_fields(self) -> Vec<TypeTable>;
+
     fn columns() -> Vec<&'static str>;
+
     fn query_update() -> String
     where
         Self: Table,
