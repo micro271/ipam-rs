@@ -19,3 +19,27 @@ pub struct Network {
     pub used: HostCount,
     pub free: HostCount,
 }
+
+impl std::cmp::PartialEq for Network {
+    fn eq(&self, other: &Self) -> bool {
+        self.network == other.network && self.vlan == other.vlan /* Location of network? */
+    }
+}
+
+impl std::cmp::PartialOrd for Network {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.network.partial_cmp(&other.network)
+    }
+}
+
+impl std::cmp::PartialEq<IpNet> for Network {
+    fn eq(&self, other: &IpNet) -> bool {
+        self.network.eq(other)
+    }
+}
+
+impl std::cmp::PartialOrd<IpNet> for Network {
+    fn partial_cmp(&self, other: &IpNet) -> Option<std::cmp::Ordering> {
+        self.network.partial_cmp(other)
+    }
+}

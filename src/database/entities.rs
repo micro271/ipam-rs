@@ -25,12 +25,12 @@ impl Table for Device {
     fn columns() -> Vec<&'static str> {
         vec![
             "ip",
+            "network_id",
             "description",
             "office_id",
             "rack",
             "room",
             "status",
-            "network_id",
             "credential",
         ]
     }

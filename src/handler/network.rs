@@ -6,7 +6,7 @@ use crate::{
     database::{repository::QueryResult, transaction::Transaction},
     models::{device::Device, network::*},
 };
-use entries::{params::QueryNetwork, models};
+use entries::{models, params::QueryNetwork};
 
 pub async fn create(
     State(state): State<RepositoryType>,

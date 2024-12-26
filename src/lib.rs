@@ -729,6 +729,18 @@ pub mod type_net {
             }
         }
 
+        impl std::cmp::PartialEq for Vlan {
+            fn eq(&self, other: &Self) -> bool {
+                self.0.eq(&other.0)
+            }
+        }
+
+        impl std::cmp::PartialEq<u16> for Vlan {
+            fn eq(&self, other: &u16) -> bool {
+                self.0.eq(other)
+            }
+        }
+
         impl From<u16> for Vlan {
             fn from(value: u16) -> Self {
                 Self(value)

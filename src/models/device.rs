@@ -25,6 +25,30 @@ pub struct Device {
     pub credential: Option<Credential>,
 }
 
+impl std::cmp::PartialEq for Device {
+    fn eq(&self, other: &Self) -> bool {
+        self.ip == other.ip && self.network_id == other.network_id
+    }
+}
+
+impl std::cmp::PartialOrd for Device {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.ip.partial_cmp(&other.ip)
+    }
+}
+
+impl std::cmp::PartialEq<IpAddr> for Device {
+    fn eq(&self, other: &IpAddr) -> bool {
+        self.ip.eq(other)
+    }
+}
+
+impl std::cmp::PartialOrd<IpAddr> for Device {
+    fn partial_cmp(&self, other: &IpAddr) -> Option<std::cmp::Ordering> {
+        self.ip.partial_cmp(other)
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug, sqlx::Type, PartialEq, Clone)]
 #[sqlx(type_name = "CREDENTIAL")]
 pub struct Credential {
