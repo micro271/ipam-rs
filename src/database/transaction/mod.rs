@@ -51,7 +51,7 @@ impl<'b> BuilderPgTransaction<'b> {
         Ok(())
     }
 
-    pub fn insert<T>(&mut self, data: T) -> TransactionTask<'_>
+    pub fn insert<T>(&mut self, data: T) -> impl Future<Output = TransactionTaskResult> + use<'_, T>
     where
         T: Table + Send + std::fmt::Debug + Clone + 'b,
     {
@@ -69,7 +69,7 @@ impl<'b> BuilderPgTransaction<'b> {
         &mut self,
         updater: U,
         condition: Option<HashMap<&'static str, TypeTable>>,
-    ) -> TransactionTask<'_>
+    ) -> impl Future<Output = TransactionTaskResult> + use<'_, T, U>
     where
         T: Table + std::fmt::Debug + Clone,
         U: Updatable<'static> + Send + std::fmt::Debug + 'static,
@@ -89,7 +89,7 @@ impl<'b> BuilderPgTransaction<'b> {
     pub fn delete<T>(
         &mut self,
         condition: Option<HashMap<&'static str, TypeTable>>,
-    ) -> TransactionTask<'_>
+    ) -> impl Future<Output = TransactionTaskResult> + use<'_, T>
     where
         T: Table + 'b + Send + std::fmt::Debug + Clone,
     {
