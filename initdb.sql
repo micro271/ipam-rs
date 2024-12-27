@@ -5,12 +5,14 @@ CREATE TYPE CREDENTIAL AS (
 
 CREATE TYPE STATUS as ENUM ('Reserved', 'Unknown', 'Online', 'Offline');
 
+CREATE TYPE
+
 CREATE TABLE IF NOT EXISTS networks (
     id UUID PRIMARY KEY,
     network VARCHAR NOT NULL,
     available INTEGER NOT NULL,
     used INTEGER NOT NULL,
-    total INTEGER NOT NULL,
+    free INTEGER NOT NULL,
     vlan INTEGER,
     description VARCHAR
 );

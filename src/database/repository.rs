@@ -79,14 +79,14 @@ pub trait Table {
     where
         Self: Table,
     {
-        format!("UPDATE {} SET", <Self as Table>::name())
+        format!("UPDATE {} SET", Self::name())
     }
 
     fn query_delete() -> String
     where
         Self: Table,
     {
-        format!("DELETE FROM {}", <Self as Table>::name())
+        format!("DELETE FROM {}", Self::name())
     }
 }
 
