@@ -610,7 +610,7 @@ pub mod type_net {
         impl TryFrom<i32> for HostCount {
             type Error = CountOfRange;
             fn try_from(value: i32) -> Result<Self, Self::Error> {
-                if value < 0 || value > Self::MAX {
+                if !(0..=Self::MAX).contains(&value) {
                     Err(CountOfRange)
                 } else {
                     Ok(Self(value))
@@ -737,8 +737,13 @@ pub mod type_net {
                 value.try_into()
             }
 
-            pub fn set_vlan(&mut self, id: u16) {
-                self.0 = id as i16;
+            pub fn set_vlan(&mut self, id: i16) -> Result<(), OutOfRange> {
+                if !(2..=Self::MAX).contains(&id) {
+                    Err(OutOfRange)
+                } else {
+                    self.0 = id;
+                    Ok(())
+                }
             }
         }
 
@@ -757,7 +762,7 @@ pub mod type_net {
         impl TryFrom<i16> for Vlan {
             type Error = OutOfRange;
             fn try_from(value: i16) -> Result<Self, Self::Error> {
-                if value <= 0 || value > Self::MAX {
+                if !(2..=Self::MAX).contains(&value) {
                     Err(OutOfRange)
                 } else {
                     Ok(Self(value))
@@ -797,39 +802,39 @@ pub mod type_net {
                 let vlan = Vlan::new(-1);
                 assert!(vlan.is_err());
             }
-            
+
             #[test]
             fn vlan_out_range_error() {
                 let vlan = Vlan::new(4096);
                 assert!(vlan.is_err());
             }
-            
+
             #[test]
             fn vlan_ok() {
                 let vlan = Vlan::new(4095);
                 assert!(vlan.is_ok());
             }
-            
+
             #[test]
             fn vlan_cmp_with_vlan_eq_false() {
                 let one = Vlan::new(4095).unwrap();
                 let two = Vlan::new(1094).unwrap();
                 assert_eq!(one == two, false);
             }
-            
+
             #[test]
             fn vlan_cmp_with_vlan_eq_true() {
                 let one = Vlan::new(4095).unwrap();
                 let two = Vlan::new(4095).unwrap();
                 assert!(one == two);
             }
-            
+
             #[test]
             fn vlan_cmp_with_i16_eq_true() {
                 let one = Vlan::new(4095).unwrap();
                 assert!(one == 4095);
             }
-            
+
             #[test]
             fn vlan_cmp_with_i16_eq_false() {
                 let one = Vlan::new(4095).unwrap();

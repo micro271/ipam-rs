@@ -15,7 +15,6 @@ pub enum Role {
     Operator,
 }
 
-
 impl std::cmp::PartialEq for User {
     fn eq(&self, other: &Self) -> bool {
         self.username.eq(&other.username)
