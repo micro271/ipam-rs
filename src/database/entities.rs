@@ -25,13 +25,14 @@ impl Table for Device {
     fn columns() -> Vec<&'static str> {
         vec![
             "ip",
-            "network_id",
             "description",
-            "office_id",
-            "rack",
+            "label",
             "room",
+            "mount_point",
             "status",
-            "credential",
+            "network_id",
+            "username",
+            "password",
         ]
     }
 
@@ -42,13 +43,14 @@ impl Table for Device {
     fn get_fields(self) -> Vec<TypeTable> {
         vec![
             self.ip.into(),
-            self.network_id.into(),
             self.description.into(),
-            self.office_id.into(),
-            self.rack.into(),
+            self.label.into(),
             self.room.into(),
+            self.mount_point.into(),
             self.status.into(),
-            self.credential.into(),
+            self.network_id.into(),
+            self.username.into(),
+            self.password.into(),
         ]
     }
 }
@@ -58,11 +60,12 @@ impl Table for Network {
         vec![
             "id",
             "network",
-            "description",
             "available",
             "used",
-            "total",
+            "free",
             "vlan",
+            "description",
+            "farther",
         ]
     }
 
@@ -79,6 +82,7 @@ impl Table for Network {
             self.free.into(),
             self.vlan.into(),
             self.description.into(),
+            self.father.into(),
         ]
     }
 }
@@ -114,36 +118,8 @@ impl<'a> Updatable<'a> for UpdateDevice {
             pair.insert("network_id", tmp.into());
         }
 
-        if let Some(tmp) = self.office_id {
-            let data = if tmp == uuid::Uuid::nil() {
-                None
-            } else {
-                Some(tmp)
-            };
-            pair.insert("office", data.into());
-        }
-
-        if let Some(tmp) = self.rack {
-            let data = if tmp.is_empty() { None } else { Some(tmp) };
-            pair.insert("rack", data.into());
-        }
-
-        if let Some(tmp) = self.room {
-            let data = if tmp.is_empty() { None } else { Some(tmp) };
-            pair.insert("room", data.into());
-        }
-
         if let Some(tmp) = self.status {
             pair.insert("status", tmp.into());
-        }
-
-        if let Some(cred) = self.credential {
-            let data = if cred.password.is_empty() && cred.username.is_empty() {
-                None
-            } else {
-                Some(cred)
-            };
-            pair.insert("credential", data.into());
         }
 
         if !pair.is_empty() {

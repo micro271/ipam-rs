@@ -1,6 +1,6 @@
 use super::PgRow;
 use crate::models::{
-    device::{Credential, Status},
+    device::Status,
     user::Role,
 };
 use axum::{
@@ -189,7 +189,6 @@ pub enum TypeTable {
     Status(Status),
     Role(Role),
     OptionVlan(Option<i32>),
-    OptionCredential(Option<Credential>),
     I64(i64),
     Null,
 }
@@ -233,12 +232,6 @@ impl From<IpAddr> for TypeTable {
 impl From<IpNet> for TypeTable {
     fn from(value: IpNet) -> Self {
         Self::String(value.to_string())
-    }
-}
-
-impl From<Option<Credential>> for TypeTable {
-    fn from(value: Option<Credential>) -> Self {
-        Self::OptionCredential(value)
     }
 }
 

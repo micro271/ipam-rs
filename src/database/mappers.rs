@@ -14,6 +14,7 @@ impl From<PgRow> for Network {
             used: value.get("available"),
             free: value.get("available"),
             vlan: value.get("vlan"),
+            father: value.get("father"),
         }
     }
 }
@@ -23,10 +24,11 @@ impl From<PgRow> for Device {
         Self {
             ip: value.get::<'_, &str, _>("ip").parse().unwrap(),
             description: value.get("description"),
-            office_id: value.get("office_id"),
-            rack: value.get("rack"),
-            credential: value.get("credential"),
             room: value.get("room"),
+            label: value.get("label"),
+            mount_point: value.get("mount_point"),
+            username: value.get("username"),
+            password: value.get("password"),
             status: value.get("status"),
             network_id: value.get("network_id"),
         }

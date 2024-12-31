@@ -23,8 +23,8 @@ pub async fn create_all_devices(
         .remove(0);
 
     match models::create_all_devices(network.network, network_id) {
-        Some(e) => Ok(state.insert::<Device>(e).await?),
-        None => Err(ResponseError::builder()
+        Ok(e) => Ok(state.insert::<Device>(e).await?),
+        _ => Err(ResponseError::builder()
             .status(StatusCode::NO_CONTENT)
             .build()),
     }

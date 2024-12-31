@@ -29,6 +29,7 @@ impl From<Network> for network::Network {
             used: 0.into(),
             free: avl.into(),
             vlan: value.vlan,
+            father: None,
         }
     }
 }
@@ -37,48 +38,52 @@ impl From<Network> for network::Network {
 pub struct Device {
     pub ip: IpAddr,
     pub description: Option<String>,
-    pub office_id: Option<Uuid>,
-    pub rack: Option<String>,
-    pub room: Option<String>,
-    pub status: Option<device::Status>,
+    pub label: Option<String>,
+    pub room: Option<Uuid>,
+    pub mount_point: Option<String>,
     pub network_id: uuid::Uuid,
-    pub credential: Option<device::Credential>,
+    pub username: Option<String>,
+    pub pasword: Option<String>,
 }
 
 impl From<Device> for device::Device {
     fn from(value: Device) -> Self {
         Self {
-            status: device::Status::default(),
             ip: value.ip,
             description: value.description,
-            office_id: value.office_id,
-            rack: value.rack,
             room: value.room,
+            label: value.label,
+            mount_point: value.mount_point,
+            status: device::Status::default(),
             network_id: value.network_id,
-            credential: value.credential,
+            username: value.username,
+            password: value.pasword,
         }
     }
 }
 
-pub fn create_all_devices(network: IpNet, id: Uuid) -> Option<Vec<device::Device>> {
+pub fn create_all_devices(network: IpNet, id: Uuid) -> Result<Vec<device::Device>, &'static str> {
+    if network.network().is_ipv6() {
+        return Err("You cannot create all devices of an network ipv6");
+    }
+
     let ips = network.hosts().collect::<Vec<IpAddr>>();
-    let mut resp = Vec::new();
-    for ip in ips {
-        resp.push(device::Device {
+
+    if ips.is_empty() {
+        return Err("No devices created");
+    }
+
+    Ok(ips.into_iter().map(|ip| {
+        device::Device {
             ip,
             description: None,
-            office_id: None,
-            rack: None,
+            mount_point: None,
+            label: None,
             room: None,
             status: device::Status::default(),
             network_id: id,
-            credential: None,
-        });
-    }
-
-    if !resp.is_empty() {
-        Some(resp)
-    } else {
-        None
-    }
+            password: None,
+            username: None,
+        }
+    }).collect())
 }

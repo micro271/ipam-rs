@@ -5,24 +5,26 @@ use std::net::IpAddr;
 pub struct UpdateDevice {
     pub ip: Option<IpAddr>,
     pub description: Option<String>,
-    pub office_id: Option<Uuid>,
-    pub rack: Option<String>,
-    pub room: Option<String>,
     pub status: Option<Status>,
     pub network_id: Option<Uuid>,
-    pub credential: Option<Credential>,
+    pub label: Option<String>,
+    pub room: Option<Uuid>,
+    pub mount_point: Option<String>,
+    pub username: Option<String>,
+    pub password: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Device {
     pub ip: IpAddr,
     pub description: Option<String>,
-    pub office_id: Option<Uuid>,
-    pub rack: Option<String>,
-    pub room: Option<String>,
+    pub label: Option<String>,
+    pub room: Option<Uuid>,
+    pub mount_point: Option<String>,
     pub status: Status,
     pub network_id: uuid::Uuid,
-    pub credential: Option<Credential>,
+    pub username: Option<String>,
+    pub password: Option<String>,
 }
 
 impl std::cmp::PartialEq for Device {
@@ -47,13 +49,6 @@ impl std::cmp::PartialOrd<IpAddr> for Device {
     fn partial_cmp(&self, other: &IpAddr) -> Option<std::cmp::Ordering> {
         self.ip.partial_cmp(other)
     }
-}
-
-#[derive(Deserialize, Serialize, Debug, sqlx::Type, PartialEq, Clone)]
-#[sqlx(type_name = "CREDENTIAL")]
-pub struct Credential {
-    pub username: String,
-    pub password: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, sqlx::Type, PartialEq, Clone)]

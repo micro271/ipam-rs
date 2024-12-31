@@ -12,12 +12,13 @@ pub struct UpdateNetwork {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Network {
     pub id: Uuid,
-    pub vlan: Option<Vlan>,
     pub network: IpNet,
-    pub description: Option<String>,
     pub available: HostCount,
     pub used: HostCount,
     pub free: HostCount,
+    pub vlan: Option<Vlan>,
+    pub description: Option<String>,
+    pub father: Option<Uuid>,
 }
 
 impl std::cmp::PartialEq for Network {

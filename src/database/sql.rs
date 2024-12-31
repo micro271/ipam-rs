@@ -20,7 +20,6 @@ impl SqlOperations {
                 TypeTable::Status(value) => sql.bind(value),
                 TypeTable::Role(value) => sql.bind(value),
                 TypeTable::OptionVlan(value) => sql.bind(value),
-                TypeTable::OptionCredential(value) => sql.bind(value),
                 TypeTable::I64(value) => sql.bind(value),
                 TypeTable::Null => sql,
             };
@@ -62,7 +61,6 @@ impl SqlOperations {
         let mut sql = sqlx::query(query);
         for i in 1..pos {
             sql = match pos_values.remove(&i).unwrap() {
-                TypeTable::OptionCredential(e) => sql.bind(e),
                 TypeTable::OptionVlan(e) => sql.bind(e),
                 TypeTable::String(s) => sql.bind(s),
                 TypeTable::OptionString(value) => sql.bind(value),
@@ -102,7 +100,6 @@ impl SqlOperations {
 
             for i in 1..pos {
                 sql = match pos_column.remove(&i).unwrap() {
-                    TypeTable::OptionCredential(e) => sql.bind(e),
                     TypeTable::OptionVlan(e) => sql.bind(e),
                     TypeTable::OptionUuid(e) => sql.bind(e),
                     TypeTable::String(s) => sql.bind(s),

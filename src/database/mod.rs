@@ -58,7 +58,6 @@ impl Repository for RepositoryInjection<Postgres> {
                         TypeTable::OptionUuid(e) => tmp.bind(e),
                         TypeTable::Null => tmp,
                         TypeTable::I64(e) => tmp.bind(e),
-                        TypeTable::OptionCredential(e) => tmp.bind(e),
                         TypeTable::OptionVlan(e) => tmp.bind(e),
                     };
                 }
@@ -132,7 +131,6 @@ impl Repository for RepositoryInjection<Postgres> {
                             TypeTable::OptionString(opt) => resp.bind(opt),
                             TypeTable::Status(status) => resp.bind(status),
                             TypeTable::Role(role) => resp.bind(role),
-                            TypeTable::OptionCredential(e) => resp.bind(e),
                             TypeTable::OptionVlan(e) => resp.bind(e),
                             TypeTable::I64(e) => resp.bind(e),
                             TypeTable::Null => resp,
@@ -221,7 +219,6 @@ impl Repository for RepositoryInjection<Postgres> {
                 let mut sql = sqlx::query(&query);
                 for i in 1..pos {
                     sql = match pos_values.get(&i).unwrap() {
-                        TypeTable::OptionCredential(e) => sql.bind(e),
                         TypeTable::OptionVlan(e) => sql.bind(e),
                         TypeTable::String(s) => sql.bind(s),
                         TypeTable::OptionString(value) => sql.bind(value),
@@ -282,7 +279,6 @@ impl Repository for RepositoryInjection<Postgres> {
 
                     for i in 1..pos {
                         ex = match pos_column.get(&i).unwrap() {
-                            TypeTable::OptionCredential(e) => ex.bind(e),
                             TypeTable::OptionVlan(e) => ex.bind(e),
                             TypeTable::OptionUuid(e) => ex.bind(e),
                             TypeTable::String(s) => ex.bind(s),
