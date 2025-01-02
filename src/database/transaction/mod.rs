@@ -119,7 +119,7 @@ impl<'a> TransactionTask<'a> {
     }
 }
 
-impl<'a> Future for TransactionTask<'a> {
+impl Future for TransactionTask<'_> {
     type Output = TransactionTaskResult;
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.get_mut();

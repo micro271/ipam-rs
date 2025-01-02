@@ -1,8 +1,5 @@
 use super::PgRow;
-use crate::models::{
-    device::Status,
-    user::Role,
-};
+use crate::models::{device::Status, user::Role};
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},

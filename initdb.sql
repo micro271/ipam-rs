@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS devices (
     password TEXT,
     PRIMARY KEY (ip, network_id),
     FOREIGN KEY (network_id) REFERENCES networks(id) ON DELETE CASCADE,
-    FOREIGN KEY (label, room, mount_point) REFERENCES locations(label, role, mount_point) ON DELETE SET NULL
+    FOREIGN KEY (label, room, mount_point) REFERENCES locations(label, role, mount_point) ON DELETE SET NULL ON UPDATE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS mount_point (
@@ -36,9 +36,10 @@ CREATE TABLE IF NOT EXISTS locations (
     label TEXT,
     mount_point TEXT,
     id_room TEXT,
+    address TEXT NOT NULL,
     PRIMARY KEY (label, mount_point, id_room),
     FOREIGN KEY (mount_point) REFERENCES mount_point(name) ON DELETE SET NULL ON UPDATE CASCADE,
-    FOREIGN KEY (id_room, street, street_number) REFERENCES room(id, street, street_number) ON DELETE CASCADE ON UPDATE CASCADE
+    FOREIGN KEY (id_room, address) REFERENCES room(id, address) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS offices (

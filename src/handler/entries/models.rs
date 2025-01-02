@@ -73,8 +73,9 @@ pub fn create_all_devices(network: IpNet, id: Uuid) -> Result<Vec<device::Device
         return Err("No devices created");
     }
 
-    Ok(ips.into_iter().map(|ip| {
-        device::Device {
+    Ok(ips
+        .into_iter()
+        .map(|ip| device::Device {
             ip,
             description: None,
             mount_point: None,
@@ -84,6 +85,6 @@ pub fn create_all_devices(network: IpNet, id: Uuid) -> Result<Vec<device::Device
             network_id: id,
             password: None,
             username: None,
-        }
-    }).collect())
+        })
+        .collect())
 }

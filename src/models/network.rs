@@ -23,7 +23,7 @@ pub struct Network {
 
 impl std::cmp::PartialEq for Network {
     fn eq(&self, other: &Self) -> bool {
-        self.network == other.network && self.vlan == other.vlan /* Location of network? */
+        self.id == other.id
     }
 }
 

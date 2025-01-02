@@ -1,5 +1,8 @@
 pub mod device;
+pub mod location;
+pub mod mound_point;
 pub mod network;
+pub mod room;
 pub mod user;
 
 use serde::{Deserialize, Serialize};

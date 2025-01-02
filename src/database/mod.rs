@@ -179,7 +179,7 @@ impl Repository for RepositoryInjection<Postgres> {
             if let Some(pair) = updater.get_pair() {
                 let cols = T::columns();
 
-                let mut query = format!("UPDATE {} SET", T::name());
+                let mut query = T::query_update();
 
                 let mut pos_values = HashMap::new();
 
@@ -250,7 +250,7 @@ impl Repository for RepositoryInjection<Postgres> {
         T: Table + 'a + Send + Debug,
     {
         let resp = async move {
-            let mut query = format!("DELETE FROM {}", T::name());
+            let mut query = T::query_delete();
 
             match condition {
                 Some(condition) if !condition.is_empty() => {
@@ -322,9 +322,9 @@ impl std::ops::DerefMut for RepositoryInjection<Postgres> {
     }
 }
 
-impl<'a> Transaction<'a> for RepositoryInjection<Postgres> {
+impl Transaction<'_> for RepositoryInjection<Postgres> {
     fn transaction(
-        &'a self,
+        &self,
     ) -> std::pin::Pin<
         Box<
             dyn std::future::Future<Output = Result<BuilderPgTransaction<'_>, RepositoryError>>
