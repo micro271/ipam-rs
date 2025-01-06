@@ -92,7 +92,7 @@ pub trait Updatable<'a> {
 }
 
 pub enum QueryResult<T> {
-    Insert { row_affect: u64, data: Vec<T> },
+    Insert(u64),
     Update(u64),
     Delete(u64),
     Select(Vec<T>),
@@ -104,18 +104,17 @@ where
 {
     fn into_response(self) -> axum::response::Response {
         let (body, status) = match self {
-            Self::Insert { row_affect, data } => (
+            Self::Insert(e) => (
                 json!({
                     "status": 201,
-                    "row_affect": row_affect,
-                    "data": data
+                    "row_inserted": e,
                 }),
                 StatusCode::CREATED,
             ),
-            Self::Update(e) | Self::Delete(e) => (
+            Self::Update(e) | Self::Delete(e)  => (
                 json!({
                     "status": 200,
-                    "row_affect": e
+                    "row_affect": e,
                 }),
                 StatusCode::OK,
             ),
@@ -185,14 +184,14 @@ pub enum TypeTable {
     OptionString(Option<String>),
     Status(Status),
     Role(Role),
-    OptionVlan(Option<i32>),
+    OptionVlan(Option<Vlan>),
     I64(i64),
     Null,
 }
 
 impl From<Option<Vlan>> for TypeTable {
     fn from(value: Option<Vlan>) -> Self {
-        Self::OptionVlan(value.map(|vlan| *vlan as i32))
+        Self::OptionVlan(value)
     }
 }
 

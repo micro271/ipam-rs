@@ -1,6 +1,6 @@
 pub mod error;
 use super::{
-    repository::{error::RepositoryError, Repository},
+    repository::{error::RepositoryError, QueryResult, Repository},
     sql::SqlOperations,
     Table, TypeTable, Updatable,
 };
@@ -14,7 +14,7 @@ use std::{
 };
 use tokio::sync::Mutex;
 
-type TransactionTaskResult = Result<(), RepositoryError>;
+type TransactionTaskResult<T> = Result<QueryResult<T>, RepositoryError>;
 
 pub trait Transaction<'a>: Repository {
     fn transaction(
@@ -51,7 +51,7 @@ impl<'b> BuilderPgTransaction<'b> {
         Ok(())
     }
 
-    pub fn insert<T>(&mut self, data: T) -> impl Future<Output = TransactionTaskResult> + use<'_, T>
+    pub fn insert<T>(&mut self, data: T) -> impl Future<Output = TransactionTaskResult<T>> + use<'_, T>
     where
         T: Table + Send + std::fmt::Debug + Clone + 'b,
     {
@@ -60,8 +60,8 @@ impl<'b> BuilderPgTransaction<'b> {
             let mut transaction = transaction.lock().await;
             let q_insert = T::query_insert();
             let query = SqlOperations::insert(data, &q_insert);
-            let _ = query.execute(&mut **transaction).await;
-            Ok(())
+
+            Ok(QueryResult::Insert(query.execute(&mut **transaction).await?.rows_affected()))
         })
     }
 
@@ -69,7 +69,7 @@ impl<'b> BuilderPgTransaction<'b> {
         &mut self,
         updater: U,
         condition: Option<HashMap<&'static str, TypeTable>>,
-    ) -> impl Future<Output = TransactionTaskResult> + use<'_, T, U>
+    ) -> impl Future<Output = TransactionTaskResult<T>> + use<'_, T, U>
     where
         T: Table + std::fmt::Debug + Clone,
         U: Updatable<'static> + Send + std::fmt::Debug + 'static,
@@ -81,15 +81,14 @@ impl<'b> BuilderPgTransaction<'b> {
             let sql = SqlOperations::update(updater.get_pair().unwrap(), condition, &mut query);
 
             let mut transaction = transaction.lock().await;
-            let _ = sql.execute(&mut **transaction).await;
-            Ok(())
+            Ok(QueryResult::Update(sql.execute(&mut **transaction).await?.rows_affected()))
         })
     }
 
     pub fn delete<T>(
         &mut self,
         condition: Option<HashMap<&'static str, TypeTable>>,
-    ) -> impl Future<Output = TransactionTaskResult> + use<'_, T>
+    ) -> impl Future<Output = TransactionTaskResult<T>> + use<'_, T>
     where
         T: Table + 'b + Send + std::fmt::Debug + Clone,
     {
@@ -98,20 +97,19 @@ impl<'b> BuilderPgTransaction<'b> {
             let mut query = T::query_delete();
             let sql = SqlOperations::delete(condition, &mut query);
             let mut transaction = transaction.lock().await;
-            sql.execute(&mut **transaction).await?;
-            Ok(())
+            Ok(QueryResult::Delete(sql.execute(&mut **transaction).await?.rows_affected()))
         })
     }
 }
 
-pub struct TransactionTask<'a> {
-    future: Pin<Box<dyn Future<Output = TransactionTaskResult> + 'a + Send>>,
+pub struct TransactionTask<'a, T> {
+    future: Pin<Box<dyn Future<Output = TransactionTaskResult<T>> + 'a + Send>>,
 }
 
-impl<'a> TransactionTask<'a> {
+impl<'a, T> TransactionTask<'a, T> {
     pub fn new<F>(future: F) -> Self
     where
-        F: Future<Output = TransactionTaskResult> + 'a + Send,
+        F: Future<Output = TransactionTaskResult<T>> + 'a + Send,
     {
         Self {
             future: Box::pin(future),
@@ -119,8 +117,8 @@ impl<'a> TransactionTask<'a> {
     }
 }
 
-impl Future for TransactionTask<'_> {
-    type Output = TransactionTaskResult;
+impl<T> Future for TransactionTask<'_, T> {
+    type Output = TransactionTaskResult<T>;
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.get_mut();
         this.future.as_mut().poll(cx)

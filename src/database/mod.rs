@@ -74,10 +74,7 @@ impl Repository for RepositoryInjection<Postgres> {
             }
 
             match tx.commit().await {
-                Ok(_) => Ok(QueryResult::Insert {
-                    row_affect: count,
-                    data: resp_data,
-                }),
+                Ok(_) => Ok(QueryResult::Insert(count)),
                 Err(e) => Err(RepositoryError::Sqlx(e.to_string())),
             }
         };
