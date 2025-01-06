@@ -108,13 +108,23 @@ where
                 json!({
                     "status": 201,
                     "row_inserted": e,
+                    "success": true,
                 }),
                 StatusCode::CREATED,
             ),
-            Self::Update(e) | Self::Delete(e)  => (
+            Self::Update(e) => (
                 json!({
                     "status": 200,
-                    "row_affect": e,
+                    "row_updated": e,
+                    "success": true,
+                }),
+                StatusCode::OK,
+            ),
+            Self::Delete(e) => (
+                json!({
+                    "status": 200,
+                    "row_deleted": e,
+                    "success": true,
                 }),
                 StatusCode::OK,
             ),
@@ -123,6 +133,7 @@ where
                     "status": 200,
                     "length": elements.len(),
                     "data": elements,
+                    "success": true,
                 }),
                 StatusCode::OK,
             ),
