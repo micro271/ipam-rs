@@ -38,23 +38,34 @@ impl SqlOperations {
         let mut pos = 1;
         let len: usize = pair_updater.len();
         for (key, value) in pair_updater {
-            query.push_str(&format!(" {} = ${}", key, pos));
-            pos_values.insert(pos, value);
-            if len > pos {
-                query.push(',');
+            if value == TypeTable::Null {
+                query.push_str(&format!(" {} = NULL", key));
+            } else {
+                query.push_str(&format!(" {} = ${}", key, pos));
+                pos_values.insert(pos, value);
+
+                if len > pos {
+                    query.push(',');
+                }
+                pos += 1
             }
-            pos += 1
+
         }
 
         if let Some(condition) = condition {
             let len = condition.len() + pos - 1;
             for (key, value) in condition {
-                pos_values.insert(pos, value);
-                query.push_str(&format!(" {} = ${}", key, pos));
-                if pos < len {
-                    query.push_str(" AND");
+                if value == TypeTable::Null {
+                    query.push_str(&format!(" {} IS NULL", key));
+                } else {
+                    pos_values.insert(pos, value);
+                    query.push_str(&format!(" {} = ${}", key, pos));
+
+                    if pos < len {
+                        query.push_str(" AND");
+                    }
+                    pos += 1;
                 }
-                pos += 1;
             }
         }
 
@@ -88,12 +99,18 @@ impl SqlOperations {
 
             let len = condition.len();
             for (key, value) in condition {
-                query.push_str(&format!(" {} = ${}", key, pos));
-                pos_column.insert(pos, value);
-                if pos < len {
-                    query.push_str(" AND");
+                if value == TypeTable::Null {
+                    query.push_str(&format!(" {} IS NULL", key));
+                } else {
+                    query.push_str(&format!(" {} = ${}", key, pos));
+                    pos_column.insert(pos, value);
+
+                    if pos < len {
+                        query.push_str(" AND");
+                    }
+                    pos += 1;
                 }
-                pos += 1;
+
             }
 
             let mut sql = sqlx::query(query);
