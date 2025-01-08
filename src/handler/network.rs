@@ -6,12 +6,12 @@ use crate::{
     database::{repository::QueryResult, transaction::Transaction},
     models::{device::Device, network::*},
 };
-use entries::models;
+use entries::models::NetworkCreateEntry;
 
 pub async fn create(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
-    Json(netw): Json<models::Network>,
+    Json(netw): Json<NetworkCreateEntry>,
 ) -> Result<QueryResult<Network>, ResponseError> {
     Ok(state.insert::<Network>(netw.into()).await?)
 }

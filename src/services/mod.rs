@@ -30,7 +30,7 @@ pub async fn create_default_user<'a>(db: &impl Repository) -> Result<(), Reposit
         password: encrypt(std::env::var("IPAM_PASSWORD_ROOT").unwrap_or("admin".into())).unwrap(),
         role: Role::Admin,
     };
-    db.insert::<User>(vec![user]).await?;
+    db.insert::<User>(user).await?;
     Ok(())
 }
 

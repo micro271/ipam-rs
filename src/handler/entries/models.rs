@@ -1,4 +1,4 @@
-use super::super::models::{device, network};
+use super::super::models::{device::{Device, Status}, network::Network};
 use ipnet::IpNet;
 use libipam::type_net::vlan::Vlan;
 use serde::{Deserialize, Serialize};
@@ -12,14 +12,15 @@ pub struct User {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Network {
+pub struct NetworkCreateEntry {
     pub network: IpNet,
     pub description: Option<String>,
     pub vlan: Option<Vlan>,
+    pub father: Option<Uuid>
 }
 
-impl From<Network> for network::Network {
-    fn from(value: Network) -> Self {
+impl From<NetworkCreateEntry> for Network {
+    fn from(value: NetworkCreateEntry) -> Self {
         let avl = 2_u32.pow(32 - value.network.prefix_len() as u32) - 2;
         Self {
             id: Uuid::new_v4(),
@@ -29,13 +30,13 @@ impl From<Network> for network::Network {
             used: 0.into(),
             free: avl.into(),
             vlan: value.vlan,
-            father: None,
+            father: value.father,
         }
     }
 }
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct Device {
+pub struct DeviceCreateEntry {
     pub ip: IpAddr,
     pub description: Option<String>,
     pub label: Option<String>,
@@ -46,15 +47,15 @@ pub struct Device {
     pub pasword: Option<String>,
 }
 
-impl From<Device> for device::Device {
-    fn from(value: Device) -> Self {
+impl From<DeviceCreateEntry> for Device {
+    fn from(value: DeviceCreateEntry) -> Self {
         Self {
             ip: value.ip,
             description: value.description,
             room: value.room,
             label: value.label,
             mount_point: value.mount_point,
-            status: device::Status::default(),
+            status: Status::default(),
             network_id: value.network_id,
             username: value.username,
             password: value.pasword,
@@ -62,7 +63,7 @@ impl From<Device> for device::Device {
     }
 }
 
-pub fn create_all_devices(network: IpNet, id: Uuid) -> Result<Vec<device::Device>, &'static str> {
+pub fn create_all_devices(network: IpNet, id: Uuid) -> Result<Vec<Device>, &'static str> {
     if network.network().is_ipv6() {
         return Err("You cannot create all devices of an network ipv6");
     }
@@ -75,13 +76,13 @@ pub fn create_all_devices(network: IpNet, id: Uuid) -> Result<Vec<device::Device
 
     Ok(ips
         .into_iter()
-        .map(|ip| device::Device {
+        .map(|ip| Device {
             ip,
             description: None,
             mount_point: None,
             label: None,
             room: None,
-            status: device::Status::default(),
+            status: Status::default(),
             network_id: id,
             password: None,
             username: None,

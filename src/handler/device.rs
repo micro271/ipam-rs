@@ -4,14 +4,14 @@ use crate::{
     models::{device::*, network::Network},
 };
 use entries::{
-    models,
+    models::{DeviceCreateEntry, self},
     params::{GetMapParams, ParamsDevice, ParamsDeviceStrict},
 };
 
 pub async fn create(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
-    Json(device): Json<models::Device>,
+    Json(device): Json<DeviceCreateEntry>,
 ) -> Result<impl IntoResponse, ResponseError> {
     Ok(state.insert::<Device>(device.into()).await?)
 }
