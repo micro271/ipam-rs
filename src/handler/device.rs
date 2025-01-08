@@ -1,8 +1,12 @@
 use super::*;
-use crate::models::{device::*, network::Network};
-use entries::{models, params::ParamsDevice};
-
-use std::net::IpAddr;
+use crate::{
+    database::repository::QueryResult,
+    models::{device::*, network::Network},
+};
+use entries::{
+    models,
+    params::{GetMapParams, ParamsDevice, ParamsDeviceStrict},
+};
 
 pub async fn create(
     State(state): State<RepositoryType>,
@@ -30,102 +34,28 @@ pub async fn create_all_devices(
     }
 }
 
-pub async fn get_all(
-    State(state): State<RepositoryType>,
-    Path(network_id): Path<Uuid>,
-) -> Result<impl IntoResponse, ResponseError> {
-    let condition = HashMap::from([("network_id", network_id.into())]);
-    let devices = state.get::<Device>(Some(condition)).await?;
-
-    Ok(Json(json!({
-        "length": devices.len(),
-        "devices": devices
-    })))
-}
-
 pub async fn update(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
-    Query(params): Query<ParamsDevice>,
-    Json(device): Json<UpdateDevice>,
+    Query(param): Query<ParamsDeviceStrict>,
+    Json(new): Json<UpdateDevice>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    let ip = params.ip;
-    let network_id = params.network_id;
-
-    if device.network_id.is_some() || device.ip.is_some() {
-        let ip_to_delete: IpAddr;
-
-        let netw_new = state
-            .get::<Network>(Some(HashMap::from([(
-                "id",
-                match device.network_id {
-                    Some(e) => e.into(),
-                    None => network_id.into(),
-                },
-            )])))
-            .await?
-            .remove(0);
-
-        if let Some(ip) = device.ip {
-            if !netw_new.network.contains(&ip) {
-                return Err(ResponseError::builder()
-                    .status(StatusCode::BAD_REQUEST)
-                    .build());
-            }
-            ip_to_delete = ip;
-        } else {
-            if !netw_new.network.contains(&ip) {
-                return Err(ResponseError::builder()
-                    .status(StatusCode::CONFLICT)
-                    .build());
-            }
-            ip_to_delete = ip;
-        }
-
-        state
-            .delete::<Device>(Some(HashMap::from([
-                ("ip", ip_to_delete.into()),
-                ("network_id", netw_new.id.into()),
-            ])))
-            .await?;
-    }
-
-    Ok(state
-        .update::<Device, _>(
-            device,
-            Some(HashMap::from([
-                ("ip", ip.into()),
-                ("network_id", network_id.into()),
-            ])),
-        )
-        .await?)
+    Ok(state.update::<Device, _>(new, param.get_pairs()).await?)
 }
 
-pub async fn get_one(
+pub async fn get(
     State(state): State<RepositoryType>,
     Query(params): Query<ParamsDevice>,
-) -> Result<impl IntoResponse, ResponseError> {
-    let device = state
-        .get::<Device>(Some(HashMap::from([
-            ("ip", params.ip.into()),
-            ("network_id", params.network_id.into()),
-        ])))
-        .await?;
+) -> Result<QueryResult<Device>, ResponseError> {
+    let device = state.get::<Device>(params.get_pairs()).await?;
 
-    Ok(Json(json!({
-        "device": device.first()
-    })))
+    Ok(device.into())
 }
 
 pub async fn delete(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
-    Query((ip, network_id)): Query<(IpAddr, Uuid)>,
+    Query(param): Query<ParamsDeviceStrict>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    Ok(state
-        .delete::<Device>(Some(HashMap::from([
-            ("ip", ip.into()),
-            ("network_id", network_id.into()),
-        ])))
-        .await?)
+    Ok(state.delete::<Device>(param.get_pairs()).await?)
 }

@@ -49,7 +49,6 @@ impl SqlOperations {
                 }
                 pos += 1
             }
-
         }
 
         if let Some(condition) = condition {
@@ -110,7 +109,6 @@ impl SqlOperations {
                     }
                     pos += 1;
                 }
-
             }
 
             let mut sql = sqlx::query(query);

@@ -17,7 +17,6 @@ use axum::{
 };
 use extractors::IsAdministrator;
 use libipam::response_error::ResponseError;
-use serde_json::json;
 use std::{collections::HashMap, sync::Arc};
 use uuid::Uuid;
 

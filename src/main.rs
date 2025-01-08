@@ -1,12 +1,12 @@
+mod config;
 mod database;
 mod handler;
 mod models;
 mod services;
-mod config;
 
 use axum::{
     http::Response,
-    routing::{delete, get, post, put},
+    routing::{get, post},
     serve, Router,
 };
 use config::Config;
@@ -18,11 +18,10 @@ use tower_http::cors::CorsLayer;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let Config { app, database } = config::Config::init().unwrap();
 
-    let Config{app, database} = config::Config::init().unwrap();
+    let lst = tokio::net::TcpListener::bind(format!("{}:{}", app.ip, app.port)).await?;
 
-    let lst = tokio::net::TcpListener::bind(format!("{}:{}", app.ip.unwrap(), app.port.unwrap())).await?;
-    
     let database_url = format!(
         "postgres://{}:{}@{}:{}/{}",
         database.username, database.password, database.host, database.port, database.name,
@@ -33,21 +32,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let db = Arc::new(db);
 
-    let network = Router::new().route("/create", put(network::create)).route(
-        "/",
-        get(network::get)
+    let network = Router::new().route(
+        "/:id",
+        post(network::create)
+            .get(network::get)
             .delete(network::delete)
             .patch(network::update),
     );
 
     let device = Router::new()
-        .route("/create", put(device::create))
         .route(
-            "/all/:network_id",
-            get(device::get_all).put(device::create_all_devices),
-        ) // create, update and get all devices
-        .route("/delete", delete(device::delete))
-        .route("/one", get(device::get_one).patch(device::update)); //get one device
+            "/",
+            post(device::create)
+                .get(device::get)
+                .patch(device::update)
+                .delete(device::delete),
+        )
+        .route("/:network_id", post(device::create_all_devices));
 
     let user = Router::new().route("/", post(auth::create));
 

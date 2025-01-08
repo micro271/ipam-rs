@@ -1,34 +1,23 @@
-use crate::database::repository::TypeTable;
-use ipnet::IpNet;
 use serde::Deserialize;
 use std::{collections::HashMap, net::IpAddr};
-use uuid::Uuid;
+
+use crate::database::repository::TypeTable;
 
 #[derive(Debug, Deserialize)]
 pub struct ParamsDevice {
-    pub ip: IpAddr,
-    pub network_id: uuid::Uuid,
+    pub ip: Option<IpAddr>,
+    pub network_id: Option<uuid::Uuid>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct QueryNetwork {
-    pub id: Option<Uuid>,
-    pub description: Option<String>,
-    pub network: Option<IpNet>,
-}
+impl GetMapParams for ParamsDevice {
+    fn get_pairs(self) -> Option<HashMap<&'static str, TypeTable>> {
+        let mut resp = HashMap::new();
 
-impl QueryNetwork {
-    pub fn get_condition(self) -> Option<HashMap<&'static str, TypeTable>> {
-        let mut resp: HashMap<&str, TypeTable> = HashMap::new();
-
-        if let Some(id) = self.id {
-            resp.insert("id", id.into());
+        if let Some(e) = self.ip {
+            resp.insert("ip", e.into());
         }
-        if let Some(description) = self.description {
-            resp.insert("id", description.into());
-        }
-        if let Some(network) = self.network {
-            resp.insert("id", network.into());
+        if let Some(e) = self.network_id {
+            resp.insert("network_id", e.into());
         }
 
         if resp.is_empty() {
@@ -37,4 +26,23 @@ impl QueryNetwork {
             Some(resp)
         }
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ParamsDeviceStrict {
+    pub ip: IpAddr,
+    pub network_id: uuid::Uuid,
+}
+
+impl GetMapParams for ParamsDeviceStrict {
+    fn get_pairs(self) -> Option<HashMap<&'static str, TypeTable>> {
+        Some(HashMap::from([
+            ("ip", self.ip.into()),
+            ("network_id", self.network_id.into()),
+        ]))
+    }
+}
+
+pub trait GetMapParams {
+    fn get_pairs(self) -> Option<HashMap<&'static str, TypeTable>>;
 }

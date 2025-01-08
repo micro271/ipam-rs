@@ -6,7 +6,7 @@ use crate::{
     database::{repository::QueryResult, transaction::Transaction},
     models::{device::Device, network::*},
 };
-use entries::{models, params::QueryNetwork};
+use entries::models;
 
 pub async fn create(
     State(state): State<RepositoryType>,
@@ -18,9 +18,12 @@ pub async fn create(
 
 pub async fn get(
     State(state): State<RepositoryType>,
-    Query(param): Query<QueryNetwork>,
+    Path(id): Path<Option<Uuid>>,
 ) -> Result<QueryResult<Network>, ResponseError> {
-    Ok(state.get::<Network>(param.get_condition()).await?.into())
+    Ok(state
+        .get::<Network>(id.map(|x| HashMap::from([("id", x.into())])))
+        .await?
+        .into())
 }
 
 pub async fn update(
@@ -64,7 +67,7 @@ pub async fn update(
 pub async fn delete(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
-    Query(id): Query<Uuid>,
+    Path(id): Path<Uuid>,
 ) -> Result<QueryResult<Network>, ResponseError> {
     Ok(state
         .delete::<Network>(Some(HashMap::from([("id", id.into())])))
