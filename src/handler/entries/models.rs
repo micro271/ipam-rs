@@ -16,7 +16,6 @@ pub struct NetworkCreateEntry {
     pub network: IpNet,
     pub description: Option<String>,
     pub vlan: Option<Vlan>,
-    pub father: Option<Uuid>
 }
 
 impl From<NetworkCreateEntry> for Network {
@@ -30,7 +29,7 @@ impl From<NetworkCreateEntry> for Network {
             used: 0.into(),
             free: avl.into(),
             vlan: value.vlan,
-            father: value.father,
+            father: None,
         }
     }
 }

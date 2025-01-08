@@ -43,6 +43,11 @@ impl GetMapParams for ParamsDeviceStrict {
     }
 }
 
+pub struct Subnet {
+    pub father: uuid::Uuid,
+    pub prefix: u8,
+}
+
 pub trait GetMapParams {
     fn get_pairs(self) -> Option<HashMap<&'static str, TypeTable>>;
 }

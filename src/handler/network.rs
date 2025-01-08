@@ -1,17 +1,18 @@
 use super::RepositoryType;
 use super::*;
 use crate::{
-    database::repository::QueryResult,
+    database::{repository::QueryResult, transaction::Transaction},
     models::{device::Device, network::*},
 };
-use entries::models::NetworkCreateEntry;
+use entries::{models::NetworkCreateEntry, params::Subnet};
+use libipam::type_net::host_count::HostCount;
 
 pub async fn create(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
-    Json(netw): Json<NetworkCreateEntry>,
+    Json(network): Json<NetworkCreateEntry>,
 ) -> Result<QueryResult<Network>, ResponseError> {
-    Ok(state.insert::<Network>(netw.into()).await?)
+    Ok(state.insert::<Network>(network.into()).await?)
 }
 
 pub async fn get(
@@ -46,4 +47,35 @@ pub async fn delete(
     Ok(state
         .delete::<Network>(Some(HashMap::from([("id", id.into())])))
         .await?)
+}
+
+pub async fn subnetting(State(state): State<RepositoryType>, _: IsAdministrator, Query(Subnet { father, prefix }): Query<Subnet>) -> Result<QueryResult<Network>, ResponseError> {
+    let father = state.get::<Network>(Some(HashMap::from([("id", father.into())]))).await?.remove(0);
+
+    let networks = libipam::ipam_services::subnetting(father.network, prefix).map_err(|x| ResponseError::builder().detail(x.to_string()).build())?;
+
+    let mut state = state.transaction().await?;
+    let len = networks.len();
+
+    for network in networks {
+        let new_network = Network {
+            network,
+            id: uuid::Uuid::new_v4(),
+            available: HostCount::new((&network).into()),
+            used: 0.into(),
+            free: HostCount::new((&network).into()),
+            vlan: None,
+            description: None,
+            father: Some(father.id),
+        };
+
+        if let Err(e) = state.insert(new_network).await {
+            state.rollback().await?;
+            return Err(ResponseError::from(e));
+        }
+    }
+    state.commit().await?;
+    
+    Ok(QueryResult::Insert(len as u64))
+
 }

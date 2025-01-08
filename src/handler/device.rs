@@ -49,6 +49,9 @@ pub async fn update(
     Query(param): Query<ParamsDeviceStrict>,
     Json(new): Json<UpdateDevice>,
 ) -> Result<impl IntoResponse, ResponseError> {
+
+    let network = state.get::<Network>(Some(HashMap::from([("id", new.network_id.unwrap_or(param.network_id).into())]))).await?.remove(0);
+    
     Ok(state.update::<Device, _>(new, param.get_pairs()).await?)
 }
 

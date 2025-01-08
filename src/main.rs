@@ -32,10 +32,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let db = Arc::new(db);
 
-    let network = Router::new().route(
-        "/:id",
-        post(network::create)
-            .get(network::get)
+    let network = Router::new()
+        .route("/", post(network::create))
+        .route("/:id",
+            get(network::get)
             .delete(network::delete)
             .patch(network::update),
     );
@@ -48,6 +48,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .patch(device::update)
                 .delete(device::delete),
         )
+        .route("/subnet", method_router)
         .route("/:network_id", post(device::create_all_devices));
 
     let user = Router::new().route("/", post(auth::create));
