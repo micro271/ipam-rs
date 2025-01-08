@@ -34,6 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let network = Router::new()
         .route("/", post(network::create))
+        .route("/subnet", post(network::subnetting))
         .route("/:id",
             get(network::get)
             .delete(network::delete)
@@ -48,7 +49,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .patch(device::update)
                 .delete(device::delete),
         )
-        .route("/subnet", method_router)
         .route("/:network_id", post(device::create_all_devices));
 
     let user = Router::new().route("/", post(auth::create));

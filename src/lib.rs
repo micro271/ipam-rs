@@ -857,20 +857,20 @@ pub mod type_net {
 }
 
 pub mod ipam_services {
-    use std::net::IpAddr;
+    use std::net::{IpAddr, Ipv4Addr};
 
     use axum::{
         http::{Response, StatusCode},
         response::IntoResponse,
     };
-    use ipnet::{IpNet, Ipv4Net};
+    use ipnet::IpNet;
 
     #[derive(Debug)]
-    pub struct SubnettingError(pub String);
+    pub struct SubnettingError(String);
 
     impl std::fmt::Display for SubnettingError {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "Subnneting can't create")
+            write!(f, "Subnneting error: {}", self.0)
         }
     }
 
@@ -878,31 +878,27 @@ pub mod ipam_services {
 
     pub fn subnetting(ipnet: IpNet, prefix: u8) -> Result<Vec<IpNet>, SubnettingError> {
         let ip = match ipnet.network() {
-            IpAddr::V4(e) => e,
-            IpAddr::V6(_) => {
-                return Err(SubnettingError(
-                    "we can't create dinamic subnneting for ipv6".to_string(),
-                ))
-            }
+            IpAddr::V4(ipv4) => ipv4,
+            IpAddr::V6(_) => return Err(SubnettingError("You cannot create an red above an ipv6".to_string())),
         };
+
         let mut resp = Vec::new();
 
-        if prefix <= ipnet.prefix_len() || prefix > ipnet.max_prefix_len() {
-            return Err(SubnettingError(format!(
-                "Subnet {}/{} is not valid for the network {}",
-                ip, prefix, ipnet
-            )));
+        let mut subnet = IpNet::new(ip.into(), prefix).map_err(|x|SubnettingError(x.to_string()))?;
+        
+        if !ipnet.contains(&subnet) {
+            return Err(SubnettingError(format!("The network {} doesnt belong to the network {}", subnet, ipnet)));
         }
-        let sub = 2u32.pow((prefix - ipnet.prefix_len()) as u32);
-        let hosts = 2u32.pow((ipnet.max_prefix_len() - prefix) as u32);
 
-        for i in 0..sub {
-            // this code was stoled, pending the creation of my own algorithm :3
+        let sub = 2u32.pow((prefix - ipnet.prefix_len()) as u32);
+        let hosts = 2u32.pow((subnet.max_prefix_len() - prefix) as u32);
+
+        resp.push(subnet);
+
+        for i in 1..sub {
             let new = u32::from(ip) + i * hosts;
-            let subnet = std::net::Ipv4Addr::from(new);
-            if let Ok(subnet) = Ipv4Net::new(subnet, prefix) {
-                resp.push(ipnet::IpNet::from(subnet));
-            }
+            subnet = IpNet::new(Ipv4Addr::from(new).into(), prefix).unwrap();
+            resp.push(subnet);
         }
         Ok(resp)
     }

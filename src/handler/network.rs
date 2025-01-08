@@ -5,7 +5,6 @@ use crate::{
     models::{device::Device, network::*},
 };
 use entries::{models::NetworkCreateEntry, params::Subnet};
-use libipam::type_net::host_count::HostCount;
 
 pub async fn create(
     State(state): State<RepositoryType>,
@@ -58,16 +57,8 @@ pub async fn subnetting(State(state): State<RepositoryType>, _: IsAdministrator,
     let len = networks.len();
 
     for network in networks {
-        let new_network = Network {
-            network,
-            id: uuid::Uuid::new_v4(),
-            available: HostCount::new((&network).into()),
-            used: 0.into(),
-            free: HostCount::new((&network).into()),
-            vlan: None,
-            description: None,
-            father: Some(father.id),
-        };
+        let mut new_network = Network::from(network);
+        new_network.father = Some(father.id);
 
         if let Err(e) = state.insert(new_network).await {
             state.rollback().await?;

@@ -43,6 +43,7 @@ impl GetMapParams for ParamsDeviceStrict {
     }
 }
 
+#[derive(Deserialize, Debug)]
 pub struct Subnet {
     pub father: uuid::Uuid,
     pub prefix: u8,
