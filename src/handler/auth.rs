@@ -25,7 +25,7 @@ pub async fn create(
         }
     };
 
-    Ok(state.insert(vec![user]).await?)
+    Ok(state.insert(user).await?)
 }
 
 pub async fn login(

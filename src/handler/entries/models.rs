@@ -70,7 +70,7 @@ pub fn create_all_devices(network: IpNet, id: Uuid) -> Result<Vec<device::Device
     let ips = network.hosts().collect::<Vec<IpAddr>>();
 
     if ips.is_empty() {
-        return Err("No devices created");
+        return Err("The network doesn't have devices");
     }
 
     Ok(ips

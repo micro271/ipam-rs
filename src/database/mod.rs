@@ -31,52 +31,29 @@ impl RepositoryInjection<Postgres> {
 }
 
 impl Repository for RepositoryInjection<Postgres> {
-    fn insert<'a, T>(&'a self, data: Vec<T>) -> ResultRepository<'a, QueryResult<T>>
+    fn insert<'a, T>(&'a self, data: T) -> ResultRepository<'a, QueryResult<T>>
     where
         T: Table + 'a + Send + Debug + Clone,
     {
         let resp = async {
-            let mut tx = match self.begin().await {
-                Ok(e) => e,
-                Err(e) => return Err(RepositoryError::Sqlx(e.to_string())),
-            };
-            let mut resp_data = Vec::new();
 
-            let mut count = 0;
-            for data in data {
-                resp_data.push(data.clone());
-                let query = T::query_insert();
-                let mut tmp = sqlx::query(&query);
-                let data = T::get_fields(data);
-                for i in data {
-                    tmp = match i {
-                        TypeTable::String(s) => tmp.bind(s),
-                        TypeTable::OptionString(opt) => tmp.bind(opt),
-                        TypeTable::Status(status) => tmp.bind(status),
-                        TypeTable::Uuid(e) => tmp.bind(e),
-                        TypeTable::Role(r) => tmp.bind(r),
-                        TypeTable::OptionUuid(e) => tmp.bind(e),
-                        TypeTable::Null => tmp,
-                        TypeTable::I64(e) => tmp.bind(e),
-                        TypeTable::OptionVlan(e) => tmp.bind(e),
-                    };
-                }
-
-                match tmp.execute(&mut *tx).await {
-                    Ok(_) => {
-                        count += 1;
-                    }
-                    Err(e) => {
-                        tx.rollback().await?;
-                        return Err(RepositoryError::Sqlx(e.to_string()));
-                    }
-                }
+            let query = T::query_insert();
+            let mut tmp = sqlx::query(&query);
+            let data = data.get_fields();
+            for i in data {
+                tmp = match i {
+                    TypeTable::String(s) => tmp.bind(s),
+                    TypeTable::OptionString(opt) => tmp.bind(opt),
+                    TypeTable::Status(status) => tmp.bind(status),
+                    TypeTable::Uuid(e) => tmp.bind(e),
+                    TypeTable::Role(r) => tmp.bind(r),
+                    TypeTable::OptionUuid(e) => tmp.bind(e),
+                    TypeTable::Null => tmp,
+                    TypeTable::I64(e) => tmp.bind(e),
+                    TypeTable::OptionVlan(e) => tmp.bind(e),
+                };
             }
-
-            match tx.commit().await {
-                Ok(_) => Ok(QueryResult::Insert(count)),
-                Err(e) => Err(RepositoryError::Sqlx(e.to_string())),
-            }
+            Ok(QueryResult::Insert(tmp.execute(& self.0).await?.rows_affected()))
         };
         Box::pin(resp)
     }

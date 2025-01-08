@@ -13,7 +13,7 @@ pub async fn create(
     _: IsAdministrator,
     Json(netw): Json<models::Network>,
 ) -> Result<QueryResult<Network>, ResponseError> {
-    Ok(state.insert::<Network>(vec![netw.into()]).await?)
+    Ok(state.insert::<Network>(netw.into()).await?)
 }
 
 pub async fn get(

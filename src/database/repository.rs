@@ -28,7 +28,7 @@ pub trait Repository {
     ) -> ResultRepository<'a, Vec<T>>
     where
         T: Table + From<PgRow> + 'a + Send + Debug + Clone;
-    fn insert<'a, T>(&'a self, data: Vec<T>) -> ResultRepository<'a, QueryResult<T>>
+    fn insert<'a, T>(&'a self, data: T) -> ResultRepository<'a, QueryResult<T>>
     where
         T: Table + 'a + Send + Debug + Clone;
     fn update<'a, T, U>(
