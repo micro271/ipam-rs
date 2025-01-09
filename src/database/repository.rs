@@ -6,7 +6,7 @@ use axum::{
 };
 use error::RepositoryError;
 use ipnet::IpNet;
-use libipam::type_net::{host_count::HostCount, vlan::Vlan};
+use libipam::type_net::{host_count::HostCount, vlan::VlanId};
 use serde::Serialize;
 use serde_json::json;
 use std::{
@@ -195,7 +195,7 @@ pub enum TypeTable {
     OptionString(Option<String>),
     Status(Status),
     Role(Role),
-    OptionVlan(Option<Vlan>),
+    OptionVlan(Option<VlanId>),
     I64(i64),
     I32(i32),
     Null,
@@ -207,8 +207,8 @@ impl From<i32> for TypeTable {
     }
 }
 
-impl From<Option<Vlan>> for TypeTable {
-    fn from(value: Option<Vlan>) -> Self {
+impl From<Option<VlanId>> for TypeTable {
+    fn from(value: Option<VlanId>) -> Self {
         Self::OptionVlan(value)
     }
 }

@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS networks (
     description VARCHAR,
     father UUID,
     children INTEGER,
-    FOREIGN KEY father REFERENCES networks(id) ON DELETE CASCADE
+    FOREIGN KEY father REFERENCES networks(id) ON DELETE CASCADE,
+    FOREIGN KEY vlan REFERENCES vlans(id) ON DELETE SET NULL ON UPDATE CASCADE,
 );
 
 CREATE TABLE IF NOT EXISTS devices (
@@ -27,6 +28,12 @@ CREATE TABLE IF NOT EXISTS devices (
     FOREIGN KEY (network_id) REFERENCES networks(id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (label, room_name, mount_point) REFERENCES locations(label, room_name, mount_point) ON DELETE SET NULL ON UPDATE SET NULL
 );
+
+CREATE IF NOT EXIST vlans (
+    id INTEGER,
+    description,
+    PRIMARY KEY (id),
+)
 
 CREATE TABLE IF NOT EXISTS mount_point (
     name TEXT,

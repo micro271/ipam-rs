@@ -3,6 +3,7 @@ use sqlx::{postgres::PgArguments, query::Query, Postgres};
 use std::collections::HashMap;
 
 pub struct SqlOperations;
+// We've taken ownership of the query string and used a builder to add the behavior of limit, offset, and group by.
 
 impl SqlOperations {
     pub fn insert<T>(data: T, query: &str) -> Query<'_, Postgres, PgArguments>
@@ -19,6 +20,7 @@ impl SqlOperations {
                 TypeTable::OptionString(value) => sql.bind(value),
                 TypeTable::Status(value) => sql.bind(value),
                 TypeTable::Role(value) => sql.bind(value),
+                TypeTable::I32(e) => sql.bind(e),
                 TypeTable::OptionVlan(value) => sql.bind(value),
                 TypeTable::I64(value) => sql.bind(value),
                 TypeTable::Null => sql,
@@ -76,6 +78,7 @@ impl SqlOperations {
                 TypeTable::OptionString(value) => sql.bind(value),
                 TypeTable::Status(value) => sql.bind(value),
                 TypeTable::Uuid(e) => sql.bind(e),
+                TypeTable::I32(e) => sql.bind(e),
                 TypeTable::Role(value) => sql.bind(value),
                 TypeTable::OptionUuid(e) => sql.bind(e),
                 TypeTable::Null => sql,
@@ -118,6 +121,7 @@ impl SqlOperations {
                     TypeTable::OptionVlan(e) => sql.bind(e),
                     TypeTable::OptionUuid(e) => sql.bind(e),
                     TypeTable::String(s) => sql.bind(s),
+                    TypeTable::I32(e) => sql.bind(e),
                     TypeTable::OptionString(s) => sql.bind(s),
                     TypeTable::Uuid(e) => sql.bind(e),
                     TypeTable::Status(status) => sql.bind(status),

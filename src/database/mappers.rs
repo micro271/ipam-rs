@@ -1,6 +1,6 @@
 use crate::models::{
     device::Device, location::Location, mound_point::MountPoint, network::Network, office::Office,
-    room::Room, user::User,
+    room::Room, user::User, vlan::VlanRow,
 };
 use sqlx::{postgres::PgRow, Row};
 
@@ -82,6 +82,15 @@ impl From<PgRow> for Room {
         Self {
             id: value.get("id"),
             address: value.get("address"),
+        }
+    }
+}
+
+impl From<PgRow> for VlanRow {
+    fn from(value: PgRow) -> Self {
+        Self {
+            id: value.get("id"),
+            description: value.get("description"),
         }
     }
 }

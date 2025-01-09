@@ -66,6 +66,7 @@ impl Table for Network {
             "vlan",
             "description",
             "farther",
+            "children",
         ]
     }
 
@@ -83,6 +84,7 @@ impl Table for Network {
             self.vlan.into(),
             self.description.into(),
             self.father.into(),
+            self.children.into(),
         ]
     }
 }

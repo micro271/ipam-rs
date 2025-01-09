@@ -1,6 +1,6 @@
 use super::super::models::{device::{Device, Status}, network::Network};
 use ipnet::IpNet;
-use libipam::type_net::vlan::Vlan;
+use libipam::type_net::vlan::VlanId;
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
 use uuid::Uuid;
@@ -15,7 +15,7 @@ pub struct User {
 pub struct NetworkCreateEntry {
     pub network: IpNet,
     pub description: Option<String>,
-    pub vlan: Option<Vlan>,
+    pub vlan: Option<VlanId>,
 }
 
 impl From<NetworkCreateEntry> for Network {

@@ -51,6 +51,7 @@ impl Repository for RepositoryInjection<Postgres> {
                     TypeTable::Null => tmp,
                     TypeTable::I64(e) => tmp.bind(e),
                     TypeTable::OptionVlan(e) => tmp.bind(e),
+                    TypeTable::I32(e) => tmp.bind(e),
                 };
             }
             Ok(QueryResult::Insert(tmp.execute(& self.0).await?.rows_affected()))
@@ -107,6 +108,7 @@ impl Repository for RepositoryInjection<Postgres> {
                             TypeTable::Role(role) => resp.bind(role),
                             TypeTable::OptionVlan(e) => resp.bind(e),
                             TypeTable::I64(e) => resp.bind(e),
+                            TypeTable::I32(e) => resp.bind(e),
                             TypeTable::Null => resp,
                         };
                     }
@@ -202,6 +204,7 @@ impl Repository for RepositoryInjection<Postgres> {
                         TypeTable::OptionUuid(e) => sql.bind(e),
                         TypeTable::Null => sql,
                         TypeTable::I64(e) => sql.bind(e),
+                        TypeTable::I32(e) => sql.bind(e),
                     };
                 }
 
@@ -261,6 +264,7 @@ impl Repository for RepositoryInjection<Postgres> {
                             TypeTable::Status(status) => ex.bind(status),
                             TypeTable::Role(role) => ex.bind(role),
                             TypeTable::I64(e) => ex.bind(e),
+                            TypeTable::I32(e) => ex.bind(e),
                             TypeTable::Null => ex,
                         };
                     }

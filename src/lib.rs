@@ -728,9 +728,9 @@ pub mod type_net {
 
         #[derive(Debug, Deserialize, Serialize, Clone, sqlx::Type)]
         #[sqlx(transparent)]
-        pub struct Vlan(i16);
+        pub struct VlanId(i16);
 
-        impl Vlan {
+        impl VlanId {
             pub const MAX: i16 = 0x0FFF;
 
             pub fn new(value: i16) -> Result<Self, OutOfRange> {
@@ -747,19 +747,19 @@ pub mod type_net {
             }
         }
 
-        impl std::cmp::PartialEq for Vlan {
+        impl std::cmp::PartialEq for VlanId {
             fn eq(&self, other: &Self) -> bool {
                 self.0.eq(&other.0)
             }
         }
 
-        impl std::cmp::PartialEq<i16> for Vlan {
+        impl std::cmp::PartialEq<i16> for VlanId {
             fn eq(&self, other: &i16) -> bool {
                 self.0.eq(other)
             }
         }
 
-        impl TryFrom<i16> for Vlan {
+        impl TryFrom<i16> for VlanId {
             type Error = OutOfRange;
             fn try_from(value: i16) -> Result<Self, Self::Error> {
                 if !(2..=Self::MAX).contains(&value) {
@@ -770,13 +770,13 @@ pub mod type_net {
             }
         }
 
-        impl std::default::Default for Vlan {
+        impl std::default::Default for VlanId {
             fn default() -> Self {
                 Self(1)
             }
         }
 
-        impl std::ops::Deref for Vlan {
+        impl std::ops::Deref for VlanId {
             type Target = i16;
             fn deref(&self) -> &Self::Target {
                 &self.0
@@ -795,61 +795,61 @@ pub mod type_net {
 
         #[cfg(test)]
         mod test {
-            use crate::type_net::vlan::Vlan;
+            use crate::type_net::vlan::VlanId;
 
             #[test]
             fn vlan_negative_error() {
-                let vlan = Vlan::new(-1);
+                let vlan = VlanId::new(-1);
                 assert!(vlan.is_err());
             }
 
             #[test]
             fn vlan_out_range_error() {
-                let vlan = Vlan::new(4096);
+                let vlan = VlanId::new(4096);
                 assert!(vlan.is_err());
             }
 
             #[test]
             fn vlan_ok() {
-                let vlan = Vlan::new(4095);
+                let vlan = VlanId::new(4095);
                 assert!(vlan.is_ok());
             }
 
             #[test]
             fn vlan_cmp_with_vlan_eq_false() {
-                let one = Vlan::new(4095).unwrap();
-                let two = Vlan::new(1094).unwrap();
+                let one = VlanId::new(4095).unwrap();
+                let two = VlanId::new(1094).unwrap();
                 assert_eq!(one == two, false);
             }
 
             #[test]
             fn vlan_cmp_with_vlan_eq_true() {
-                let one = Vlan::new(4095).unwrap();
-                let two = Vlan::new(4095).unwrap();
+                let one = VlanId::new(4095).unwrap();
+                let two = VlanId::new(4095).unwrap();
                 assert!(one == two);
             }
 
             #[test]
             fn vlan_cmp_with_i16_eq_true() {
-                let one = Vlan::new(4095).unwrap();
+                let one = VlanId::new(4095).unwrap();
                 assert!(one == 4095);
             }
 
             #[test]
             fn vlan_cmp_with_i16_eq_false() {
-                let one = Vlan::new(4095).unwrap();
+                let one = VlanId::new(4095).unwrap();
                 assert_eq!(one == 5, false);
             }
 
             #[test]
             fn vlan_deref_cmp_with_i16_eq_false() {
-                let one = Vlan::new(4095).unwrap();
+                let one = VlanId::new(4095).unwrap();
                 assert_eq!(*one == 4, false);
             }
 
             #[test]
             fn vlan_deref_cmp_with_i16_eq_true() {
-                let one = Vlan::new(4095).unwrap();
+                let one = VlanId::new(4095).unwrap();
                 assert!(*one == 4095);
             }
         }

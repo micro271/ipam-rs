@@ -1,12 +1,12 @@
 use super::*;
 use ipnet::IpNet;
-use libipam::type_net::{host_count::HostCount, vlan::Vlan};
+use libipam::type_net::{host_count::HostCount, vlan::VlanId};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct UpdateNetwork {
     pub network: Option<IpNet>,
     pub description: Option<String>,
-    pub vlan: Option<Vlan>,
+    pub vlan: Option<VlanId>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -16,7 +16,7 @@ pub struct Network {
     pub available: HostCount,
     pub used: HostCount,
     pub free: HostCount,
-    pub vlan: Option<Vlan>,
+    pub vlan: Option<VlanId>,
     pub description: Option<String>,
     pub father: Option<Uuid>,
     pub children: i32,
