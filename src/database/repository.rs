@@ -197,7 +197,14 @@ pub enum TypeTable {
     Role(Role),
     OptionVlan(Option<Vlan>),
     I64(i64),
+    I32(i32),
     Null,
+}
+
+impl From<i32> for TypeTable {
+    fn from(value: i32) -> Self {
+        Self::I32(value)
+    }
 }
 
 impl From<Option<Vlan>> for TypeTable {

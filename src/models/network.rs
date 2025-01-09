@@ -19,6 +19,7 @@ pub struct Network {
     pub vlan: Option<Vlan>,
     pub description: Option<String>,
     pub father: Option<Uuid>,
+    pub children: i32,
 }
 
 impl std::cmp::PartialEq for Network {
@@ -58,6 +59,7 @@ impl From<IpNet> for Network {
             vlan: None,
             description: None,
             father: None,
+            children: 0,
         }
     }
 }

@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS networks (
     vlan INTEGER,
     description VARCHAR,
     father UUID,
+    children INTEGER,
     FOREIGN KEY father REFERENCES networks(id) ON DELETE CASCADE
 );
 

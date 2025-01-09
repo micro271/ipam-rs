@@ -172,6 +172,12 @@ impl<'a> Updatable<'a> for UpdateOffice {
     }
 }
 
+impl<'a> Updatable<'a> for HashMap<&'a str, TypeTable> {
+    fn get_pair(self) -> Option<HashMap<&'a str, TypeTable>> {
+        Some(self)
+    }
+}
+
 impl<'a> Updatable<'a> for IpAddr {
     fn get_pair(self) -> Option<HashMap<&'a str, TypeTable>> {
         Some(HashMap::from([("ip", self.into())]))

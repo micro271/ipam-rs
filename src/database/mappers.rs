@@ -15,6 +15,7 @@ impl From<PgRow> for Network {
             free: value.get("available"),
             vlan: value.get("vlan"),
             father: value.get("father"),
+            children: value.get("children"),
         }
     }
 }

@@ -30,6 +30,7 @@ impl From<NetworkCreateEntry> for Network {
             free: avl.into(),
             vlan: value.vlan,
             father: None,
+            children: 0,
         }
     }
 }

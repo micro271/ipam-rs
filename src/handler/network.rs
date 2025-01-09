@@ -1,7 +1,7 @@
 use super::RepositoryType;
 use super::*;
 use crate::{
-    database::{repository::QueryResult, transaction::Transaction},
+    database::{repository::{QueryResult, TypeTable}, transaction::Transaction},
     models::{device::Device, network::*},
 };
 use entries::{models::NetworkCreateEntry, params::Subnet};
@@ -65,6 +65,9 @@ pub async fn subnetting(State(state): State<RepositoryType>, _: IsAdministrator,
             return Err(ResponseError::from(e));
         }
     }
+
+    state.update::<Network, _>(HashMap::from([("children", TypeTable::from(len as i32))]), Some(HashMap::from([("id", father.id.into())]))).await?;
+
     state.commit().await?;
     
     Ok(QueryResult::Insert(len as u64))
