@@ -1,5 +1,11 @@
 CREATE TYPE STATUS as ENUM ('Reserved', 'Unknown', 'Online', 'Offline');
 
+CREATE TABLE IF NOT EXISTS vlans (
+    id INTEGER,
+    description TEXT,
+    PRIMARY KEY (id)
+);
+
 CREATE TABLE IF NOT EXISTS networks (
     id UUID PRIMARY KEY,
     network VARCHAR NOT NULL,
@@ -10,8 +16,36 @@ CREATE TABLE IF NOT EXISTS networks (
     description VARCHAR,
     father UUID,
     children INTEGER,
-    FOREIGN KEY father REFERENCES networks(id) ON DELETE CASCADE,
-    FOREIGN KEY vlan REFERENCES vlans(id) ON DELETE SET NULL ON UPDATE CASCADE,
+    FOREIGN KEY (father) REFERENCES networks(id) ON DELETE CASCADE,
+    FOREIGN KEY (vlan) REFERENCES vlans(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS mount_point (
+    name TEXT,
+    PRIMARY KEY (name)
+);
+
+CREATE TABLE IF NOT EXISTS offices (
+    description VARCHAR,
+    address TEXT,
+    PRIMARY KEY (address)
+);
+
+CREATE TABLE IF NOT EXISTS room (
+    name TEXT,
+    address TEXT,
+    PRIMARY KEY (name, address),
+    FOREIGN KEY (address) REFERENCES offices(address) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS locations (
+    label TEXT,
+    mount_point TEXT,
+    room_name TEXT,
+    address TEXT NOT NULL,
+    PRIMARY KEY (label, mount_point, room_name),
+    FOREIGN KEY (mount_point) REFERENCES mount_point(name) ON DELETE SET NULL ON UPDATE CASCADE,
+    FOREIGN KEY (room_name, address) REFERENCES room(name, address) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS devices (
@@ -29,39 +63,6 @@ CREATE TABLE IF NOT EXISTS devices (
     FOREIGN KEY (label, room_name, mount_point) REFERENCES locations(label, room_name, mount_point) ON DELETE SET NULL ON UPDATE SET NULL
 );
 
-CREATE IF NOT EXIST vlans (
-    id INTEGER,
-    description,
-    PRIMARY KEY (id),
-)
-
-CREATE TABLE IF NOT EXISTS mount_point (
-    name TEXT,
-    PRIMARY KEY (name)
-);
-
-CREATE TABLE IF NOT EXISTS locations (
-    label TEXT,
-    mount_point TEXT,
-    room_name TEXT,
-    address TEXT NOT NULL,
-    PRIMARY KEY (label, mount_point, room_name),
-    FOREIGN KEY (mount_point) REFERENCES mount_point(name) ON DELETE SET NULL ON UPDATE CASCADE,
-    FOREIGN KEY (room_name, address) REFERENCES room(name, address) ON DELETE CASCADE ON UPDATE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS offices (
-    description VARCHAR,
-    address TEXT,
-    PRIMARY KEY (address)
-);
-
-CREATE TABLE IF NOT EXISTS room (
-    name TEXT,
-    address TEXT,
-    PRIMARY KEY (name, address),
-    FOREIGN KEY (address) REFERENCES offices(address) ON DELETE CASCADE
-);
 
 CREATE TYPE ROLE AS ENUM ('Admin', 'Operator', 'Guest');
 
