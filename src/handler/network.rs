@@ -39,9 +39,10 @@ pub async fn update(
     Query(id): Query<Uuid>,
     Json(updater): Json<UpdateNetwork>,
 ) -> Result<QueryResult<Network>, ResponseError> {
-    
-    if updater.network.is_some() && state.get::<Device>(Some(HashMap::from([("network_id",id.into())]))).await.is_ok() {
-        Err(ResponseError::builder().detail("The network have devices".to_string()).build())
+    let network = state.get::<Network>(Some(HashMap::from([("id", id.into())]))).await?.remove(0);
+
+    if updater.network.is_some() && (state.get::<Device>(Some(HashMap::from([("network_id",id.into())]))).await.is_ok() || network.children != 0 ) {
+        Err(ResponseError::builder().detail("The network have elements".to_string()).build())
     } else {
         Ok(state.update(updater, Some(HashMap::from([("id", id.into())]))).await?)
     }

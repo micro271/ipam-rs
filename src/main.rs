@@ -6,12 +6,13 @@ mod services;
 
 use axum::{
     http::Response,
-    routing::{get, post},
+    routing::{get, patch, post},
     serve, Router,
 };
 use config::Config;
 use database::RepositoryInjection;
 use handler::*;
+use models::user;
 use std::sync::Arc;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
@@ -51,7 +52,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .route("/:network_id", post(device::create_all_devices));
 
-    let user = Router::new().route("/", post(auth::create));
+    let user = Router::new()
+        .route("/", post(auth::create))
+        .route("/:id", patch(auth::update).delete(auth::delete));
 
     let app = Router::new()
         .route("/", get(hello_world))

@@ -4,6 +4,7 @@ use crate::{
 };
 use libipam::authentication::{encrypt, Claim};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -25,7 +26,7 @@ pub async fn create_default_user<'a>(db: &impl Repository) -> Result<(), Reposit
     }
 
     let user = User {
-        id: uuid::Uuid::new_v4(),
+        id: Uuid::new_v4(),
         username: std::env::var("IPAM_USER_ROOT").unwrap_or("admin".into()),
         password: encrypt(std::env::var("IPAM_PASSWORD_ROOT").unwrap_or("admin".into())).unwrap(),
         role: Role::Admin,

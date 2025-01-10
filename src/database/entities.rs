@@ -132,6 +132,32 @@ impl<'a> Updatable<'a> for UpdateDevice {
     }
 }
 
+impl<'a> Updatable<'a> for UpdateUser {
+    fn get_pair(self) -> Option<HashMap<&'a str, TypeTable>> {
+        let mut resp = HashMap::new();
+        if let Some(e) = self.username {
+            resp.insert("username", e.into());
+        }
+
+        if let Some(e) = self.password {
+            resp.insert("password", match libipam::authentication::encrypt(e) {
+                Ok(e) => e,
+                Err(_) => return None,
+            }.into());
+        }
+
+        if let Some(e) = self.role {
+            resp.insert("role", e.into());
+        }
+
+        if resp.is_empty() {
+            None
+        } else {
+            Some(resp)
+        }
+    }
+}
+
 impl<'a> Updatable<'a> for UpdateNetwork {
     fn get_pair(self) -> Option<HashMap<&'a str, TypeTable>> {
         let mut pair = HashMap::new();
