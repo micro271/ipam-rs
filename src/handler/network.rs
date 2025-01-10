@@ -1,3 +1,5 @@
+use std::{net::{IpAddr, Ipv4Addr}, str::FromStr};
+
 use super::RepositoryType;
 use super::*;
 use crate::{
@@ -11,6 +13,13 @@ pub async fn create(
     _: IsAdministrator,
     Json(network): Json<NetworkCreateEntry>,
 ) -> Result<QueryResult<Network>, ResponseError> {
+
+    let net = network.network.network();
+
+    if net == IpAddr::from_str("0.0.0.0").unwrap() || net == IpAddr::from_str("::").unwrap() {
+        return Err(ResponseError::builder().detail(format!("You cannot create the ip {:?}", network.network)).build());
+    }
+
     Ok(state.insert::<Network>(network.into()).await?)
 }
 
