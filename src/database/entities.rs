@@ -1,7 +1,27 @@
 use super::HashMap;
 use super::{Table, TypeTable, Updatable};
+use crate::models::location::{Location, LocationUpdate};
 use crate::models::{device::*, network::*, office::*, user::*};
 use std::net::IpAddr;
+
+impl Table for Location {
+    fn name() -> String {
+        String::from("locations")
+    }
+
+    fn get_fields(self) -> Vec<TypeTable> {
+        vec![
+            self.mont_point.into(),
+            self.room_name.into(),
+            self.label.into(),
+            self.address.into(),
+        ]
+    }
+
+    fn columns() -> Vec<&'static str> {
+        vec!["mount_point", "room_name", "label", "address"]
+    }
+}
 
 impl Table for User {
     fn columns() -> Vec<&'static str> {
@@ -213,5 +233,41 @@ impl<'a> Updatable<'a> for HashMap<&'a str, TypeTable> {
 impl<'a> Updatable<'a> for IpAddr {
     fn get_pair(self) -> Option<HashMap<&'a str, TypeTable>> {
         Some(HashMap::from([("ip", self.into())]))
+    }
+}
+
+impl<'a> Updatable<'a> for LocationUpdate {
+    fn get_pair(self) -> Option<HashMap<&'a str, TypeTable>> {
+        let mut cond = HashMap::new();
+
+        if let Some(tmp) = self.room_name {
+            cond.insert(
+                "room_name",
+                if tmp.is_empty() { tmp } else { return None }.into(),
+            );
+        }
+
+        if let Some(tmp) = self.address {
+            cond.insert(
+                "address",
+                if tmp.is_empty() { tmp } else { return None }.into(),
+            );
+        }
+
+        if let Some(tmp) = self.label {
+            cond.insert(
+                "label",
+                if tmp.is_empty() { tmp } else { return None }.into(),
+            );
+        }
+
+        if let Some(tmp) = self.mont_point {
+            cond.insert(
+                "mont_point",
+                if tmp.is_empty() { tmp } else { return None }.into(),
+            );
+        }
+
+        Some(cond)
     }
 }

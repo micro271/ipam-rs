@@ -52,3 +52,46 @@ pub struct Subnet {
 pub trait GetMapParams {
     fn get_pairs(self) -> Option<HashMap<&'static str, TypeTable>>;
 }
+
+#[derive(Debug, Deserialize)]
+pub struct LocationParam {
+    pub label: Option<String>,
+    pub room_name: Option<String>,
+    pub mount_point: Option<String>,
+}
+
+impl GetMapParams for LocationParam {
+    fn get_pairs(self) -> Option<HashMap<&'static str, TypeTable>> {
+        let mut condition = HashMap::new();
+        if let Some(label) = self.label.filter(|x| x.is_empty()) {
+            condition.insert("label", label.into());
+        }
+
+        if let Some(mount_point) = self.mount_point.filter(|x| x.is_empty()) {
+            condition.insert("mount_point", mount_point.into());
+        }
+
+        if let Some(room_name) = self.room_name.filter(|x| x.is_empty()) {
+            condition.insert("room_name", room_name.into());
+        }
+
+        Some(condition)
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LocationParamStict {
+    pub label: String,
+    pub room_name: String,
+    pub mount_point: String,
+}
+
+impl GetMapParams for LocationParamStict {
+    fn get_pairs(self) -> Option<HashMap<&'static str, TypeTable>> {
+        Some(HashMap::from([
+            ("label", self.label.into()),
+            ("room_name", self.room_name.into()),
+            ("mount_point", self.mount_point.into()),
+        ]))
+    }
+}

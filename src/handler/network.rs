@@ -1,7 +1,4 @@
-use std::{
-    net::{IpAddr, Ipv4Addr},
-    str::FromStr,
-};
+use std::{net::IpAddr, str::FromStr};
 
 use super::RepositoryType;
 use super::*;

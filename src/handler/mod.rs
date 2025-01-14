@@ -3,6 +3,7 @@ pub mod device;
 mod entries;
 pub mod error;
 pub mod extractors;
+pub mod location;
 pub mod network;
 
 use crate::{

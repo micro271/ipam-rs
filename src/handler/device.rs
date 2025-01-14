@@ -7,7 +7,6 @@ use entries::{
     models::{self, DeviceCreateEntry},
     params::{GetMapParams, ParamsDevice, ParamsDeviceStrict},
 };
-use futures::FutureExt;
 
 pub async fn create(
     State(state): State<RepositoryType>,
@@ -95,7 +94,7 @@ pub async fn update(
             }
             .await
             {
-                Err(tr.rollback().await.map(|_| e.into())?)
+                Err(tr.rollback().await.map(|_| e)?)
             } else {
                 Ok(tr.commit().await.map(|_| StatusCode::OK)?)
             }

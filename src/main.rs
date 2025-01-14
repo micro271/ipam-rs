@@ -56,10 +56,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/", post(auth::create))
         .route("/:id", patch(auth::update).delete(auth::delete));
 
+    let location = Router::new().route(
+        "/",
+        get(location::get)
+            .delete(location::delete)
+            .patch(location::update)
+            .post(location::insert),
+    );
+
     let api_v1 = Router::new()
         .nest("/network", network)
         .nest("/device", device)
-        .nest("/user", user);
+        .nest("/user", user)
+        .nest("/location", location);
 
     let app = Router::new()
         .route("/", get(hello_world))
