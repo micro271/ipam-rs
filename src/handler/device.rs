@@ -7,6 +7,7 @@ use entries::{
     models::{DeviceCreateEntry, self},
     params::{GetMapParams, ParamsDevice, ParamsDeviceStrict},
 };
+use futures::FutureExt;
 
 pub async fn create(
     State(state): State<RepositoryType>,
@@ -47,12 +48,45 @@ pub async fn update(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
     Query(param): Query<ParamsDeviceStrict>,
-    Json(new): Json<UpdateDevice>,
-) -> Result<impl IntoResponse, ResponseError> {
+    Json(mut new): Json<UpdateDevice>,
+) -> Result<StatusCode, ResponseError> {
 
     let network = state.get::<Network>(Some(HashMap::from([("id", new.network_id.unwrap_or(param.network_id).into())]))).await?.remove(0);
+
+    if new.ip.is_some_and(|x| x == param.ip) {
+        new.ip = None;
+    }
+
+    if network.id == param.network_id {
+        new.network_id = None;
+    }
     
-    Ok(state.update::<Device, _>(new, param.get_pairs()).await?)
+
+    if new.ip.is_some() || new.network_id.is_some() {
+        let dev = state.get::<Device>(Some(HashMap::from([("network_id", network.network.into())]))).await?.remove(0);
+        
+        if dev.status == Status::Unknown {
+            let mut tr = state.transaction().await?;
+
+            if let Err(e) = async {
+                tr.delete::<Device>(Some(HashMap::from([("network_id", network.network.into())]))).await?;
+    
+                tr.update::<Device, _>(new, param.get_pairs()).await?;
+
+                Ok::<(), ResponseError>(())
+            }.await {
+                Err(tr.rollback().await.map(|_| e.into() )?)
+            } else {
+                Ok(tr.commit().await.map(|_| StatusCode::OK )?)
+            }
+            
+        } else {
+            Err(ResponseError::builder().detail(format!("The device {:?} is used", dev)).build())
+        }  
+    } else {
+        Ok(state.update::<Device, _>(new, param.get_pairs()).await.map(|_| StatusCode::OK)?)
+    }
+
 }
 
 pub async fn get(
