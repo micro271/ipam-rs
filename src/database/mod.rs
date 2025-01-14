@@ -36,7 +36,6 @@ impl Repository for RepositoryInjection<Postgres> {
         T: Table + 'a + Send + Debug + Clone,
     {
         let resp = async {
-
             let query = T::query_insert();
             let mut tmp = sqlx::query(&query);
             let data = data.get_fields();
@@ -54,7 +53,9 @@ impl Repository for RepositoryInjection<Postgres> {
                     TypeTable::I32(e) => tmp.bind(e),
                 };
             }
-            Ok(QueryResult::Insert(tmp.execute(& self.0).await?.rows_affected()))
+            Ok(QueryResult::Insert(
+                tmp.execute(&self.0).await?.rows_affected(),
+            ))
         };
         Box::pin(resp)
     }

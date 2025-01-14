@@ -140,10 +140,14 @@ impl<'a> Updatable<'a> for UpdateUser {
         }
 
         if let Some(e) = self.password {
-            resp.insert("password", match libipam::authentication::encrypt(e) {
-                Ok(e) => e,
-                Err(_) => return None,
-            }.into());
+            resp.insert(
+                "password",
+                match libipam::authentication::encrypt(e) {
+                    Ok(e) => e,
+                    Err(_) => return None,
+                }
+                .into(),
+            );
         }
 
         if let Some(e) = self.role {

@@ -4,7 +4,7 @@ use crate::{
     models::{device::*, network::Network},
 };
 use entries::{
-    models::{DeviceCreateEntry, self},
+    models::{self, DeviceCreateEntry},
     params::{GetMapParams, ParamsDevice, ParamsDeviceStrict},
 };
 use futures::FutureExt;
@@ -27,16 +27,20 @@ pub async fn create_all_devices(
         .await?
         .remove(0);
 
-    let devices =  models::create_all_devices(network.network, network_id).map_err(|x|{
-        ResponseError::builder().detail(x.to_string()).build()
-    })?;
+    let devices = models::create_all_devices(network.network, network_id)
+        .map_err(|x| ResponseError::builder().detail(x.to_string()).build())?;
 
     let mut transaction = state.transaction().await?;
     let len = devices.len();
     for device in devices {
         if let Err(e) = transaction.insert(device).await {
-            transaction.rollback().await?;
-            return Err(ResponseError::builder().detail(e.to_string()).title("Device create error".to_string()).status(StatusCode::INTERNAL_SERVER_ERROR).build())
+            return Err(transaction.rollback().await.map(|_| {
+                ResponseError::builder()
+                    .detail(e.to_string())
+                    .title("Device create error".to_string())
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .build()
+            })?);
         }
     }
     transaction.commit().await?;
@@ -50,8 +54,13 @@ pub async fn update(
     Query(param): Query<ParamsDeviceStrict>,
     Json(mut new): Json<UpdateDevice>,
 ) -> Result<StatusCode, ResponseError> {
-
-    let network = state.get::<Network>(Some(HashMap::from([("id", new.network_id.unwrap_or(param.network_id).into())]))).await?.remove(0);
+    let network = state
+        .get::<Network>(Some(HashMap::from([(
+            "id",
+            new.network_id.unwrap_or(param.network_id).into(),
+        )])))
+        .await?
+        .remove(0);
 
     if new.ip.is_some_and(|x| x == param.ip) {
         new.ip = None;
@@ -60,33 +69,47 @@ pub async fn update(
     if network.id == param.network_id {
         new.network_id = None;
     }
-    
 
     if new.ip.is_some() || new.network_id.is_some() {
-        let dev = state.get::<Device>(Some(HashMap::from([("network_id", network.network.into())]))).await?.remove(0);
-        
+        let dev = state
+            .get::<Device>(Some(HashMap::from([(
+                "network_id",
+                network.network.into(),
+            )])))
+            .await?
+            .remove(0);
+
         if dev.status == Status::Unknown {
             let mut tr = state.transaction().await?;
 
             if let Err(e) = async {
-                tr.delete::<Device>(Some(HashMap::from([("network_id", network.network.into())]))).await?;
-    
+                tr.delete::<Device>(Some(HashMap::from([(
+                    "network_id",
+                    network.network.into(),
+                )])))
+                .await?;
+
                 tr.update::<Device, _>(new, param.get_pairs()).await?;
 
                 Ok::<(), ResponseError>(())
-            }.await {
-                Err(tr.rollback().await.map(|_| e.into() )?)
-            } else {
-                Ok(tr.commit().await.map(|_| StatusCode::OK )?)
             }
-            
+            .await
+            {
+                Err(tr.rollback().await.map(|_| e.into())?)
+            } else {
+                Ok(tr.commit().await.map(|_| StatusCode::OK)?)
+            }
         } else {
-            Err(ResponseError::builder().detail(format!("The device {:?} is used", dev)).build())
-        }  
+            Err(ResponseError::builder()
+                .detail(format!("The device {:?} is used", dev))
+                .build())
+        }
     } else {
-        Ok(state.update::<Device, _>(new, param.get_pairs()).await.map(|_| StatusCode::OK)?)
+        Ok(state
+            .update::<Device, _>(new, param.get_pairs())
+            .await
+            .map(|_| StatusCode::OK)?)
     }
-
 }
 
 pub async fn get(
@@ -95,7 +118,7 @@ pub async fn get(
 ) -> Result<QueryResult<Device>, ResponseError> {
     let mut device = state.get::<Device>(params.get_pairs()).await?;
 
-    device.sort_by_key(|x| x.ip );
+    device.sort_by_key(|x| x.ip);
 
     Ok(device.into())
 }

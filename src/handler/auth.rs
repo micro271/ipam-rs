@@ -29,21 +29,40 @@ pub async fn create(
     Ok(state.insert(user).await?)
 }
 
-pub async fn update(State(state): State<RepositoryType>, Path(id): Path<Uuid>, Json(updater): Json<UpdateUser>) -> Result<QueryResult<User>, ResponseError> {
-    Ok(state.update::<User, _>(updater, Some(HashMap::from([("id", id.into())]))).await?)
+pub async fn update(
+    State(state): State<RepositoryType>,
+    Path(id): Path<Uuid>,
+    Json(updater): Json<UpdateUser>,
+) -> Result<QueryResult<User>, ResponseError> {
+    Ok(state
+        .update::<User, _>(updater, Some(HashMap::from([("id", id.into())])))
+        .await?)
 }
 
-pub async fn delete(State(state): State<RepositoryType>, Path(id): Path<Uuid>) -> Result<QueryResult<User>, ResponseError> {
-    let user = state.get::<User>(Some(HashMap::from([("id", id.into())]))).await?.remove(0);
+pub async fn delete(
+    State(state): State<RepositoryType>,
+    Path(id): Path<Uuid>,
+) -> Result<QueryResult<User>, ResponseError> {
+    let user = state
+        .get::<User>(Some(HashMap::from([("id", id.into())])))
+        .await?
+        .remove(0);
 
     if user.is_admin() {
-        let user = state.get::<User>(Some(HashMap::from([("role", Role::Admin.into())]))).await.unwrap_or_default();
+        let user = state
+            .get::<User>(Some(HashMap::from([("role", Role::Admin.into())])))
+            .await
+            .unwrap_or_default();
         if user.len() <= 1 {
-            return Err(ResponseError::builder().detail("The system requires at least one administrator".to_string()).build())
+            return Err(ResponseError::builder()
+                .detail("The system requires at least one administrator".to_string())
+                .build());
         }
     }
 
-    Ok(state.delete(Some(HashMap::from([("id", id.into())]))).await?)
+    Ok(state
+        .delete(Some(HashMap::from([("id", id.into())])))
+        .await?)
 }
 
 pub async fn login(

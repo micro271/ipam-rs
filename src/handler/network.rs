@@ -1,9 +1,15 @@
-use std::{net::{IpAddr, Ipv4Addr}, str::FromStr};
+use std::{
+    net::{IpAddr, Ipv4Addr},
+    str::FromStr,
+};
 
 use super::RepositoryType;
 use super::*;
 use crate::{
-    database::{repository::{QueryResult, TypeTable}, transaction::Transaction},
+    database::{
+        repository::{QueryResult, TypeTable},
+        transaction::Transaction,
+    },
     models::{device::Device, network::*},
 };
 use entries::{models::NetworkCreateEntry, params::Subnet};
@@ -13,11 +19,12 @@ pub async fn create(
     _: IsAdministrator,
     Json(network): Json<NetworkCreateEntry>,
 ) -> Result<QueryResult<Network>, ResponseError> {
-
     let net = network.network.network();
 
     if net == IpAddr::from_str("0.0.0.0").unwrap() || net == IpAddr::from_str("::").unwrap() {
-        return Err(ResponseError::builder().detail(format!("You cannot create the ip {:?}", network.network)).build());
+        return Err(ResponseError::builder()
+            .detail(format!("You cannot create the ip {:?}", network.network))
+            .build());
     }
 
     Ok(state.insert::<Network>(network.into()).await?)
@@ -39,12 +46,25 @@ pub async fn update(
     Query(id): Query<Uuid>,
     Json(updater): Json<UpdateNetwork>,
 ) -> Result<QueryResult<Network>, ResponseError> {
-    let network = state.get::<Network>(Some(HashMap::from([("id", id.into())]))).await?.remove(0);
+    let network = state
+        .get::<Network>(Some(HashMap::from([("id", id.into())])))
+        .await?
+        .remove(0);
 
-    if updater.network.is_some() && (state.get::<Device>(Some(HashMap::from([("network_id",id.into())]))).await.is_ok() || network.children != 0 ) {
-        Err(ResponseError::builder().detail("The network have elements".to_string()).build())
+    if updater.network.is_some()
+        && (state
+            .get::<Device>(Some(HashMap::from([("network_id", id.into())])))
+            .await
+            .is_ok()
+            || network.children != 0)
+    {
+        Err(ResponseError::builder()
+            .detail("The network have elements".to_string())
+            .build())
     } else {
-        Ok(state.update(updater, Some(HashMap::from([("id", id.into())]))).await?)
+        Ok(state
+            .update(updater, Some(HashMap::from([("id", id.into())])))
+            .await?)
     }
 }
 
@@ -58,10 +78,18 @@ pub async fn delete(
         .await?)
 }
 
-pub async fn subnetting(State(state): State<RepositoryType>, _: IsAdministrator, Query(Subnet { father, prefix }): Query<Subnet>) -> Result<QueryResult<Network>, ResponseError> {
-    let father = state.get::<Network>(Some(HashMap::from([("id", father.into())]))).await?.remove(0);
+pub async fn subnetting(
+    State(state): State<RepositoryType>,
+    _: IsAdministrator,
+    Query(Subnet { father, prefix }): Query<Subnet>,
+) -> Result<QueryResult<Network>, ResponseError> {
+    let father = state
+        .get::<Network>(Some(HashMap::from([("id", father.into())])))
+        .await?
+        .remove(0);
 
-    let networks = libipam::ipam_services::subnetting(father.network, prefix).map_err(|x| ResponseError::builder().detail(x.to_string()).build())?;
+    let networks = libipam::ipam_services::subnetting(father.network, prefix)
+        .map_err(|x| ResponseError::builder().detail(x.to_string()).build())?;
 
     let mut state = state.transaction().await?;
     let len = networks.len();
@@ -76,10 +104,14 @@ pub async fn subnetting(State(state): State<RepositoryType>, _: IsAdministrator,
         }
     }
 
-    state.update::<Network, _>(HashMap::from([("children", TypeTable::from(len as i32))]), Some(HashMap::from([("id", father.id.into())]))).await?;
+    state
+        .update::<Network, _>(
+            HashMap::from([("children", TypeTable::from(len as i32))]),
+            Some(HashMap::from([("id", father.id.into())])),
+        )
+        .await?;
 
     state.commit().await?;
-    
-    Ok(QueryResult::Insert(len as u64))
 
+    Ok(QueryResult::Insert(len as u64))
 }

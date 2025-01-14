@@ -879,15 +879,23 @@ pub mod ipam_services {
     pub fn subnetting(ipnet: IpNet, prefix: u8) -> Result<Vec<IpNet>, SubnettingError> {
         let ip = match ipnet.network() {
             IpAddr::V4(ipv4) => ipv4,
-            IpAddr::V6(_) => return Err(SubnettingError("You cannot create an red above an ipv6".to_string())),
+            IpAddr::V6(_) => {
+                return Err(SubnettingError(
+                    "You cannot create an red above an ipv6".to_string(),
+                ))
+            }
         };
 
         let mut resp = Vec::new();
 
-        let mut subnet = IpNet::new(ip.into(), prefix).map_err(|x|SubnettingError(x.to_string()))?;
-        
+        let mut subnet =
+            IpNet::new(ip.into(), prefix).map_err(|x| SubnettingError(x.to_string()))?;
+
         if !ipnet.contains(&subnet) {
-            return Err(SubnettingError(format!("The network {} doesnt belong to the network {}", subnet, ipnet)));
+            return Err(SubnettingError(format!(
+                "The network {} doesnt belong to the network {}",
+                subnet, ipnet
+            )));
         }
 
         let sub = 2u32.pow((prefix - ipnet.prefix_len()) as u32);

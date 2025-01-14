@@ -1,4 +1,7 @@
-use super::super::models::{device::{Device, Status}, network::Network};
+use super::super::models::{
+    device::{Device, Status},
+    network::Network,
+};
 use ipnet::IpNet;
 use libipam::type_net::vlan::VlanId;
 use serde::{Deserialize, Serialize};

@@ -12,7 +12,6 @@ use axum::{
 use config::Config;
 use database::RepositoryInjection;
 use handler::*;
-use models::user;
 use std::sync::Arc;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
@@ -36,11 +35,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let network = Router::new()
         .route("/", post(network::create))
         .route("/subnet", post(network::subnetting))
-        .route("/:id",
+        .route(
+            "/:id",
             get(network::get)
-            .delete(network::delete)
-            .patch(network::update),
-    );
+                .delete(network::delete)
+                .patch(network::update),
+        );
 
     let device = Router::new()
         .route(
@@ -56,11 +56,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/", post(auth::create))
         .route("/:id", patch(auth::update).delete(auth::delete));
 
-    let app = Router::new()
-        .route("/", get(hello_world))
+    let api_v1 = Router::new()
         .nest("/network", network)
         .nest("/device", device)
-        .nest("/user", user)
+        .nest("/user", user);
+
+    let app = Router::new()
+        .route("/", get(hello_world))
+        .nest("/api/v1", api_v1)
         .layer(axum::middleware::from_fn(auth::verify_token))
         .route("/login", post(auth::login))
         .with_state(db.clone())
