@@ -7,6 +7,7 @@ pub mod location;
 pub mod mount_point;
 pub mod network;
 pub mod room;
+pub mod vlan;
 
 use crate::{
     database::{repository::Repository, RepositoryInjection},

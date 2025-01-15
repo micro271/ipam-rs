@@ -195,10 +195,17 @@ pub enum TypeTable {
     OptionString(Option<String>),
     Status(Status),
     Role(Role),
-    OptionVlan(Option<VlanId>),
+    OptionVlanId(Option<VlanId>),
+    VlanId(VlanId),
     I64(i64),
     I32(i32),
     Null,
+}
+
+impl From<VlanId> for TypeTable {
+    fn from(value: VlanId) -> Self {
+        Self::VlanId(value)
+    }
 }
 
 impl From<i32> for TypeTable {
@@ -209,7 +216,7 @@ impl From<i32> for TypeTable {
 
 impl From<Option<VlanId>> for TypeTable {
     fn from(value: Option<VlanId>) -> Self {
-        Self::OptionVlan(value)
+        Self::OptionVlanId(value.filter(|x| !(..1).contains(&**x)))
     }
 }
 

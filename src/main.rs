@@ -79,12 +79,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .delete(room::delete),
     );
 
+    let vlan = Router::new().route("/", post(vlan::insert)).route(
+        "/:id",
+        get(vlan::get).delete(vlan::delete).patch(vlan::update),
+    );
+
     let api_v1 = Router::new()
         .nest("/network", network)
         .nest("/device", device)
         .nest("/user", user)
         .nest("/mount_point", mount_point)
         .nest("/room", room)
+        .nest("/vlan", vlan)
         .nest("/location", location);
 
     let app = Router::new()

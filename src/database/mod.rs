@@ -49,7 +49,8 @@ impl Repository for RepositoryInjection<Postgres> {
                     TypeTable::OptionUuid(e) => tmp.bind(e),
                     TypeTable::Null => tmp,
                     TypeTable::I64(e) => tmp.bind(e),
-                    TypeTable::OptionVlan(e) => tmp.bind(e),
+                    TypeTable::OptionVlanId(e) => tmp.bind(e),
+                    TypeTable::VlanId(e) => tmp.bind(e),
                     TypeTable::I32(e) => tmp.bind(e),
                 };
             }
@@ -107,7 +108,8 @@ impl Repository for RepositoryInjection<Postgres> {
                             TypeTable::OptionString(opt) => resp.bind(opt),
                             TypeTable::Status(status) => resp.bind(status),
                             TypeTable::Role(role) => resp.bind(role),
-                            TypeTable::OptionVlan(e) => resp.bind(e),
+                            TypeTable::OptionVlanId(e) => resp.bind(e),
+                            TypeTable::VlanId(e) => resp.bind(e),
                             TypeTable::I64(e) => resp.bind(e),
                             TypeTable::I32(e) => resp.bind(e),
                             TypeTable::Null => resp,
@@ -196,7 +198,8 @@ impl Repository for RepositoryInjection<Postgres> {
                 let mut sql = sqlx::query(&query);
                 for i in 1..pos {
                     sql = match pos_values.get(&i).unwrap() {
-                        TypeTable::OptionVlan(e) => sql.bind(e),
+                        TypeTable::OptionVlanId(e) => sql.bind(e),
+                        TypeTable::VlanId(e) => sql.bind(e),
                         TypeTable::String(s) => sql.bind(s),
                         TypeTable::OptionString(value) => sql.bind(value),
                         TypeTable::Status(value) => sql.bind(value),
@@ -257,7 +260,8 @@ impl Repository for RepositoryInjection<Postgres> {
 
                     for i in 1..pos {
                         ex = match pos_column.get(&i).unwrap() {
-                            TypeTable::OptionVlan(e) => ex.bind(e),
+                            TypeTable::OptionVlanId(e) => ex.bind(e),
+                            TypeTable::VlanId(e) => ex.bind(e),
                             TypeTable::OptionUuid(e) => ex.bind(e),
                             TypeTable::String(s) => ex.bind(s),
                             TypeTable::OptionString(s) => ex.bind(s),
