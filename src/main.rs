@@ -64,10 +64,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .post(location::insert),
     );
 
+    let mount_point = Router::new().route("/", post(mount_point::insert)).route(
+        "/:name",
+        get(mount_point::get)
+            .patch(mount_point::update)
+            .delete(mount_point::delete),
+    );
+
     let api_v1 = Router::new()
         .nest("/network", network)
         .nest("/device", device)
         .nest("/user", user)
+        .nest("/mount_point", mount_point)
         .nest("/location", location);
 
     let app = Router::new()

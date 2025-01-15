@@ -1,8 +1,23 @@
 use super::HashMap;
 use super::{Table, TypeTable, Updatable};
 use crate::models::location::{Location, LocationUpdate};
+use crate::models::mound_point::{MountPoint, UpdateMountPoint};
 use crate::models::{device::*, network::*, office::*, user::*};
 use std::net::IpAddr;
+
+impl Table for MountPoint {
+    fn name() -> String {
+        String::from("mount_point")
+    }
+
+    fn get_fields(self) -> Vec<TypeTable> {
+        vec![self.name.into()]
+    }
+
+    fn columns() -> Vec<&'static str> {
+        vec!["mount_point"]
+    }
+}
 
 impl Table for Location {
     fn name() -> String {
@@ -269,5 +284,15 @@ impl<'a> Updatable<'a> for LocationUpdate {
         }
 
         Some(cond)
+    }
+}
+
+impl<'a> Updatable<'a> for UpdateMountPoint {
+    fn get_pair(self) -> Option<HashMap<&'a str, TypeTable>> {
+        if self.name.as_ref().is_some_and(|x| !x.is_empty()) {
+            None
+        } else {
+            Some(HashMap::from([("name", self.name.into())]))
+        }
     }
 }
