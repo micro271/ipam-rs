@@ -6,6 +6,7 @@ pub mod extractors;
 pub mod location;
 pub mod mount_point;
 pub mod network;
+pub mod room;
 
 use crate::{
     database::{repository::Repository, RepositoryInjection},

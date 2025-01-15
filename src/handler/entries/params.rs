@@ -4,6 +4,42 @@ use std::{collections::HashMap, net::IpAddr};
 use crate::database::repository::TypeTable;
 
 #[derive(Debug, Deserialize)]
+pub struct ParamRoomStrict {
+    name: String,
+    address: String,
+}
+
+impl GetMapParams for ParamRoomStrict {
+    fn get_pairs(self) -> Option<HashMap<&'static str, TypeTable>> {
+        Some(HashMap::from([
+            ("name", self.name.into()),
+            ("address", self.address.into()),
+        ]))
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ParamRoom {
+    name: Option<String>,
+    address: Option<String>,
+}
+
+impl GetMapParams for ParamRoom {
+    fn get_pairs(self) -> Option<HashMap<&'static str, TypeTable>> {
+        let mut tmp = HashMap::new();
+
+        if let Some(e) = self.name {
+            tmp.insert("name", e.into());
+        }
+        if let Some(e) = self.address {
+            tmp.insert("address", e.into());
+        }
+
+        Some(tmp)
+    }
+}
+
+#[derive(Debug, Deserialize)]
 pub struct ParamsDevice {
     pub ip: Option<IpAddr>,
     pub network_id: Option<uuid::Uuid>,
@@ -63,15 +99,15 @@ pub struct LocationParam {
 impl GetMapParams for LocationParam {
     fn get_pairs(self) -> Option<HashMap<&'static str, TypeTable>> {
         let mut condition = HashMap::new();
-        if let Some(label) = self.label.filter(|x| x.is_empty()) {
+        if let Some(label) = self.label {
             condition.insert("label", label.into());
         }
 
-        if let Some(mount_point) = self.mount_point.filter(|x| x.is_empty()) {
+        if let Some(mount_point) = self.mount_point {
             condition.insert("mount_point", mount_point.into());
         }
 
-        if let Some(room_name) = self.room_name.filter(|x| x.is_empty()) {
+        if let Some(room_name) = self.room_name {
             condition.insert("room_name", room_name.into());
         }
 

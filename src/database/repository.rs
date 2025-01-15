@@ -257,7 +257,7 @@ impl From<String> for TypeTable {
 
 impl From<Option<String>> for TypeTable {
     fn from(value: Option<String>) -> Self {
-        Self::OptionString(value)
+        Self::OptionString(value.filter(|x| !x.is_empty()))
     }
 }
 

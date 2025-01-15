@@ -2,8 +2,23 @@ use super::HashMap;
 use super::{Table, TypeTable, Updatable};
 use crate::models::location::{Location, LocationUpdate};
 use crate::models::mound_point::{MountPoint, UpdateMountPoint};
+use crate::models::room::{Room, UpdateRoom};
 use crate::models::{device::*, network::*, office::*, user::*};
 use std::net::IpAddr;
+
+impl Table for Room {
+    fn name() -> String {
+        String::from("room")
+    }
+
+    fn get_fields(self) -> Vec<TypeTable> {
+        vec![self.id.into(), self.address.into()]
+    }
+
+    fn columns() -> Vec<&'static str> {
+        vec!["id", "address"]
+    }
+}
 
 impl Table for MountPoint {
     fn name() -> String {
@@ -294,5 +309,20 @@ impl<'a> Updatable<'a> for UpdateMountPoint {
         } else {
             Some(HashMap::from([("name", self.name.into())]))
         }
+    }
+}
+
+impl<'a> Updatable<'a> for UpdateRoom {
+    fn get_pair(self) -> Option<HashMap<&'a str, TypeTable>> {
+        let mut resp = HashMap::new();
+        if let Some(e) = self.address {
+            resp.insert("address", e.into());
+        }
+
+        if let Some(e) = self.id {
+            resp.insert("id", e.into());
+        }
+
+        Some(resp)
     }
 }

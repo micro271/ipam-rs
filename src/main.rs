@@ -71,11 +71,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .delete(mount_point::delete),
     );
 
+    let room = Router::new().route(
+        "/",
+        post(room::insert)
+            .get(room::get)
+            .patch(room::update)
+            .delete(room::delete),
+    );
+
     let api_v1 = Router::new()
         .nest("/network", network)
         .nest("/device", device)
         .nest("/user", user)
         .nest("/mount_point", mount_point)
+        .nest("/room", room)
         .nest("/location", location);
 
     let app = Router::new()
