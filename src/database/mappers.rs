@@ -39,8 +39,6 @@ impl From<PgRow> for Device {
 impl From<PgRow> for Office {
     fn from(value: PgRow) -> Self {
         Self {
-            id: value.get("id"),
-            name: value.get("description"),
             address: value.get("address"),
             description: value.get("description"),
         }

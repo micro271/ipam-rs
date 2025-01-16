@@ -160,11 +160,11 @@ impl Table for Office {
     }
 
     fn get_fields(self) -> Vec<TypeTable> {
-        vec![self.id.into(), self.description.into(), self.address.into()]
+        vec![self.description.into(), self.address.into()]
     }
 
     fn columns() -> Vec<&'static str> {
-        todo!()
+        vec!["description", "address"]
     }
 }
 
