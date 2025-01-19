@@ -1,5 +1,7 @@
 use super::*;
 use std::net::IpAddr;
+use macros::FromPgRow;
+use sqlx::{Row, postgres::PgRow};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct UpdateDevice {
@@ -14,9 +16,11 @@ pub struct UpdateDevice {
     pub password: Option<String>,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, FromPgRow)]
 pub struct Device {
+    #[FromStr]
     pub ip: IpAddr,
+
     pub description: Option<String>,
     pub label: Option<String>,
     pub room: Option<Uuid>,

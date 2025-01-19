@@ -1,5 +1,5 @@
 use crate::models::{
-    device::Device, location::Location, mound_point::MountPoint, network::Network, office::Office,
+    location::Location, mound_point::MountPoint, network::Network, office::Office,
     room::Room, user::User, vlan::Vlan,
 };
 use sqlx::{postgres::PgRow, Row};
@@ -20,21 +20,21 @@ impl From<PgRow> for Network {
     }
 }
 
-impl From<PgRow> for Device {
-    fn from(value: PgRow) -> Self {
-        Self {
-            ip: value.get::<'_, &str, _>("ip").parse().unwrap(),
-            description: value.get("description"),
-            room: value.get("room"),
-            label: value.get("label"),
-            mount_point: value.get("mount_point"),
-            username: value.get("username"),
-            password: value.get("password"),
-            status: value.get("status"),
-            network_id: value.get("network_id"),
-        }
-    }
-}
+// impl From<PgRow> for Device {
+//     fn from(value: PgRow) -> Self {
+//         Self {
+//             ip: value.get::<'_, &str, _>("ip").parse().unwrap(),
+//             description: value.get("description"),
+//             room: value.get("room"),
+//             label: value.get("label"),
+//             mount_point: value.get("mount_point"),
+//             username: value.get("username"),
+//             password: value.get("password"),
+//             status: value.get("status"),
+//             network_id: value.get("network_id"),
+//         }
+//     }
+// }
 
 impl From<PgRow> for Office {
     fn from(value: PgRow) -> Self {
