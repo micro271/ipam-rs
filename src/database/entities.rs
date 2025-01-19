@@ -3,23 +3,23 @@ use super::{Table, TypeTable, Updatable};
 use crate::models::location::{Location, LocationUpdate};
 use crate::models::mound_point::{MountPoint, UpdateMountPoint};
 use crate::models::room::{Room, UpdateRoom};
-use crate::models::vlan::{UpdateVlan, Vlan};
+use crate::models::vlan::UpdateVlan;
 use crate::models::{device::*, network::*, office::*, user::*};
 use std::net::IpAddr;
 
-impl Table for Vlan {
-    fn name() -> String {
-        String::from("vlan")
-    }
+// impl Table for Vlan {
+//     fn name() -> String {
+//         String::from("vlan")
+//     }
 
-    fn get_fields(self) -> Vec<TypeTable> {
-        vec![self.id.into(), self.description.into()]
-    }
+//     fn get_fields(self) -> Vec<TypeTable> {
+//         vec![self.id.into(), self.description.into()]
+//     }
 
-    fn columns() -> Vec<&'static str> {
-        vec!["id", "description"]
-    }
-}
+//     fn columns() -> Vec<&'static str> {
+//         vec!["id", "description"]
+//     }
+// }
 
 impl Table for Room {
     fn name() -> String {

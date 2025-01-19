@@ -16,7 +16,7 @@ pub struct Claims {
 
 impl Claim for Claims {}
 
-pub async fn create_default_user<'a>(db: &impl Repository) -> Result<(), RepositoryError> {
+pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryError> {
     if db
         .get::<User>(Some(HashMap::from([("role", Role::Admin.into())])))
         .await

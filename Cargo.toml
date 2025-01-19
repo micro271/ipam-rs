@@ -23,6 +23,7 @@ tower-http = { version = "0.6.1", features = ["cors", "tracing"] }
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 uuid = { version = "1.11.0", features = ["serde", "v4"] }
+macros ={ path = "./macros"}
 
 [lib]
 name = "libipam"
