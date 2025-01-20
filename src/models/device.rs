@@ -1,7 +1,7 @@
 use super::*;
-use std::net::IpAddr;
 use macros::FromPgRow;
-use sqlx::{Row, postgres::PgRow};
+use sqlx::{postgres::PgRow, Row};
+use std::net::IpAddr;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct UpdateDevice {

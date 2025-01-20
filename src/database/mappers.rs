@@ -1,6 +1,6 @@
 use crate::models::{
-    location::Location, mound_point::MountPoint, network::Network, office::Office,
-    room::Room, user::User, vlan::Vlan,
+    location::Location, mound_point::MountPoint, network::Network, office::Office, room::Room,
+    user::User, vlan::Vlan,
 };
 use sqlx::{postgres::PgRow, Row};
 

@@ -15,8 +15,7 @@ fn impl_table_trait(ast: &syn::DeriveInput) -> TokenStream {
         .attrs
         .iter()
         .find(|x| x.path().is_ident("table_name"))
-        .and_then(|attr| attr.parse_args::<syn::LitStr>().ok())
-        .map(|x| x.value())
+        .and_then(|attr| attr.parse_args::<syn::LitStr>().map(|x| x.value() ).ok())
         .unwrap_or(t.to_string().to_lowercase());
 
     let fields = match &ast.data {
@@ -93,4 +92,38 @@ fn impl_from_pg_row(input: &syn::DeriveInput) -> TokenStream {
         }
     }
     .into()
+}
+
+#[proc_macro_derive(Updatable)]
+pub fn create_updatable(token: TokenStream) -> TokenStream {
+    let ast = syn::parse(token).unwrap();
+
+    impl_updatable(&ast)
+}
+
+fn impl_updatable(input: &syn::DeriveInput) -> TokenStream {
+    let name = &input.ident;
+    let fields = match &input.data {
+        Data::Struct(data) => &data.fields,
+        _ => panic!("This isn't a struct"),
+    }.iter().filter_map(|x| x.ident.as_ref() ).collect::<Vec<_>>();
+
+    quote! {
+        impl<'a> Updatable<'a> for #name {
+            fn get_pair(self) -> Option<HashMap<&'a str, TypeTable>> {
+                let mut resp = HashMap::new();
+                #(
+                    if let Some(value) = self.#fields {
+                        resp.insert(stringify!(#fields), value.into());
+                    }
+                )*
+
+                if !resp.is_empty() {
+                    Some(resp)
+                } else {
+                    None
+                }
+            }
+        }
+    }.into()
 }
