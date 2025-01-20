@@ -15,7 +15,7 @@ fn impl_table_trait(ast: &syn::DeriveInput) -> TokenStream {
         .attrs
         .iter()
         .find(|x| x.path().is_ident("table_name"))
-        .and_then(|attr| attr.parse_args::<syn::LitStr>().map(|x| x.value()).ok())
+        .and_then(|attr| attr.parse_args::<syn::LitStr>().map(|x|x.value()).ok() )
         .unwrap_or(t.to_string().to_lowercase());
 
     let fields = match &ast.data {

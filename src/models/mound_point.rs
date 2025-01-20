@@ -1,11 +1,12 @@
-use super::{Deserialize, Serialize};
+use super::*;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Table, FromPgRow)]
+#[table_name("mount_point")]
 pub struct MountPoint {
     pub name: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Updatable)]
 pub struct UpdateMountPoint {
     pub name: Option<String>,
 }

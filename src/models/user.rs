@@ -1,6 +1,7 @@
 use super::*;
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, Table, FromPgRow)]
+#[table_name("users")]
 pub struct User {
     pub id: Uuid,
     pub username: String,
@@ -27,7 +28,7 @@ impl std::cmp::PartialEq for User {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Updatable)]
 pub struct UpdateUser {
     pub username: Option<String>,
     pub password: Option<String>,

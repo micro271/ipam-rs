@@ -1,5 +1,3 @@
-pub mod entities;
-pub mod mappers;
 pub mod repository;
 pub mod sql;
 pub mod transaction;
@@ -316,5 +314,11 @@ impl Transaction<'_> for RepositoryInjection<Postgres> {
         >,
     > {
         Box::pin(async { Ok(BuilderPgTransaction::new(self.0.begin().await?)) })
+    }
+}
+
+impl<'a> Updatable<'a> for HashMap<&'a str, TypeTable> {
+    fn get_pair(self) -> Option<HashMap<&'a str, TypeTable>> {
+        Some(self)
     }
 }

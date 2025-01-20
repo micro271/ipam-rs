@@ -1,9 +1,9 @@
 use libipam::type_net::vlan::VlanId;
-use macros::{Table, Updatable};
 use serde::{Deserialize, Serialize};
+use super::*;
 
-#[derive(Deserialize, Serialize, Debug, Clone, Table)]
-#[table_name = "vlans"]
+#[derive(Deserialize, Serialize, Debug, Clone, Table, FromPgRow)]
+#[table_name("vlans")]
 pub struct Vlan {
     pub id: VlanId,
     pub description: Option<String>,

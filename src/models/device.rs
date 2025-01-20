@@ -2,7 +2,7 @@ use super::*;
 use macros::FromPgRow;
 use std::net::IpAddr;
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Updatable)]
 pub struct UpdateDevice {
     pub ip: Option<IpAddr>,
     pub description: Option<String>,
@@ -15,7 +15,8 @@ pub struct UpdateDevice {
     pub password: Option<String>,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, FromPgRow)]
+#[derive(Deserialize, Serialize, Debug, Clone, FromPgRow, Table)]
+#[table_name("devices")]
 pub struct Device {
     #[FromStr]
     pub ip: IpAddr,

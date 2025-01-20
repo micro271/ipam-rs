@@ -1,5 +1,5 @@
 use crate::{
-    database::repository::{error::RepositoryError, Repository},
+    database::repository::{error::RepositoryError, Repository, Table},
     models::user::*,
 };
 use libipam::authentication::{encrypt, Claim};
@@ -31,6 +31,7 @@ pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryE
         password: encrypt(std::env::var("IPAM_PASSWORD_ROOT").unwrap_or("admin".into())).unwrap(),
         role: Role::Admin,
     };
+    println!("{:?} - {:?} - {:?}", User::name(), User::query_insert(), User::columns());
     db.insert::<User>(user).await?;
     Ok(())
 }

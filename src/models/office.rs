@@ -1,6 +1,7 @@
 use super::*;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Table, FromPgRow)]
+#[table_name("offices")]
 pub struct Office {
     pub address: String,
     pub description: Option<String>,

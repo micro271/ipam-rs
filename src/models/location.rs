@@ -1,6 +1,7 @@
-use super::{Deserialize, Serialize};
+use super::*;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Table, FromPgRow)]
+#[table_name("locations")]
 pub struct Location {
     pub label: String,
     pub mont_point: String,
@@ -8,7 +9,7 @@ pub struct Location {
     pub address: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Updatable)]
 pub struct LocationUpdate {
     pub label: Option<String>,
     pub mont_point: Option<String>,
