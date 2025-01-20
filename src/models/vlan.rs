@@ -1,17 +1,15 @@
-use crate::database::repository::{Table, TypeTable, Updatable};
 use libipam::type_net::vlan::VlanId;
-use macros::{Table as Tb, Updatable as Upd};
+use macros::{Table, Updatable};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
-#[derive(Deserialize, Serialize, Debug, Clone, Tb)]
+#[derive(Deserialize, Serialize, Debug, Clone, Table)]
 #[table_name = "vlans"]
 pub struct Vlan {
     pub id: VlanId,
     pub description: Option<String>,
 }
 
-#[derive(Deserialize, Debug, Upd)]
+#[derive(Deserialize, Debug, Updatable)]
 pub struct UpdateVlan {
     pub id: Option<VlanId>,
     pub description: Option<String>,

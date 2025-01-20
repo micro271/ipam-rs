@@ -8,4 +8,5 @@ pub mod user;
 pub mod vlan;
 
 use serde::{Deserialize, Serialize};
+use sqlx::Row;
 use uuid::Uuid;

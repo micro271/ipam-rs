@@ -1,6 +1,5 @@
 use super::*;
 use macros::FromPgRow;
-use sqlx::{postgres::PgRow, Row};
 use std::net::IpAddr;
 
 #[derive(Deserialize, Serialize, Debug)]
