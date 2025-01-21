@@ -1,9 +1,10 @@
 use serde::Deserialize;
+use uuid::Uuid;
 use std::{collections::HashMap, net::IpAddr};
-
+use macros::MapParams;
 use crate::database::repository::TypeTable;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, MapParams)]
 pub struct ParamRoomStrict {
     name: String,
     address: String,
@@ -43,6 +44,10 @@ impl GetMapParams for ParamRoom {
 pub struct ParamsDevice {
     pub ip: Option<IpAddr>,
     pub network_id: Option<uuid::Uuid>,
+}
+
+pub trait GetMapParams {
+    fn get_pairs(self) -> Option<HashMap<&'static str, TypeTable>>;
 }
 
 impl GetMapParams for ParamsDevice {
@@ -85,7 +90,7 @@ pub struct Subnet {
     pub prefix: u8,
 }
 
-pub trait GetMapParams {
+pub trait MapParams {
     fn get_pairs(self) -> Option<HashMap<&'static str, TypeTable>>;
 }
 
@@ -130,4 +135,11 @@ impl GetMapParams for LocationParamStict {
             ("mount_point", self.mount_point.into()),
         ]))
     }
+}
+
+struct OfficeParam {
+    pub id: Option<Uuid>,
+    pub street: Option<String>,
+    pub neighborhood: Option<String>,
+    pub description: Option<String>,
 }

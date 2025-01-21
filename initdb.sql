@@ -26,16 +26,19 @@ CREATE TABLE IF NOT EXISTS mount_point (
 );
 
 CREATE TABLE IF NOT EXISTS offices (
-    description VARCHAR,
-    address TEXT,
-    PRIMARY KEY (address)
+    id UUID,
+    description TEXT,
+    street TEXT,
+    neighborhood TEXT,
+    UNIQUE (neighborhood, street),
+    PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS room (
     name TEXT,
-    address TEXT,
-    PRIMARY KEY (name, address),
-    FOREIGN KEY (address) REFERENCES offices(address) ON DELETE CASCADE
+    id_office UUID,
+    PRIMARY KEY (name, id_office),
+    FOREIGN KEY (id_office) REFERENCES offices(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS locations (

@@ -66,9 +66,9 @@ fn impl_from_pg_row(input: &syn::DeriveInput) -> TokenStream {
 
         if attrs.iter().any(|x| x.path().is_ident("FromStr")) {
             if attrs.iter().any(|x|x.path().is_ident("default")) {
-                quote! { #field_name: value.get::<'_, &str, _>(stringify!(#field_name)).parse().unwrap_or_default() }
+                quote! { #field_name: sqlx::Row::get::<'_, &str, _>(&value, stringify!(#field_name)).parse().unwrap_or_default() }
             } else {
-                quote! { #field_name: value.get::<'_, &str, _>(stringify!(#field_name)).parse().unwrap() }
+                quote! { #field_name: sqlx::Row::get::<'_, &str, _>(&value, stringify!(#field_name)).parse().unwrap() }
             }
         } else {
 
@@ -76,7 +76,7 @@ fn impl_from_pg_row(input: &syn::DeriveInput) -> TokenStream {
                 panic!("Default is used only when the FromStr attribute is present");
             }
 
-            quote! { #field_name: value.get(stringify!(#field_name)) }
+            quote! { #field_name: /*value.get(stringify!(#field_name))*/ sqlx::Row::get(&value, stringify!(#field_name)) }
         }
 
     }).collect::<Vec<_>>();
@@ -125,6 +125,55 @@ fn impl_updatable(input: &syn::DeriveInput) -> TokenStream {
                 } else {
                     None
                 }
+            }
+        }
+    }.into()
+}
+
+
+#[proc_macro_derive(MapParams)]
+pub fn map_params(token: TokenStream) -> TokenStream {
+    let tmp = syn::parse(token).unwrap();
+
+    impl_map_params(&tmp)
+}
+
+fn impl_map_params(input: &syn::DeriveInput) -> TokenStream {
+    let name = &input.ident;
+    let fields = match &input.data {
+        Data::Struct(e) => &e.fields,
+        _ => panic!("Only struct"),
+    }
+        .iter()
+        .map(|field| {
+            let ty = &field.ty;
+            let name = field.ident.as_ref().unwrap();
+            if let syn::Type::Path(e) = ty {
+                if e.path.segments.iter().any(|x|  x.ident == "Option") {
+                    return quote! {
+                        if let Some(e) = self.#name {
+                            condition.insert(stringify!(#name), e.into());
+                        }
+                    };  
+                }
+            }
+
+            quote! {
+                condition.insert(stringify!(#name), self.#name.into());
+            }
+        })
+        .collect::<Vec<_>>();
+
+
+
+    quote! {
+        impl MapParams for #name {
+            fn get_pairs(self) -> Option<HashMap<&'static str, TypeTable>> {
+                let mut condition = HashMap::new();
+
+                #(#fields)*
+
+                Some(condition)
             }
         }
     }.into()
