@@ -5,7 +5,7 @@ use crate::{
 };
 use entries::{
     models::{self, DeviceCreateEntry},
-    params::{GetMapParams, ParamsDevice, ParamsDeviceStrict},
+    params::{ParamsDevice, ParamsDeviceStrict},
 };
 
 pub async fn create(

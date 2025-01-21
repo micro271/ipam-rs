@@ -1,6 +1,5 @@
 use std::{net::IpAddr, str::FromStr};
 
-use super::RepositoryType;
 use super::*;
 use crate::{
     database::{
@@ -85,7 +84,7 @@ pub async fn subnetting(
         .await?
         .remove(0);
 
-    let networks = libipam::ipam_services::subnetting(father.network, prefix)
+    let networks = libipam::ipam_services::subnetting(father.network, prefix as u8)
         .map_err(|x| ResponseError::builder().detail(x.to_string()).build())?;
 
     let mut state = state.transaction().await?;

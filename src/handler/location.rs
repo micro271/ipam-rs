@@ -1,6 +1,6 @@
 use super::{
-    entries::params::{GetMapParams, LocationParam, LocationParamStict},
-    RepositoryType, ResponseError,
+    entries::params::{LocationParam, LocationParamStict},
+    RepositoryType, ResponseError, MapParams,
 };
 use crate::{
     database::repository::{QueryResult, Repository},

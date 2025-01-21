@@ -151,7 +151,7 @@ fn impl_map_params(input: &syn::DeriveInput) -> TokenStream {
             if let syn::Type::Path(e) = ty {
                 if e.path.segments.iter().any(|x|  x.ident == "Option") {
                     return quote! {
-                        if let Some(e) = self.#name {
+                        if let ::std::option::Option::Some(e) = self.#name {
                             condition.insert(stringify!(#name), e.into());
                         }
                     };  
@@ -168,8 +168,8 @@ fn impl_map_params(input: &syn::DeriveInput) -> TokenStream {
 
     quote! {
         impl MapParams for #name {
-            fn get_pairs(self) -> Option<HashMap<&'static str, TypeTable>> {
-                let mut condition = HashMap::new();
+            fn get_pairs(self) -> ::std::option::Option<::std::collections::HashMap<&'static str, crate::database::repository::TypeTable>> {
+                let mut condition = ::std::collections::HashMap::new();
 
                 #(#fields)*
 

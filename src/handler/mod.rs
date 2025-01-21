@@ -14,7 +14,7 @@ use crate::{
     database::{repository::Repository, RepositoryInjection},
     models::{self, user::Role},
 };
-
+use entries::params::MapParams;
 use axum::{
     extract::{Json, Path, Query, State},
     http::{StatusCode, Uri},

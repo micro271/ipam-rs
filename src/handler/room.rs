@@ -1,8 +1,8 @@
 use axum::extract::Query;
 
 use super::{
-    entries::params::{GetMapParams, ParamRoom, ParamRoomStrict},
-    Json, RepositoryType, ResponseError, State,
+    entries::params::{ParamRoom, ParamRoomStrict},
+    Json, RepositoryType, ResponseError, State, MapParams
 };
 use crate::{
     database::repository::{QueryResult, Repository},
