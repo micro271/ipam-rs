@@ -24,6 +24,9 @@ impl SqlOperations {
                 TypeTable::OptionVlanId(value) => sql.bind(value),
                 TypeTable::VlanId(e) => sql.bind(e),
                 TypeTable::I64(value) => sql.bind(value),
+                TypeTable::Bool(e) => sql.bind(e),
+                TypeTable::OptionTime(e) => sql.bind(e),
+                TypeTable::Time(e) => sql.bind(e),
                 TypeTable::Null => sql,
             };
         }
@@ -83,6 +86,9 @@ impl SqlOperations {
                 TypeTable::I32(e) => sql.bind(e),
                 TypeTable::Role(value) => sql.bind(value),
                 TypeTable::OptionUuid(e) => sql.bind(e),
+                TypeTable::Bool(e) => sql.bind(e),
+                TypeTable::OptionTime(e) => sql.bind(e),
+                TypeTable::Time(e) => sql.bind(e),
                 TypeTable::Null => sql,
                 TypeTable::I64(e) => sql.bind(e),
             };
@@ -123,6 +129,9 @@ impl SqlOperations {
                     TypeTable::OptionVlanId(e) => sql.bind(e),
                     TypeTable::VlanId(e) => sql.bind(e),
                     TypeTable::OptionUuid(e) => sql.bind(e),
+                    TypeTable::Bool(e) => sql.bind(e),
+                    TypeTable::OptionTime(e) => sql.bind(e),
+                    TypeTable::Time(e) => sql.bind(e),
                     TypeTable::String(s) => sql.bind(s),
                     TypeTable::I32(e) => sql.bind(e),
                     TypeTable::OptionString(s) => sql.bind(s),

@@ -15,7 +15,7 @@ fn impl_table_trait(ast: &syn::DeriveInput) -> TokenStream {
         .attrs
         .iter()
         .find(|x| x.path().is_ident("table_name"))
-        .and_then(|attr| attr.parse_args::<syn::LitStr>().map(|x|x.value()).ok() )
+        .and_then(|attr| attr.parse_args::<syn::LitStr>().map(|x| x.value()).ok())
         .unwrap_or(t.to_string().to_lowercase());
 
     let fields = match &ast.data {
@@ -48,7 +48,10 @@ fn impl_table_trait(ast: &syn::DeriveInput) -> TokenStream {
     .into()
 }
 
-#[proc_macro_derive(FromPgRow, attributes(FromStr, default))]
+#[proc_macro_derive(
+    FromPgRow,
+    attributes(FromStr, default, offset_timestamp, hours, minutes, seconds)
+)]
 pub fn from_pg_row(token: TokenStream) -> TokenStream {
     let tmp = syn::parse(token).unwrap();
 
@@ -69,6 +72,25 @@ fn impl_from_pg_row(input: &syn::DeriveInput) -> TokenStream {
                 quote! { #field_name: sqlx::Row::get::<'_, &str, _>(&value, stringify!(#field_name)).parse().unwrap_or_default() }
             } else {
                 quote! { #field_name: sqlx::Row::get::<'_, &str, _>(&value, stringify!(#field_name)).parse().unwrap() }
+            }
+        } else if let Some(e) = attrs.iter().find(|x| x.path().is_ident("offset_timestamp")) {
+
+            let exp = e.parse_args::<syn::ExprTuple>().unwrap();
+            let exp = exp.elems.iter().collect::<Vec<_>>();
+            let h = *exp.first().unwrap();
+            let m = *exp.get(1).unwrap();
+            let s = *exp.get(2).unwrap();
+
+            if let syn::Type::Path(e) = &field.ty {
+                if e.path.segments.iter().any(|x| x.ident == "Option") {
+                    return quote! {
+                        #field_name: sqlx::Row::get::<'_, Option<time::OffsetDateTime>, _>(&value, stringify!(#field_name)).map(|x| x.to_offset(time::UtcOffset::from_hms(#h, #m, #s).unwrap()))
+                    };
+                }
+            }
+
+            quote! {
+                #field_name: sqlx::Row::get::<'_, time::OffsetDateTime, _>(&value, stringify!(#field_name)).to_offset(time::UtcOffset::from_hms(#h, #m, #s).expect(&format!("Invalid offset h: {}, m: {}, s: {}", stringify!(#h), stringify!(#m), stringify!(#s))))
             }
         } else {
 
@@ -130,7 +152,6 @@ fn impl_updatable(input: &syn::DeriveInput) -> TokenStream {
     }.into()
 }
 
-
 #[proc_macro_derive(MapParams)]
 pub fn map_params(token: TokenStream) -> TokenStream {
     let tmp = syn::parse(token).unwrap();
@@ -144,27 +165,25 @@ fn impl_map_params(input: &syn::DeriveInput) -> TokenStream {
         Data::Struct(e) => &e.fields,
         _ => panic!("Only struct"),
     }
-        .iter()
-        .map(|field| {
-            let ty = &field.ty;
-            let name = field.ident.as_ref().unwrap();
-            if let syn::Type::Path(e) = ty {
-                if e.path.segments.iter().any(|x|  x.ident == "Option") {
-                    return quote! {
-                        if let ::std::option::Option::Some(e) = self.#name {
-                            condition.insert(stringify!(#name), e.into());
-                        }
-                    };  
-                }
+    .iter()
+    .map(|field| {
+        let ty = &field.ty;
+        let name = field.ident.as_ref().unwrap();
+        if let syn::Type::Path(e) = ty {
+            if e.path.segments.iter().any(|x| x.ident == "Option") {
+                return quote! {
+                    if let ::std::option::Option::Some(e) = self.#name {
+                        condition.insert(stringify!(#name), e.into());
+                    }
+                };
             }
+        }
 
-            quote! {
-                condition.insert(stringify!(#name), self.#name.into());
-            }
-        })
-        .collect::<Vec<_>>();
-
-
+        quote! {
+            condition.insert(stringify!(#name), self.#name.into());
+        }
+    })
+    .collect::<Vec<_>>();
 
     quote! {
         impl MapParams for #name {

@@ -199,7 +199,28 @@ pub enum TypeTable {
     VlanId(VlanId),
     I64(i64),
     I32(i32),
+    OptionTime(Option<time::OffsetDateTime>),
+    Time(time::OffsetDateTime),
+    Bool(bool),
     Null,
+}
+
+impl From<bool> for TypeTable {
+    fn from(value: bool) -> Self {
+        Self::Bool(value)
+    }
+}
+
+impl From<time::OffsetDateTime> for TypeTable {
+    fn from(value: time::OffsetDateTime) -> Self {
+        Self::Time(value)
+    }
+}
+
+impl From<Option<time::OffsetDateTime>> for TypeTable {
+    fn from(value: Option<time::OffsetDateTime>) -> Self {
+        Self::OptionTime(value)
+    }
 }
 
 impl From<VlanId> for TypeTable {

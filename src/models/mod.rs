@@ -7,6 +7,6 @@ pub mod room;
 pub mod user;
 pub mod vlan;
 
-use serde::{Deserialize, Serialize};
 use macros::{FromPgRow, Table, Updatable};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;

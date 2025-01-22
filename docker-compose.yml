@@ -4,9 +4,9 @@ services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_PASSWORD: ${DB_PASSWD}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWD}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_DB: ${DATABASE_NAME}
     ports:
       - 5432:5432
     volumes:
@@ -20,11 +20,11 @@ services:
     ports:
       - 3000:3000
     environment:
-      DATABASE_NAME: ${DB_NAME}
-      DATABASE_PASSWD: ${DB_PASSWD}
-      DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_USER: ${DB_USER}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_PASSWD: ${DATABASE_PASSWD}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_USER: ${DATABASE_USER}
       SECRET_KEY: ${SECRET_KEY}
     depends_on:
       - postgres

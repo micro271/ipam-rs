@@ -45,10 +45,10 @@ CREATE TABLE IF NOT EXISTS locations (
     label TEXT,
     mount_point TEXT,
     room_name TEXT,
-    address TEXT NOT NULL,
+    id_office UUID NOT NULL,
     PRIMARY KEY (label, mount_point, room_name),
     FOREIGN KEY (mount_point) REFERENCES mount_point(name) ON DELETE SET NULL ON UPDATE CASCADE,
-    FOREIGN KEY (room_name, address) REFERENCES room(name, address) ON DELETE CASCADE ON UPDATE CASCADE
+    FOREIGN KEY (room_name, id_office) REFERENCES room(name, id_office) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS devices (
@@ -73,5 +73,8 @@ CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,
     username VARCHAR(32) UNIQUE,
     password TEXT,
-    role ROLE
+    role ROLE,
+    is_active BOOLEAN DEFAULT TRUE,
+    create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP
 );

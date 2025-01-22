@@ -6,20 +6,20 @@ pub mod extractors;
 pub mod location;
 pub mod mount_point;
 pub mod network;
-pub mod room;
 pub mod office;
+pub mod room;
 pub mod vlan;
 
 use crate::{
     database::{repository::Repository, RepositoryInjection},
     models::{self, user::Role},
 };
-use entries::params::MapParams;
 use axum::{
     extract::{Json, Path, Query, State},
     http::{StatusCode, Uri},
     response::IntoResponse,
 };
+use entries::params::MapParams;
 use extractors::IsAdministrator;
 use libipam::response_error::ResponseError;
 use std::{collections::HashMap, sync::Arc};

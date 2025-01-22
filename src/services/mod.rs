@@ -1,10 +1,9 @@
 use crate::{
-    database::repository::{error::RepositoryError, Repository, Table},
+    database::repository::{error::RepositoryError, Repository},
     models::user::*,
 };
 use libipam::authentication::{encrypt, Claim};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -18,9 +17,11 @@ impl Claim for Claims {}
 
 pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryError> {
     if db
-        .get::<User>(Some(HashMap::from([("role", Role::Admin.into())])))
-        .await
-        .is_ok()
+        .get::<User>(Some(std::collections::HashMap::from([(
+            "role",
+            Role::Admin.into(),
+        )])))
+        .await.is_ok()
     {
         return Ok(());
     }
@@ -30,8 +31,10 @@ pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryE
         username: std::env::var("IPAM_USER_ROOT").unwrap_or("admin".into()),
         password: encrypt(std::env::var("IPAM_PASSWORD_ROOT").unwrap_or("admin".into())).unwrap(),
         role: Role::Admin,
+        create_at: time::OffsetDateTime::now_utc(),
+        is_active: true,
+        last_login: None,
     };
-    println!("{:?} - {:?} - {:?}", User::name(), User::query_insert(), User::columns());
     db.insert::<User>(user).await?;
     Ok(())
 }

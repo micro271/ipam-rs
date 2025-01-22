@@ -1,10 +1,12 @@
-use serde::Deserialize;
-use uuid::Uuid;
-use std::net::IpAddr;
 use macros::MapParams as MapParamsDerive;
+use serde::Deserialize;
+use std::net::IpAddr;
+use uuid::Uuid;
 
 pub trait MapParams {
-    fn get_pairs(self) -> Option<std::collections::HashMap<&'static str, crate::database::repository::TypeTable>>;
+    fn get_pairs(
+        self,
+    ) -> Option<std::collections::HashMap<&'static str, crate::database::repository::TypeTable>>;
 }
 
 #[derive(Debug, Deserialize, MapParamsDerive)]
@@ -18,7 +20,6 @@ pub struct ParamRoom {
     name: Option<String>,
     address: Option<String>,
 }
-
 
 #[derive(Debug, Deserialize, MapParamsDerive)]
 pub struct ParamsDevice {

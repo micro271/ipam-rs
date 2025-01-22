@@ -7,6 +7,13 @@ pub struct User {
     pub username: String,
     pub password: String,
     pub role: Role,
+    pub is_active: bool,
+
+    #[offset_timestamp((-3,0,0))]
+    pub create_at: time::OffsetDateTime,
+
+    #[offset_timestamp((-3,0,0))]
+    pub last_login: Option<time::OffsetDateTime>,
 }
 
 impl User {
