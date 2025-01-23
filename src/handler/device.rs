@@ -114,6 +114,7 @@ pub async fn update(
 pub async fn get(
     State(state): State<RepositoryType>,
     Query(params): Query<ParamsDevice>,
+    Query(_pagination): Query<PaginationParams>
 ) -> Result<QueryResult<Device>, ResponseError> {
     let mut device = state.get::<Device>(params.get_pairs()).await?;
 

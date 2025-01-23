@@ -54,9 +54,15 @@ pub struct LocationParamStict {
 }
 
 #[derive(Debug, Deserialize, MapParamsDerive)]
-struct OfficeParam {
+pub struct OfficeParam {
     pub id: Option<Uuid>,
     pub street: Option<String>,
     pub neighborhood: Option<String>,
     pub description: Option<String>,
+}
+
+#[derive(Deserialize, Debug, MapParamsDerive)]
+pub struct PaginationParams {
+    pub offset: Option<i32>,
+    pub limit: Option<i32>,
 }

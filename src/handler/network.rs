@@ -29,6 +29,7 @@ pub async fn create(
 pub async fn get(
     State(state): State<RepositoryType>,
     Path(id): Path<Option<Uuid>>,
+    Query(_pagination): Query<PaginationParams>
 ) -> Result<QueryResult<Network>, ResponseError> {
     Ok(state
         .get::<Network>(id.map(|x| HashMap::from([("id", x.into())])))

@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-use super::{RepositoryType, ResponseError, State};
+use super::{RepositoryType, ResponseError, State, PaginationParams};
 use crate::{
     database::repository::{QueryResult, Repository},
     models::vlan::{UpdateVlan, Vlan},
 };
-use axum::{extract::Path, Json};
+use axum::{extract::{Path, Query}, Json};
 use libipam::type_net::vlan::VlanId;
 
 pub async fn insert(
@@ -18,6 +18,7 @@ pub async fn insert(
 pub async fn get(
     State(state): State<RepositoryType>,
     Path(id): Path<VlanId>,
+    Query(_pagination): Query<PaginationParams>,
 ) -> Result<QueryResult<Vlan>, ResponseError> {
     Ok(state
         .get::<Vlan>(Some(HashMap::from([("id", id.into())])))

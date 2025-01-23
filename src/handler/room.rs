@@ -1,7 +1,7 @@
 use axum::extract::Query;
 
 use super::{
-    entries::params::{ParamRoom, ParamRoomStrict},
+    entries::params::{ParamRoom, ParamRoomStrict, PaginationParams},
     Json, MapParams, RepositoryType, ResponseError, State,
 };
 use crate::{
@@ -27,6 +27,7 @@ pub async fn update(
 pub async fn get(
     State(state): State<RepositoryType>,
     Query(param): Query<ParamRoom>,
+    Query(_pagination): Query<PaginationParams>
 ) -> Result<QueryResult<Room>, ResponseError> {
     Ok(state.get(param.get_pairs()).await?.into())
 }

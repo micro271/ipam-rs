@@ -1,5 +1,5 @@
 use super::{
-    entries::params::{LocationParam, LocationParamStict},
+    entries::params::{LocationParam, LocationParamStict, PaginationParams},
     MapParams, RepositoryType, ResponseError,
 };
 use crate::{
@@ -14,6 +14,7 @@ use axum::{
 pub async fn get(
     State(state): State<RepositoryType>,
     Query(param): Query<LocationParam>,
+    Query(_pagination): Query<PaginationParams>,
 ) -> Result<QueryResult<Location>, ResponseError> {
     Ok(state.get::<Location>(param.get_pairs()).await?.into())
 }
