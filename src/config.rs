@@ -1,9 +1,10 @@
-use serde::Deserialize;
 use std::{env::var, net::IpAddr};
-#[derive(Deserialize)]
+
+use axum::http::HeaderValue;
+#[derive(Debug)]
 pub struct Config {
     pub database: Database,
-    pub app: Application,
+    pub app: Backend,
 }
 
 impl Config {
@@ -21,19 +22,26 @@ impl Config {
                 password: var("DATABASE_PASSWD").expect("Password database not defined"),
                 host: var("DATABASE_HOST").expect("Database Host not defined"),
             },
-            app: Application {
+            app: Backend {
                 port: var("APPLICATION_PORT")
+                    .ok()
+                    .filter(|x| !x.is_empty())
                     .map(|x| x.parse().expect("Invalid port for application"))
                     .unwrap_or(3000),
                 ip: var("APPLICATION_IP")
-                    .map(|x| x.parse().expect("Invalid ip"))
+                    .ok()
+                    .filter(|x| !x.is_empty())
+                    .map(|x| x.parse().expect("Invalid ip to backend"))
                     .unwrap_or("0.0.0.0".parse().unwrap()),
+                origin_allow: var("ORIGIN_ALLOW").ok().filter(|x| !x.is_empty()).map(|x| {
+                    x.split_whitespace().map(|x| x.parse().unwrap()).collect::<Vec<HeaderValue>>()
+                }).unwrap_or(Vec::from(["localhost".parse().unwrap()])),
             },
         })
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Debug)]
 pub struct Database {
     pub name: String,
     pub port: u16,
@@ -42,8 +50,9 @@ pub struct Database {
     pub host: String,
 }
 
-#[derive(Deserialize)]
-pub struct Application {
+#[derive(Debug)]
+pub struct Backend {
     pub port: u16,
     pub ip: IpAddr,
+    pub origin_allow: Vec<HeaderValue>,
 }

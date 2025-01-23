@@ -25,12 +25,12 @@ pub async fn insert(
     State(state): State<RepositoryType>,
     Json(off): Json<Office>,
 ) -> Result<QueryResult<Office>, ResponseError> {
-    Ok(state.insert::<Office>(off).await?.into())
+    Ok(state.insert::<Office>(off).await?)
 }
 
 pub async fn delete(
     State(state): State<RepositoryType>,
     Path(id): Path<Uuid>,
 ) -> Result<QueryResult<Office>, ResponseError> {
-    Ok(state.delete::<Office>(Some(HashMap::from([("id", id.into())]))).await?.into())
+    Ok(state.delete::<Office>(Some(HashMap::from([("id", id.into())]))).await?)
 }

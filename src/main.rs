@@ -3,9 +3,10 @@ mod database;
 mod handler;
 mod models;
 mod services;
+mod tracing;
 
 use axum::{
-    http::Response,
+    http::method::Method,
     routing::{get, patch, post},
     serve, Router,
 };
@@ -13,8 +14,7 @@ use config::Config;
 use database::RepositoryInjection;
 use handler::*;
 use std::sync::Arc;
-use tower::ServiceBuilder;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{AllowOrigin, CorsLayer};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -26,6 +26,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "postgres://{}:{}@{}:{}/{}",
         database.username, database.password, database.host, database.port, database.name,
     );
+
+    let cors = CorsLayer::new()
+        .allow_methods([Method::POST, Method::GET, Method::PATCH, Method::DELETE])
+        .allow_origin(AllowOrigin::predicate( move |origin: &axum::http::HeaderValue, _req: &axum::http::request::Parts| {
+            if let Ok(e) = origin.to_str() {
+                app.origin_allow.iter().any(|x| e.contains( x.to_str().unwrap() ))
+            } else {
+                false
+            }
+        }))
+        .allow_credentials(true);
 
     let db = RepositoryInjection::new(database_url).await?;
     services::create_default_user(&db).await?;
@@ -94,22 +105,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .nest("/location", location);
 
     let app = Router::new()
-        .route("/", get(hello_world))
         .nest("/api/v1", api_v1)
         .layer(axum::middleware::from_fn(auth::verify_token))
         .route("/login", post(auth::login))
         .with_state(db.clone())
-        .layer(ServiceBuilder::new().layer(CorsLayer::permissive()));
+        .layer(cors);
 
     serve(lst, app).await?;
 
     Ok(())
-}
-
-async fn hello_world() -> Response<String> {
-    Response::builder()
-        .status(200)
-        .header("Content-Type", "text/html")
-        .body("<h1>Bienvenido</h1>".to_string())
-        .unwrap_or_default()
 }

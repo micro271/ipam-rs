@@ -75,6 +75,6 @@ CREATE TABLE IF NOT EXISTS users (
     password TEXT,
     role ROLE,
     is_active BOOLEAN DEFAULT TRUE,
-    create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP
+    create_at TIMESTAMPTZ,
+    last_login TIMESTAMPTZ
 );
