@@ -1,0 +1,17 @@
+[package]
+name = "utils_ipam"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+axum = { version = "0.7.7", features = ["json", "macros"] }
+bcrypt = "0.16.0"
+futures = "0.3.31"
+ipnet = "2.11.0"
+jsonwebtoken = "9.3.0"
+serde = "1.0.217"
+serde_json = "1.0.137"
+sqlx = "0.8.3"
+time = { version = "0.3.37", features = ["serde"] }
+tokio = { version = "1.43.0", features = ["full"] }
