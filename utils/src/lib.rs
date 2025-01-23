@@ -1,12 +1,25 @@
+#[cfg(feature = "axum")]
 use axum::{extract::FromRequestParts, http::StatusCode};
+
+#[cfg(feature = "axum")]
 use error::NotFound;
+
+#[cfg(feature = "axum")]
 use futures::FutureExt;
+
+#[cfg(feature = "axum")]
 use std::convert::Infallible;
+
+#[cfg(feature = "axum")]
 use std::{boxed::Box, future::Future, pin::Pin};
+
+#[cfg(feature = "axum")]
 pub struct Token(pub Result<String, NotFound>);
 
+#[cfg(feature = "axum")]
 pub struct Theme(pub theme::Theme);
 
+#[cfg(feature = "axum")]
 impl<S> FromRequestParts<S> for Token
 where
     S: Send,
@@ -43,6 +56,7 @@ where
     }
 }
 
+#[cfg(feature = "axum")]
 impl<S> FromRequestParts<S> for Theme
 where
     S: Send,
@@ -80,6 +94,7 @@ where
     }
 }
 
+#[cfg(feature = "cookie")]
 pub mod cookie {
     #[derive(Debug, PartialEq)]
     pub enum Cookie {
@@ -108,6 +123,7 @@ pub mod cookie {
     }
 }
 
+#[cfg(feature = "cookie")]
 pub mod theme {
 
     #[derive(Debug, PartialEq)]
@@ -139,6 +155,7 @@ pub mod theme {
     }
 }
 
+#[cfg(feature = "axum")]
 pub mod error {
     use super::StatusCode;
     use axum::response::IntoResponse;
@@ -158,6 +175,7 @@ pub mod error {
     pub struct ParseError;
 }
 
+#[cfg(feature = "auth")]
 pub mod authentication {
     use bcrypt::{hash, verify, DEFAULT_COST};
     use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
@@ -244,6 +262,7 @@ pub mod authentication {
     }
 }
 
+#[cfg(feature = "axum")]
 #[allow(dead_code)]
 pub mod response_error {
     use axum::{
@@ -429,12 +448,14 @@ pub mod response_error {
 }
 
 #[allow(dead_code)]
+#[cfg(feature = "types")]
 pub mod type_net {
 
     pub mod port {
         use serde::{Deserialize, Serialize};
 
-        #[derive(Debug, Clone, Deserialize, Serialize, sqlx::Type)]
+        #[derive(Debug, Clone, Deserialize, Serialize)]
+        #[cfg_attr(feature = "sqlx_type", derive(sqlx::Type))]
         pub struct Port(u16);
 
         impl std::ops::Deref for Port {
@@ -557,8 +578,9 @@ pub mod type_net {
             }
         }
 
-        #[derive(Deserialize, Serialize, Debug, Clone, sqlx::Type)]
-        #[sqlx(transparent)]
+        #[derive(Deserialize, Serialize, Debug, Clone)]
+        #[cfg_attr(feature = "sqlx_type", derive(sqlx::Type))]
+        #[cfg_attr(feature = "sqlx_type", sqlx(transparent))]
         pub struct HostCount(i32);
 
         impl HostCount {
@@ -726,8 +748,9 @@ pub mod type_net {
     pub mod vlan {
         use serde::{Deserialize, Serialize};
 
-        #[derive(Debug, Deserialize, Serialize, Clone, sqlx::Type)]
-        #[sqlx(transparent)]
+        #[derive(Debug, Deserialize, Serialize, Clone)]
+        #[cfg_attr(feature = "sqlx_type", derive(sqlx::Type))]
+        #[cfg_attr(feature = "sqlx_type", sqlx(transparent))]
         pub struct VlanId(i16);
 
         impl VlanId {
@@ -856,6 +879,7 @@ pub mod type_net {
     }
 }
 
+#[cfg(feature = "ipam_services")]
 pub mod ipam_services {
     use std::net::{IpAddr, Ipv4Addr};
 

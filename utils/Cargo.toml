@@ -5,13 +5,22 @@ edition = "2021"
 
 
 [dependencies]
-axum = { version = "0.7.7", features = ["json", "macros"] }
+axum = { version = "0.7.7", features = ["json", "macros"], optional = true}
 bcrypt = "0.16.0"
 futures = "0.3.31"
-ipnet = "2.11.0"
+ipnet = { version = "2.11.0", optional = true}
 jsonwebtoken = "9.3.0"
 serde = "1.0.217"
 serde_json = "1.0.137"
-sqlx = "0.8.3"
+sqlx = { version = "0.8.3", optional = true }
 time = { version = "0.3.37", features = ["serde"] }
-tokio = { version = "1.43.0", features = ["full"] }
+tokio = { version = "1.43.0", features = ["full"], optional = true }
+
+[features]
+types = ["dep:ipnet"]
+axum = ["dep:axum"]
+cookie = []
+auth = []
+ipam_services = ["axum", "tokio"]
+sqlx_type = ["types", "dep:sqlx"]
+full = ["types", "axum", "cookie", "auth", "ipam_services", "sqlx_type"]
