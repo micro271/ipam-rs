@@ -14,37 +14,36 @@ use std::{
     collections::HashMap,
     fmt::Debug,
     net::IpAddr,
-    {future::Future, pin::Pin},
+    future::Future,
 };
 use uuid::Uuid;
 
-pub type ResultRepository<'a, T> =
-    Pin<Box<dyn Future<Output = Result<T, RepositoryError>> + 'a + Send>>;
+pub type ResultRepository<T> = Result<T, RepositoryError>;
 
 pub trait Repository {
-    fn get<'a, T>(
-        &'a self,
-        primary_key: Option<HashMap<&'a str, TypeTable>>,
-    ) -> ResultRepository<'a, Vec<T>>
+    fn get<T>(
+        &self,
+        primary_key: Option<HashMap<&'static str, TypeTable>>,
+    ) -> impl Future<Output = ResultRepository<Vec<T>>>
     where
-        T: Table + From<PgRow> + 'a + Send + Debug + Clone;
-    fn insert<'a, T>(&'a self, data: T) -> ResultRepository<'a, QueryResult<T>>
+        T: Table + From<PgRow> + Send + Debug + Clone;
+    fn insert<T>(&self, data: T) -> impl Future<Output = ResultRepository<QueryResult<T>>>
     where
-        T: Table + 'a + Send + Debug + Clone;
-    fn update<'a, T, U>(
-        &'a self,
+        T: Table + Send + Debug + Clone;
+    fn update<T, U>(
+        &self,
         updater: U,
-        condition: Option<HashMap<&'a str, TypeTable>>,
-    ) -> ResultRepository<'a, QueryResult<T>>
+        condition: Option<HashMap<&'static str, TypeTable>>,
+    ) -> impl Future<Output = ResultRepository<QueryResult<T>>>
     where
-        T: Table + 'a + Send + Debug + Clone,
-        U: Updatable<'a> + Send + 'a + Debug;
-    fn delete<'a, T>(
-        &'a self,
-        condition: Option<HashMap<&'a str, TypeTable>>,
-    ) -> ResultRepository<'a, QueryResult<T>>
+        T: Table + Send + Debug + Clone,
+        U: Updatable + Send + Debug;
+    fn delete<T>(
+        &self,
+        condition: Option<HashMap<&'static str, TypeTable>>,
+    ) -> impl Future<Output = ResultRepository<QueryResult<T>>>
     where
-        T: Table + 'a + Send + Debug + Clone;
+        T: Table + Send + Debug + Clone;
 }
 
 pub trait Table {
@@ -87,8 +86,8 @@ pub trait Table {
     }
 }
 
-pub trait Updatable<'a> {
-    fn get_pair(self) -> Option<HashMap<&'a str, TypeTable>>;
+pub trait Updatable {
+    fn get_pair(self) -> Option<HashMap<&'static str, TypeTable>>;
 }
 
 pub enum QueryResult<T> {

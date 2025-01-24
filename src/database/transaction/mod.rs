@@ -77,7 +77,7 @@ impl<'b> BuilderPgTransaction<'b> {
     ) -> impl Future<Output = TransactionTaskResult<T>> + use<'_, T, U>
     where
         T: Table + std::fmt::Debug + Clone,
-        U: Updatable<'static> + Send + std::fmt::Debug + 'static,
+        U: Updatable + Send + std::fmt::Debug + 'static,
     {
         let transaction = self.transaction.clone();
 

@@ -133,8 +133,8 @@ fn impl_updatable(input: &syn::DeriveInput) -> TokenStream {
     .collect::<Vec<_>>();
 
     quote! {
-        impl<'a> crate::database::repository::Updatable<'a> for #name {
-            fn get_pair(self) -> Option<::std::collections::HashMap<&'a str, crate::database::repository::TypeTable>> {
+        impl crate::database::repository::Updatable for #name {
+            fn get_pair(self) -> Option<::std::collections::HashMap<&'static str, crate::database::repository::TypeTable>> {
                 let mut resp = ::std::collections::HashMap::new();
                 #(
                     if let Some(value) = self.#fields {
