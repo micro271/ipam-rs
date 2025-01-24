@@ -33,15 +33,14 @@ impl Config {
                     .filter(|x| !x.is_empty())
                     .map(|x| x.parse().expect("Invalid ip to backend"))
                     .unwrap_or("0.0.0.0".parse().unwrap()),
-                origin_allow: var("ORIGIN_ALLOW")
+                allow_origin: var("ALLOW_ORIGIN")
                     .ok()
-                    .filter(|x| !x.is_empty())
+                    .filter(|x| !x.is_empty() && !x.contains("*"))
                     .map(|x| {
                         x.split_whitespace()
-                            .map(|x| x.parse().unwrap())
-                            .collect::<Vec<HeaderValue>>()
-                    })
-                    .unwrap_or(Vec::from(["localhost".parse().unwrap()])),
+                            .filter_map(|x| x.parse::<HeaderValue>().ok())
+                            .collect()
+                    }),
             },
         })
     }
@@ -60,5 +59,5 @@ pub struct Database {
 pub struct Backend {
     pub port: u16,
     pub ip: IpAddr,
-    pub origin_allow: Vec<HeaderValue>,
+    pub allow_origin: Option<Vec<HeaderValue>>,
 }

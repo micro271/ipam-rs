@@ -26,11 +26,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         database.username, database.password, database.host, database.port, database.name,
     );
 
-    let cors = CorsLayer::new()
-        .allow_headers(Any)
-        .allow_origin(app.origin_allow)
-        .allow_credentials(true)
-        .allow_headers(Any);
+    let cors = {
+        let tmp = CorsLayer::new().allow_headers(Any).allow_headers(Any);
+
+        if let Some(e) = app.allow_origin {
+            tmp.allow_credentials(true).allow_origin(e)
+        } else {
+            tmp.allow_origin(Any)
+        }
+    };
 
     let db = RepositoryInjection::new(database_url).await?;
     services::create_default_user(&db).await?;
