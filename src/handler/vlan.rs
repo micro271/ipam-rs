@@ -18,10 +18,10 @@ pub async fn insert(
 pub async fn get(
     State(state): State<RepositoryType>,
     Path(id): Path<VlanId>,
-    Query(_pagination): Query<PaginationParams>,
+    Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> Result<QueryResult<Vlan>, ResponseError> {
     Ok(state
-        .get::<Vlan>(Some(HashMap::from([("id", id.into())])), None, None)
+        .get::<Vlan>(Some(HashMap::from([("id", id.into())])), limit, offset)
         .await?
         .into())
 }

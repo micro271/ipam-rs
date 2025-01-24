@@ -71,7 +71,7 @@ pub struct OfficeParam {
     pub description: Option<String>,
 }
 
-#[derive(Deserialize, Debug, MapQueryDerive)]
+#[derive(Deserialize, Debug)]
 pub struct PaginationParams {
     pub offset: Option<i32>,
     pub limit: Option<i32>,

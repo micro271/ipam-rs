@@ -16,9 +16,9 @@ pub async fn update(
 pub async fn get(
     State(state): State<RepositoryType>,
     Query(of): Query<OfficeParam>,
-    Query(_pagination): Query<PaginationParams>,
+    Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> Result<QueryResult<Office>, ResponseError> {
-    Ok(state.get::<Office>(of.get_pairs(), None, None).await?.into())
+    Ok(state.get::<Office>(of.get_pairs(), limit, offset).await?.into())
 }
 
 pub async fn insert(

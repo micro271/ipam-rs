@@ -27,9 +27,9 @@ pub async fn update(
 pub async fn get(
     State(state): State<RepositoryType>,
     Query(param): Query<ParamRoom>,
-    Query(_pagination): Query<PaginationParams>
+    Query(PaginationParams { offset, limit }): Query<PaginationParams>
 ) -> Result<QueryResult<Room>, ResponseError> {
-    Ok(state.get(param.get_pairs(), None, None).await?.into())
+    Ok(state.get(param.get_pairs(), limit, offset).await?.into())
 }
 
 pub async fn delete(
