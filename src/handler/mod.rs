@@ -19,7 +19,8 @@ use axum::{
     http::{StatusCode, Uri},
     response::IntoResponse,
 };
-use entries::params::{MapParams, PaginationParams};
+use entries::params::PaginationParams;
+pub use entries::params::MapQuery;
 use extractors::IsAdministrator;
 use libipam::response_error::ResponseError;
 use std::{collections::HashMap, sync::Arc};

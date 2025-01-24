@@ -24,6 +24,8 @@ pub trait Repository {
     fn get<T>(
         &self,
         primary_key: Option<HashMap<&'static str, TypeTable>>,
+        limit: Option<i32>,
+        offset: Option<i32>,
     ) -> impl Future<Output = ResultRepository<Vec<T>>>
     where
         T: Table + From<PgRow> + Send + Debug + Clone;

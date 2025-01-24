@@ -16,7 +16,7 @@ pub async fn get(
     Query(_pagination): Query<PaginationParams>
 ) -> Result<QueryResult<MountPoint>, ResponseError> {
     Ok(state
-        .get::<MountPoint>(name.map(|x| HashMap::from([("name", x.into())])))
+        .get::<MountPoint>(name.map(|x| HashMap::from([("name", x.into())])), None, None)
         .await?
         .into())
 }

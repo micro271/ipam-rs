@@ -9,7 +9,7 @@ pub async fn update(
     Json(updater): Json<UpdateOffice>,
 ) -> Result<QueryResult<Office>, ResponseError> {
     Ok(state
-        .update::<'_, Office, _>(updater, Some(HashMap::from([("id", id.into())])))
+        .update::<Office, _>(updater, Some(HashMap::from([("id", id.into())])))
         .await?)
 }
 
@@ -18,7 +18,7 @@ pub async fn get(
     Query(of): Query<OfficeParam>,
     Query(_pagination): Query<PaginationParams>,
 ) -> Result<QueryResult<Office>, ResponseError> {
-    Ok(state.get::<Office>(of.get_pairs()).await?.into())
+    Ok(state.get::<Office>(of.get_pairs(), None, None).await?.into())
 }
 
 pub async fn insert(

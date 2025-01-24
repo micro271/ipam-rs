@@ -32,7 +32,7 @@ pub async fn get(
     Query(_pagination): Query<PaginationParams>
 ) -> Result<QueryResult<Network>, ResponseError> {
     Ok(state
-        .get::<Network>(id.map(|x| HashMap::from([("id", x.into())])))
+        .get::<Network>(id.map(|x| HashMap::from([("id", x.into())])), None, None)
         .await?
         .into())
 }
@@ -44,13 +44,13 @@ pub async fn update(
     Json(updater): Json<UpdateNetwork>,
 ) -> Result<QueryResult<Network>, ResponseError> {
     let network = state
-        .get::<Network>(Some(HashMap::from([("id", id.into())])))
+        .get::<Network>(Some(HashMap::from([("id", id.into())])), None, None)
         .await?
         .remove(0);
 
     if updater.network.is_some()
         && (state
-            .get::<Device>(Some(HashMap::from([("network_id", id.into())])))
+            .get::<Device>(Some(HashMap::from([("network_id", id.into())])), None, None)
             .await
             .is_ok()
             || network.children != 0)
@@ -81,7 +81,7 @@ pub async fn subnetting(
     Query(Subnet { father, prefix }): Query<Subnet>,
 ) -> Result<QueryResult<Network>, ResponseError> {
     let father = state
-        .get::<Network>(Some(HashMap::from([("id", father.into())])))
+        .get::<Network>(Some(HashMap::from([("id", father.into())])), None, None)
         .await?
         .remove(0);
 

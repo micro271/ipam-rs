@@ -62,6 +62,8 @@ impl Repository for RepositoryInjection<Postgres> {
     async fn get<T>(
         &self,
         column_data: Option<HashMap<&'static str, TypeTable>>,
+        limit: Option<i32>,
+        offset: Option<i32>,
     ) -> ResultRepository<Vec<T>>
     where
         T: Table + From<PgRow> + Send + Debug,
@@ -303,12 +305,12 @@ impl std::ops::DerefMut for RepositoryInjection<Postgres> {
     }
 }
 
-impl Transaction<'_> for RepositoryInjection<Postgres> {
+impl<'a> Transaction<'a> for RepositoryInjection<Postgres> {
     fn transaction(
         &self,
     ) -> std::pin::Pin<
         Box<
-            dyn std::future::Future<Output = Result<BuilderPgTransaction<'_>, RepositoryError>>
+            dyn std::future::Future<Output = Result<BuilderPgTransaction<'a>, RepositoryError>>
                 + '_
                 + Send,
         >,

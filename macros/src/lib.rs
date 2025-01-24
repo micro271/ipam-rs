@@ -152,7 +152,7 @@ fn impl_updatable(input: &syn::DeriveInput) -> TokenStream {
     }.into()
 }
 
-#[proc_macro_derive(MapParams)]
+#[proc_macro_derive(MapQuery)]
 pub fn map_params(token: TokenStream) -> TokenStream {
     let tmp = syn::parse(token).unwrap();
 
@@ -186,7 +186,7 @@ fn impl_map_params(input: &syn::DeriveInput) -> TokenStream {
     .collect::<Vec<_>>();
 
     quote! {
-        impl MapParams for #name {
+        impl MapQuery for #name {
             fn get_pairs(self) -> ::std::option::Option<::std::collections::HashMap<&'static str, crate::database::repository::TypeTable>> {
                 let mut condition = ::std::collections::HashMap::new();
 

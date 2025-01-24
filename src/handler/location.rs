@@ -1,6 +1,6 @@
 use super::{
     entries::params::{LocationParam, LocationParamStict, PaginationParams},
-    MapParams, RepositoryType, ResponseError,
+    MapQuery, RepositoryType, ResponseError,
 };
 use crate::{
     database::repository::{QueryResult, Repository},
@@ -16,7 +16,7 @@ pub async fn get(
     Query(param): Query<LocationParam>,
     Query(_pagination): Query<PaginationParams>,
 ) -> Result<QueryResult<Location>, ResponseError> {
-    Ok(state.get::<Location>(param.get_pairs()).await?.into())
+    Ok(state.get::<Location>(param.get_pairs(), None, None).await?.into())
 }
 
 pub async fn update(

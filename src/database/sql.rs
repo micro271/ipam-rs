@@ -1,11 +1,68 @@
 use super::repository::{Table, TypeTable};
 use sqlx::{postgres::PgArguments, query::Query, Postgres};
 use std::collections::HashMap;
+use crate::MapQuery;
 
 pub struct SqlOperations;
 // We've taken ownership of the query string and used a builder to add the behavior of limit, offset, and group by.
 
 impl SqlOperations {
+
+    pub fn get<'a>(query: &'a mut String, condition: impl MapQuery, limit: Option<i32>, offset: Option<i32>) -> Query<'a, Postgres, PgArguments> { 
+        let condition = condition.get_pairs();
+
+        if let Some(col) = condition {
+            query.push_str(" WHERE");
+
+            let mut data_pos = HashMap::new();
+
+            let mut pos = 1;
+            let len = col.len();
+
+            for (key, value) in col {
+                if value == TypeTable::Null {
+                    query.push_str(&format!(" {} IS NULL", key));
+                } else {
+                    query.push_str(&format!(" {} = ${}", key, pos));
+                    if pos < len {
+                        query.push_str(" AND");
+                    }
+                    data_pos.insert(pos, value);
+                    pos += 1;
+                }
+            }
+
+            if let Some(limit) = limit {
+                query.push_str(&format!(" LIMIT {}", limit));
+            }
+            if let Some(offset) = offset {
+                query.push_str(&format!(" OFFSET {}", offset));
+            }
+            let mut resp = sqlx::query(query);
+
+            for i in 1..pos {
+                resp = match data_pos.remove(&i).unwrap() {
+                    TypeTable::OptionUuid(e) => resp.bind(e),
+                    TypeTable::Uuid(e) => resp.bind(e),
+                    TypeTable::String(s) => resp.bind(s),
+                    TypeTable::OptionString(opt) => resp.bind(opt),
+                    TypeTable::Status(status) => resp.bind(status),
+                    TypeTable::Role(role) => resp.bind(role),
+                    TypeTable::OptionVlanId(e) => resp.bind(e),
+                    TypeTable::Bool(e) => resp.bind(e),
+                    TypeTable::OptionTime(e) => resp.bind(e),
+                    TypeTable::Time(e) => resp.bind(e),
+                    TypeTable::VlanId(e) => resp.bind(e),
+                    TypeTable::I64(e) => resp.bind(e),
+                    TypeTable::I32(e) => resp.bind(e),
+                    TypeTable::Null => resp,
+                };
+            }
+            resp
+        } else {
+            sqlx::query(query)
+        }
+    }
     pub fn insert<T>(data: T, query: &str) -> Query<'_, Postgres, PgArguments>
     where
         T: Table + std::fmt::Debug + Clone,

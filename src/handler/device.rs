@@ -22,7 +22,7 @@ pub async fn create_all_devices(
     Path(network_id): Path<Uuid>,
 ) -> Result<QueryResult<Device>, ResponseError> {
     let network = state
-        .get::<Network>(Some(HashMap::from([("id", network_id.into())])))
+        .get::<Network>(Some(HashMap::from([("id", network_id.into())])), None, None)
         .await?
         .remove(0);
 
@@ -57,7 +57,7 @@ pub async fn update(
         .get::<Network>(Some(HashMap::from([(
             "id",
             new.network_id.unwrap_or(param.network_id).into(),
-        )])))
+        )])), None, None)
         .await?
         .remove(0);
 
@@ -74,7 +74,7 @@ pub async fn update(
             .get::<Device>(Some(HashMap::from([(
                 "network_id",
                 network.network.into(),
-            )])))
+            )])), None, None)
             .await?
             .remove(0);
 
@@ -116,7 +116,7 @@ pub async fn get(
     Query(params): Query<ParamsDevice>,
     Query(_pagination): Query<PaginationParams>
 ) -> Result<QueryResult<Device>, ResponseError> {
-    let mut device = state.get::<Device>(params.get_pairs()).await?;
+    let mut device = state.get::<Device>(params.get_pairs(), None, None).await?;
 
     device.sort_by_key(|x| x.ip);
 

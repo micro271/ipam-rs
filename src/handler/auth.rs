@@ -44,13 +44,13 @@ pub async fn delete(
     Path(id): Path<Uuid>,
 ) -> Result<QueryResult<User>, ResponseError> {
     let user = state
-        .get::<User>(Some(HashMap::from([("id", id.into())])))
+        .get::<User>(Some(HashMap::from([("id", id.into())])), None, None)
         .await?
         .remove(0);
 
     if user.is_admin() {
         let user = state
-            .get::<User>(Some(HashMap::from([("role", Role::Admin.into())])))
+            .get::<User>(Some(HashMap::from([("role", Role::Admin.into())])), None, None)
             .await
             .unwrap_or_default();
         if user.len() <= 1 {
@@ -71,7 +71,7 @@ pub async fn login(
     Json(user): Json<entries::models::User>,
 ) -> Result<Response, ResponseError> {
     let resp = state
-        .get::<'_, User>(Some(HashMap::from([("username", user.username.into())])))
+        .get::<User>(Some(HashMap::from([("username", user.username.into())])), None, None)
         .await?
         .remove(0);
 

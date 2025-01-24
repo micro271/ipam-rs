@@ -21,7 +21,7 @@ pub async fn get(
     Query(_pagination): Query<PaginationParams>,
 ) -> Result<QueryResult<Vlan>, ResponseError> {
     Ok(state
-        .get::<Vlan>(Some(HashMap::from([("id", id.into())])))
+        .get::<Vlan>(Some(HashMap::from([("id", id.into())])), None, None)
         .await?
         .into())
 }
