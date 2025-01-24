@@ -78,7 +78,11 @@ impl Repository for RepositoryInjection<Postgres> {
         while let Some(Ok(e)) = fetch.next().await {
             vec_resp.push(T::from(e));
         }
-        Ok(vec_resp)
+        if !vec_resp.is_empty() {
+            Ok(vec_resp)
+        } else {
+            Err(RepositoryError::RowNotFound)
+        }
     }
 
     async fn update<T, U>(

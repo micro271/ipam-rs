@@ -1,5 +1,8 @@
 use super::PgRow;
-use crate::{models::{device::Status, user::Role}, MapQuery};
+use crate::{
+    models::{device::Status, user::Role},
+    MapQuery,
+};
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -9,13 +12,7 @@ use ipnet::IpNet;
 use libipam::type_net::{host_count::HostCount, vlan::VlanId};
 use serde::Serialize;
 use serde_json::json;
-use std::{
-    clone::Clone,
-    collections::HashMap,
-    fmt::Debug,
-    net::IpAddr,
-    future::Future,
-};
+use std::{clone::Clone, collections::HashMap, fmt::Debug, future::Future, net::IpAddr};
 use uuid::Uuid;
 
 pub type ResultRepository<T> = Result<T, RepositoryError>;

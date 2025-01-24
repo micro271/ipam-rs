@@ -18,7 +18,10 @@ pub async fn get(
     Query(of): Query<OfficeParam>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> Result<QueryResult<Office>, ResponseError> {
-    Ok(state.get::<Office>(of.get_pairs(), limit, offset).await?.into())
+    Ok(state
+        .get::<Office>(of.get_pairs(), limit, offset)
+        .await?
+        .into())
 }
 
 pub async fn insert(
@@ -32,5 +35,7 @@ pub async fn delete(
     State(state): State<RepositoryType>,
     Path(id): Path<Uuid>,
 ) -> Result<QueryResult<Office>, ResponseError> {
-    Ok(state.delete::<Office>(Some(HashMap::from([("id", id.into())]))).await?)
+    Ok(state
+        .delete::<Office>(Some(HashMap::from([("id", id.into())])))
+        .await?)
 }

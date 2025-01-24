@@ -1,14 +1,18 @@
 use super::repository::{Table, TypeTable};
+use crate::MapQuery;
 use sqlx::{postgres::PgArguments, query::Query, Postgres};
 use std::collections::HashMap;
-use crate::MapQuery;
 
 pub struct SqlOperations;
 // We've taken ownership of the query string and used a builder to add the behavior of limit, offset, and group by.
 
 impl SqlOperations {
-
-    pub fn get<'a>(query: &'a mut String, condition: impl MapQuery, limit: Option<i32>, offset: Option<i32>) -> Query<'a, Postgres, PgArguments> { 
+    pub fn get(
+        query: &mut String,
+        condition: impl MapQuery,
+        limit: Option<i32>,
+        offset: Option<i32>,
+    ) -> Query<'_, Postgres, PgArguments> {
         let condition = condition.get_pairs();
 
         if let Some(col) = condition {

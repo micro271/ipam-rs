@@ -13,8 +13,9 @@ pub trait MapQuery {
 
 impl MapQuery for Option<HashMap<&'static str, TypeTable>> {
     fn get_pairs(
-            self,
-        ) -> Option<std::collections::HashMap<&'static str, crate::database::repository::TypeTable>> {
+        self,
+    ) -> Option<std::collections::HashMap<&'static str, crate::database::repository::TypeTable>>
+    {
         self
     }
 }

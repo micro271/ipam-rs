@@ -17,12 +17,18 @@ impl Claim for Claims {}
 
 pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryError> {
     if db
-        .get::<User>(Some(std::collections::HashMap::from([(
-            "role",
-            Role::Admin.into(),
-        )])), None, None)
-        .await.is_ok()
+        .get::<User>(
+            Some(std::collections::HashMap::from([(
+                "role",
+                Role::Admin.into(),
+            )])),
+            None,
+            None,
+        )
+        .await
+        .is_ok()
     {
+        println!("nop");
         return Ok(());
     }
 
@@ -35,6 +41,7 @@ pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryE
         is_active: true,
         last_login: None,
     };
+    println!("{:?}", user);
     db.insert::<User>(user).await?;
     Ok(())
 }

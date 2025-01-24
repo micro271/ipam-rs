@@ -16,7 +16,10 @@ pub async fn get(
     Query(param): Query<LocationParam>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> Result<QueryResult<Location>, ResponseError> {
-    Ok(state.get::<Location>(param.get_pairs(), limit, offset).await?.into())
+    Ok(state
+        .get::<Location>(param.get_pairs(), limit, offset)
+        .await?
+        .into())
 }
 
 pub async fn update(

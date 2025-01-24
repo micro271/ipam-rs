@@ -13,10 +13,14 @@ use axum::{
 pub async fn get(
     State(state): State<RepositoryType>,
     Path(name): Path<Option<String>>,
-    Query(PaginationParams { offset, limit }): Query<PaginationParams>
+    Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> Result<QueryResult<MountPoint>, ResponseError> {
     Ok(state
-        .get::<MountPoint>(name.map(|x| HashMap::from([("name", x.into())])), limit, offset)
+        .get::<MountPoint>(
+            name.map(|x| HashMap::from([("name", x.into())])),
+            limit,
+            offset,
+        )
         .await?
         .into())
 }

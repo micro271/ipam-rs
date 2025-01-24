@@ -33,9 +33,15 @@ impl Config {
                     .filter(|x| !x.is_empty())
                     .map(|x| x.parse().expect("Invalid ip to backend"))
                     .unwrap_or("0.0.0.0".parse().unwrap()),
-                origin_allow: var("ORIGIN_ALLOW").ok().filter(|x| !x.is_empty()).map(|x| {
-                    x.split_whitespace().map(|x| x.parse().unwrap()).collect::<Vec<HeaderValue>>()
-                }).unwrap_or(Vec::from(["localhost".parse().unwrap()])),
+                origin_allow: var("ORIGIN_ALLOW")
+                    .ok()
+                    .filter(|x| !x.is_empty())
+                    .map(|x| {
+                        x.split_whitespace()
+                            .map(|x| x.parse().unwrap())
+                            .collect::<Vec<HeaderValue>>()
+                    })
+                    .unwrap_or(Vec::from(["localhost".parse().unwrap()])),
             },
         })
     }

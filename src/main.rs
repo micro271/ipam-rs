@@ -6,7 +6,6 @@ mod services;
 mod tracing;
 
 use axum::{
-    http::method::Method,
     routing::{get, patch, post},
     serve, Router,
 };
@@ -14,7 +13,7 @@ use config::Config;
 use database::RepositoryInjection;
 use handler::*;
 use std::sync::Arc;
-use tower_http::cors::{AllowOrigin, CorsLayer};
+use tower_http::cors::{Any, CorsLayer};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -28,15 +27,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let cors = CorsLayer::new()
-        .allow_methods([Method::POST, Method::GET, Method::PATCH, Method::DELETE])
-        .allow_origin(AllowOrigin::predicate( move |origin: &axum::http::HeaderValue, _req: &axum::http::request::Parts| {
-            if let Ok(e) = origin.to_str() {
-                app.origin_allow.iter().any(|x| e.contains( x.to_str().unwrap() ))
-            } else {
-                false
-            }
-        }))
-        .allow_credentials(true);
+        .allow_headers(Any)
+        .allow_origin(app.origin_allow)
+        .allow_credentials(true)
+        .allow_headers(Any);
 
     let db = RepositoryInjection::new(database_url).await?;
     services::create_default_user(&db).await?;

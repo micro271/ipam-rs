@@ -54,10 +54,14 @@ pub async fn update(
     Json(mut new): Json<UpdateDevice>,
 ) -> Result<StatusCode, ResponseError> {
     let network = state
-        .get::<Network>(Some(HashMap::from([(
-            "id",
-            new.network_id.unwrap_or(param.network_id).into(),
-        )])), None, None)
+        .get::<Network>(
+            Some(HashMap::from([(
+                "id",
+                new.network_id.unwrap_or(param.network_id).into(),
+            )])),
+            None,
+            None,
+        )
         .await?
         .remove(0);
 
@@ -71,10 +75,11 @@ pub async fn update(
 
     if new.ip.is_some() || new.network_id.is_some() {
         let dev = state
-            .get::<Device>(Some(HashMap::from([(
-                "network_id",
-                network.network.into(),
-            )])), None, None)
+            .get::<Device>(
+                Some(HashMap::from([("network_id", network.network.into())])),
+                None,
+                None,
+            )
             .await?
             .remove(0);
 
@@ -114,9 +119,11 @@ pub async fn update(
 pub async fn get(
     State(state): State<RepositoryType>,
     Query(params): Query<ParamsDevice>,
-    Query(PaginationParams { offset, limit }): Query<PaginationParams>
+    Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> Result<QueryResult<Device>, ResponseError> {
-    let mut device = state.get::<Device>(params.get_pairs(), limit, offset).await?;
+    let mut device = state
+        .get::<Device>(params.get_pairs(), limit, offset)
+        .await?;
 
     device.sort_by_key(|x| x.ip);
 
