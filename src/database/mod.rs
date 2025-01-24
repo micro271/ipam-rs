@@ -6,12 +6,15 @@ use futures::stream::StreamExt;
 use repository::{
     error::RepositoryError, QueryResult, Repository, ResultRepository, Table, TypeTable, Updatable,
 };
+use sql::SqlOperations;
 use sqlx::{
     postgres::{PgPool, PgPoolOptions, PgRow},
     Database, Pool, Postgres,
 };
 use std::{clone::Clone, collections::HashMap, fmt::Debug};
 use transaction::{BuilderPgTransaction, Transaction};
+
+use crate::MapQuery;
 
 pub struct RepositoryInjection<DB>(Pool<DB>)
 where
@@ -61,7 +64,7 @@ impl Repository for RepositoryInjection<Postgres> {
 
     async fn get<T>(
         &self,
-        column_data: Option<HashMap<&'static str, TypeTable>>,
+        column_data: impl MapQuery,
         limit: Option<i32>,
         offset: Option<i32>,
     ) -> ResultRepository<Vec<T>>
@@ -70,75 +73,12 @@ impl Repository for RepositoryInjection<Postgres> {
     {
         let mut query = format!("SELECT * FROM {}", T::name());
         let mut vec_resp = Vec::new();
-        tracing::debug!("Get element % Condition select {:?} %", column_data);
-        match column_data {
-            Some(col) if !col.is_empty() => {
-                let cols = T::columns();
-                query.push_str(" WHERE");
-
-                let mut data_pos = HashMap::new();
-
-                let mut pos = 1;
-                let len = col.len();
-                for i in col.keys() {
-                    if !cols.contains(i) {
-                        return Err(RepositoryError::ColumnNotFound(i.to_string()));
-                    }
-                    if col.get(i).unwrap() == &TypeTable::Null {
-                        query.push_str(&format!(" {} IS NULL", i));
-                    } else {
-                        query.push_str(&format!(" {} = ${}", i, pos));
-                        if pos < len {
-                            query.push_str(" AND");
-                        }
-                        data_pos.insert(pos, col.get(i).unwrap());
-                        pos += 1;
-                    }
-                }
-                tracing::debug!("{}", query);
-                tracing::debug!("{:?}", data_pos);
-                let mut resp = sqlx::query(&query);
-
-                for i in 1..pos {
-                    resp = match data_pos.get(&i).unwrap() {
-                        TypeTable::OptionUuid(e) => resp.bind(e),
-                        TypeTable::Uuid(e) => resp.bind(e),
-                        TypeTable::String(s) => resp.bind(s),
-                        TypeTable::OptionString(opt) => resp.bind(opt),
-                        TypeTable::Status(status) => resp.bind(status),
-                        TypeTable::Role(role) => resp.bind(role),
-                        TypeTable::OptionVlanId(e) => resp.bind(e),
-                        TypeTable::Bool(e) => resp.bind(e),
-                        TypeTable::OptionTime(e) => resp.bind(e),
-                        TypeTable::Time(e) => resp.bind(e),
-                        TypeTable::VlanId(e) => resp.bind(e),
-                        TypeTable::I64(e) => resp.bind(e),
-                        TypeTable::I32(e) => resp.bind(e),
-                        TypeTable::Null => resp,
-                    };
-                }
-
-                let mut resp = resp.fetch(&self.0);
-                while let Some(Ok(device)) = resp.next().await {
-                    vec_resp.push(T::from(device));
-                }
-                tracing::debug!("{:?}", vec_resp);
-                if !vec_resp.is_empty() {
-                    Ok(vec_resp)
-                } else {
-                    Err(RepositoryError::RowNotFound)
-                }
-            }
-            None => Ok({
-                let mut fetch = sqlx::query(&query).fetch(&self.0);
-                while let Some(Ok(tmp)) = fetch.next().await {
-                    vec_resp.push(tmp.into());
-                }
-
-                vec_resp
-            }),
-            _ => Err(RepositoryError::ColumnNotFound("".to_string())),
+        let query = SqlOperations::get(&mut query, column_data, limit, offset);
+        let mut fetch = query.fetch(&self.0);
+        while let Some(Ok(e)) = fetch.next().await {
+            vec_resp.push(T::from(e));
         }
+        Ok(vec_resp)
     }
 
     async fn update<T, U>(

@@ -20,7 +20,7 @@ pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryE
         .get::<User>(Some(std::collections::HashMap::from([(
             "role",
             Role::Admin.into(),
-        )])))
+        )])), None, None)
         .await.is_ok()
     {
         return Ok(());

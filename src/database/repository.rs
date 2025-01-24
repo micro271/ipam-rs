@@ -1,5 +1,5 @@
 use super::PgRow;
-use crate::models::{device::Status, user::Role};
+use crate::{models::{device::Status, user::Role}, MapQuery};
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -23,7 +23,7 @@ pub type ResultRepository<T> = Result<T, RepositoryError>;
 pub trait Repository {
     fn get<T>(
         &self,
-        primary_key: Option<HashMap<&'static str, TypeTable>>,
+        primary_key: impl MapQuery,
         limit: Option<i32>,
         offset: Option<i32>,
     ) -> impl Future<Output = ResultRepository<Vec<T>>>
