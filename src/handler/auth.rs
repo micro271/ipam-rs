@@ -86,25 +86,25 @@ pub async fn login(
         .await?
         .remove(0);
 
-    if verify_passwd(user.password, &resp.password) {
-        match create_token(Claims::from(resp)) {
-            Ok(e) => {
-                let c = Cookie::build((TOKEN.to_string(), e))
-                    .path("/")
-                    .http_only(true)
-                    .secure(true)
-                    .same_site(cookie::SameSite::None);
+    if let Some(Ok(e)) = verify_passwd(user.password, &resp.password).then_some(create_token(Claims::from(resp))) {
+        let c = Cookie::build((TOKEN.to_string(), e.clone()))
+            .path("/")
+            .http_only(true)
+            .secure(true)
+            .same_site(cookie::SameSite::None);
 
-                Ok(Response::builder()
-                    .header(axum::http::header::SET_COOKIE, c.to_string())
-                    .status(StatusCode::OK)
-                    .body(().into())
-                    .unwrap_or_default())
-            }
-            Err(_) => Err(ResponseError::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .build()),
-        }
+        Ok(Response::builder()
+            .header(axum::http::header::SET_COOKIE, c.to_string())
+            .header(axum::http::header::CONTENT_TYPE, "application/json")
+            .status(StatusCode::OK)
+            .body(serde_json::json!({
+                "data": {
+                    "token": e,
+                },
+                "status": 200,
+                "success": true,
+            }).to_string().into())
+        .unwrap_or_default())
     } else {
         Err(ResponseError::unauthorized(
             &uri,
