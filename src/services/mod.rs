@@ -25,9 +25,15 @@ pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryE
             None,
             None,
         )
-        .await.map(|mut x| x.remove(0))
+        .await
+        .map(|mut x| x.remove(0))
     {
-        tracing::info!("The admin user already exists [ username: {}, password: {}, create_at: {:?} ]", e.username, e.password, e.create_at);
+        tracing::info!(
+            "The admin user already exists [ username: {}, password: {}, create_at: {:?} ]",
+            e.username,
+            e.password,
+            e.create_at
+        );
         return Ok(());
     }
 
@@ -46,7 +52,12 @@ pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryE
 
     db.insert::<User>(user).await?;
 
-    tracing::info!("We've created the admin user [ username: {}, password: {}, role: {:?} ]", username, pass, role);
+    tracing::info!(
+        "We've created the admin user [ username: {}, password: {}, role: {:?} ]",
+        username,
+        pass,
+        role
+    );
     Ok(())
 }
 

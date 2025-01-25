@@ -3,18 +3,21 @@ mod database;
 mod handler;
 mod models;
 mod services;
-mod tracing;
+mod trace_layer;
 
 use axum::{
     http::{header, Method},
-    routing::{get, patch, post, delete},
+    routing::{delete, get, patch, post},
     serve, Router,
 };
 use config::Config;
 use database::RepositoryInjection;
 use handler::*;
 use std::sync::Arc;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::{
+    cors::{Any, CorsLayer},
+    trace::TraceLayer,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -27,8 +30,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         database.username, database.password, database.host, database.port, database.name,
     );
 
-    
-
     let cors = app
         .allow_origin
         .map(|x| {
@@ -36,9 +37,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .allow_headers([header::CONTENT_TYPE, header::COOKIE, header::AUTHORIZATION])
                 .allow_origin(x)
                 .allow_credentials(true)
-                .allow_methods([Method::GET, Method::OPTIONS, Method::PATCH, Method::POST, Method::DELETE])
+                .allow_methods([
+                    Method::GET,
+                    Method::OPTIONS,
+                    Method::PATCH,
+                    Method::POST,
+                    Method::DELETE,
+                ])
         })
         .unwrap_or(CorsLayer::new().allow_origin(Any));
+
+    let trace_layer = TraceLayer::new_for_http()
+        .make_span_with(trace_layer::make_span)
+        .on_request(tower_http::trace::DefaultOnRequest::new())
+        .on_response(trace_layer::on_response)
+        .on_failure(tower_http::trace::DefaultOnFailure::new());
 
     let db = RepositoryInjection::new(database_url).await?;
     services::create_default_user(&db).await?;
@@ -47,16 +60,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let network = Router::new()
         .route("/subnet", post(network::subnetting))
-        .route(
-            "/",
-            post(network::create)
-                .get(network::get)
-        )
-        .route(
-            "/:id", 
-            delete(network::delete)
-                .patch(network::update)
-        );
+        .route("/", post(network::create).get(network::get))
+        .route("/:id", delete(network::delete).patch(network::update));
 
     let device = Router::new()
         .route(
@@ -114,7 +119,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .layer(axum::middleware::from_fn(auth::verify_token))
         .route("/login", post(auth::login))
         .with_state(db.clone())
-        .layer(cors);
+        .layer(cors)
+        .layer(trace_layer);
 
     serve(lst, app).await?;
 

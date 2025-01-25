@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::{PaginationParams, RepositoryType, ResponseError, State, instrument, Level};
+use super::{instrument, Level, PaginationParams, RepositoryType, ResponseError, State};
 use crate::{
     database::repository::{QueryResult, Repository},
     models::vlan::{UpdateVlan, Vlan},

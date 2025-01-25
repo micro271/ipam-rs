@@ -2,7 +2,7 @@ use axum::extract::Query;
 
 use super::{
     entries::params::{PaginationParams, ParamRoom, ParamRoomStrict},
-    Json, MapQuery, RepositoryType, ResponseError, State, instrument, Level
+    instrument, Json, Level, MapQuery, RepositoryType, ResponseError, State,
 };
 use crate::{
     database::repository::{QueryResult, Repository},

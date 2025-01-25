@@ -11,7 +11,10 @@ pub mod room;
 pub mod vlan;
 
 use crate::{
-    database::{repository::{Repository, QueryResult}, RepositoryInjection},
+    database::{
+        repository::{QueryResult, Repository},
+        RepositoryInjection,
+    },
     models::{self, user::Role},
 };
 use axum::{
@@ -24,7 +27,7 @@ use entries::params::PaginationParams;
 use extractors::IsAdministrator;
 use libipam::response_error::ResponseError;
 use std::{collections::HashMap, sync::Arc};
-use uuid::Uuid;
 use tracing::{instrument, Level};
+use uuid::Uuid;
 
 type RepositoryType = Arc<RepositoryInjection<sqlx::postgres::Postgres>>;
