@@ -8,6 +8,7 @@ use libipam::{
 };
 use models::user::UpdateUser;
 
+#[instrument(level = Level::DEBUG)]
 pub async fn create(
     State(state): State<RepositoryType>,
     uri: Uri,
@@ -28,7 +29,7 @@ pub async fn create(
 
     Ok(state.insert(user).await?)
 }
-
+#[instrument(level = Level::INFO)]
 pub async fn update(
     State(state): State<RepositoryType>,
     Path(id): Path<Uuid>,
@@ -39,6 +40,7 @@ pub async fn update(
         .await?)
 }
 
+#[instrument(level = Level::DEBUG)]
 pub async fn delete(
     State(state): State<RepositoryType>,
     Path(id): Path<Uuid>,
@@ -69,6 +71,7 @@ pub async fn delete(
         .await?)
 }
 
+#[instrument(level = Level::INFO)]
 pub async fn login(
     State(state): State<RepositoryType>,
     uri: Uri,
@@ -110,6 +113,7 @@ pub async fn login(
     }
 }
 
+#[instrument(level = Level::DEBUG)]
 pub async fn verify_token(
     libipam::Token(token): libipam::Token,
     mut req: Request,

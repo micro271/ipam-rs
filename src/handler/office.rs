@@ -3,6 +3,7 @@ use crate::database::repository::QueryResult;
 use entries::params::OfficeParam;
 use models::office::{Office, UpdateOffice};
 
+#[instrument(level = Level::DEBUG)]
 pub async fn update(
     State(state): State<RepositoryType>,
     Path(id): Path<Uuid>,
@@ -13,6 +14,7 @@ pub async fn update(
         .await?)
 }
 
+#[instrument(level = Level::DEBUG)]
 pub async fn get(
     State(state): State<RepositoryType>,
     Query(of): Query<OfficeParam>,
@@ -24,6 +26,7 @@ pub async fn get(
         .into())
 }
 
+#[instrument(level = Level::DEBUG)]
 pub async fn insert(
     State(state): State<RepositoryType>,
     Json(off): Json<Office>,
@@ -31,6 +34,7 @@ pub async fn insert(
     Ok(state.insert::<Office>(off).await?)
 }
 
+#[instrument(level = Level::INFO)]
 pub async fn delete(
     State(state): State<RepositoryType>,
     Path(id): Path<Uuid>,

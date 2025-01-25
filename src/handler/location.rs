@@ -1,16 +1,8 @@
-use super::{
-    entries::params::{LocationParam, LocationParamStict, PaginationParams},
-    MapQuery, RepositoryType, ResponseError,
-};
-use crate::{
-    database::repository::{QueryResult, Repository},
-    models::location::{Location, LocationUpdate},
-};
-use axum::{
-    extract::{Query, State},
-    Json,
-};
+use super::*;
+use entries::params::{LocationParam, LocationParamStict};
+use models::location::{Location, LocationUpdate};
 
+#[instrument(level = Level::DEBUG)]
 pub async fn get(
     State(state): State<RepositoryType>,
     Query(param): Query<LocationParam>,
@@ -22,6 +14,7 @@ pub async fn get(
         .into())
 }
 
+#[instrument(level = Level::DEBUG)]
 pub async fn update(
     State(state): State<RepositoryType>,
     Query(param): Query<LocationParamStict>,
@@ -32,6 +25,7 @@ pub async fn update(
         .await?)
 }
 
+#[instrument(level = Level::INFO)]
 pub async fn delete(
     State(state): State<RepositoryType>,
     Query(param): Query<LocationParamStict>,
@@ -39,6 +33,7 @@ pub async fn delete(
     Ok(state.delete::<Location>(param.get_pairs()).await?)
 }
 
+#[instrument(level = Level::DEBUG)]
 pub async fn insert(
     State(state): State<RepositoryType>,
     Json(new): Json<Location>,

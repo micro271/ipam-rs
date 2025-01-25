@@ -1,15 +1,7 @@
-use std::collections::HashMap;
+use super::*;
+use models::mound_point::{MountPoint, UpdateMountPoint};
 
-use super::{entries::params::PaginationParams, RepositoryType, ResponseError};
-use crate::{
-    database::repository::{QueryResult, Repository},
-    models::mound_point::{MountPoint, UpdateMountPoint},
-};
-use axum::{
-    extract::{Path, Query, State},
-    Json,
-};
-
+#[instrument(level = Level::DEBUG)]
 pub async fn get(
     State(state): State<RepositoryType>,
     Path(name): Path<Option<String>>,
@@ -25,6 +17,7 @@ pub async fn get(
         .into())
 }
 
+#[instrument(level = Level::DEBUG)]
 pub async fn update(
     State(state): State<RepositoryType>,
     Path(name): Path<String>,
@@ -35,6 +28,7 @@ pub async fn update(
         .await?)
 }
 
+#[instrument(level = Level::INFO)]
 pub async fn delete(
     State(state): State<RepositoryType>,
     Path(name): Path<String>,
@@ -44,6 +38,7 @@ pub async fn delete(
         .await?)
 }
 
+#[instrument(level = Level::INFO)]
 pub async fn insert(
     State(state): State<RepositoryType>,
     Json(new): Json<MountPoint>,

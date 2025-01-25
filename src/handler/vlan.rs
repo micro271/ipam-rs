@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::{PaginationParams, RepositoryType, ResponseError, State};
+use super::{PaginationParams, RepositoryType, ResponseError, State, instrument, Level};
 use crate::{
     database::repository::{QueryResult, Repository},
     models::vlan::{UpdateVlan, Vlan},
@@ -11,6 +11,7 @@ use axum::{
 };
 use libipam::type_net::vlan::VlanId;
 
+#[instrument(level = Level::DEBUG)]
 pub async fn insert(
     State(state): State<RepositoryType>,
     Json(vlan): Json<Vlan>,
@@ -18,6 +19,7 @@ pub async fn insert(
     Ok(state.insert(vlan).await?)
 }
 
+#[instrument(level = Level::DEBUG)]
 pub async fn get(
     State(state): State<RepositoryType>,
     Path(id): Path<VlanId>,
@@ -29,6 +31,7 @@ pub async fn get(
         .into())
 }
 
+#[instrument(level = Level::DEBUG)]
 pub async fn update(
     State(state): State<RepositoryType>,
     Path(id): Path<VlanId>,
@@ -39,6 +42,7 @@ pub async fn update(
         .await?)
 }
 
+#[instrument(level = Level::INFO)]
 pub async fn delete(
     State(state): State<RepositoryType>,
     Path(id): Path<VlanId>,

@@ -7,7 +7,7 @@ mod tracing;
 
 use axum::{
     http::{header, Method},
-    routing::{get, patch, post},
+    routing::{get, patch, post, delete},
     serve, Router,
 };
 use config::Config;
@@ -26,6 +26,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "postgres://{}:{}@{}:{}/{}",
         database.username, database.password, database.host, database.port, database.name,
     );
+
+    
 
     let cors = app
         .allow_origin
@@ -49,8 +51,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/",
             post(network::create)
                 .get(network::get)
-                .delete(network::delete)
-                .patch(network::update),
+        )
+        .route(
+            "/:id", 
+            delete(network::delete)
+                .patch(network::update)
         );
 
     let device = Router::new()

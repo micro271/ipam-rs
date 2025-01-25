@@ -1,23 +1,19 @@
 use std::{net::IpAddr, str::FromStr};
+use crate::database::transaction::Transaction as _;
 
 use super::*;
-use crate::{
-    database::{
-        repository::{QueryResult, Table, TypeTable},
-        transaction::Transaction,
-    },
-    models::network::*,
-};
-use entries::{models::NetworkCreateEntry, params::{ParamNetwork, Subnet}};
-use tracing::instrument;
 
+use models::network::*;
+use entries::{models::NetworkCreateEntry, params::{ParamNetwork, Subnet}};
+
+#[instrument(level = Level::INFO)]
 pub async fn create(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
     Json(network): Json<NetworkCreateEntry>,
 ) -> Result<QueryResult<Network>, ResponseError> {
     let net = network.network.network();
-
+    
     if net == IpAddr::from_str("0.0.0.0").unwrap() || net == IpAddr::from_str("::").unwrap() {
         return Err(ResponseError::builder()
             .detail(format!("You cannot create the ip {:?}", network.network))
@@ -27,7 +23,7 @@ pub async fn create(
     Ok(state.insert::<Network>(network.into()).await?)
 }
 
-#[tracing::instrument]
+#[instrument(level = Level::DEBUG)]
 pub async fn get(
     State(state): State<RepositoryType>,
     Query(param): Query<ParamNetwork>,
@@ -37,12 +33,10 @@ pub async fn get(
         .get::<Network>(param, limit, offset)
         .await?;
 
-    tracing::debug!("Get {} fields from table {}", req.len(), Network::name());
-
     Ok(req.into())
 }
 
-#[tracing::instrument]
+#[instrument(level = Level::DEBUG)]
 pub async fn update(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
@@ -66,7 +60,7 @@ pub async fn update(
         .await?)
 }
 
-#[instrument]
+#[instrument(level = Level::INFO)]
 pub async fn delete(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
@@ -80,6 +74,7 @@ pub async fn delete(
         .await?)
 }
 
+#[instrument(level = Level::DEBUG)]
 pub async fn subnetting(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
@@ -108,7 +103,7 @@ pub async fn subnetting(
 
     state
         .update::<Network, _>(
-            HashMap::from([("children", TypeTable::from(len as i32))]),
+            HashMap::from([("children", (len as i32).into() )]),
             Some(HashMap::from([("id", father.id.into())])),
         )
         .await?;

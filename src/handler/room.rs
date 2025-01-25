@@ -2,13 +2,14 @@ use axum::extract::Query;
 
 use super::{
     entries::params::{PaginationParams, ParamRoom, ParamRoomStrict},
-    Json, MapQuery, RepositoryType, ResponseError, State,
+    Json, MapQuery, RepositoryType, ResponseError, State, instrument, Level
 };
 use crate::{
     database::repository::{QueryResult, Repository},
     models::room::{Room, UpdateRoom},
 };
 
+#[instrument(level = Level::DEBUG)]
 pub async fn insert(
     State(state): State<RepositoryType>,
     Json(room): Json<Room>,
@@ -16,6 +17,7 @@ pub async fn insert(
     Ok(state.insert(room).await?)
 }
 
+#[instrument(level = Level::DEBUG)]
 pub async fn update(
     State(state): State<RepositoryType>,
     Query(param): Query<ParamRoomStrict>,
@@ -24,6 +26,7 @@ pub async fn update(
     Ok(state.update::<Room, _>(room, param.get_pairs()).await?)
 }
 
+#[instrument(level = Level::DEBUG)]
 pub async fn get(
     State(state): State<RepositoryType>,
     Query(param): Query<ParamRoom>,
@@ -32,6 +35,7 @@ pub async fn get(
     Ok(state.get(param.get_pairs(), limit, offset).await?.into())
 }
 
+#[instrument(level = Level::INFO)]
 pub async fn delete(
     State(state): State<RepositoryType>,
     Query(param): Query<ParamRoomStrict>,

@@ -8,6 +8,7 @@ use entries::{
     params::{ParamsDevice, ParamsDeviceStrict},
 };
 
+#[instrument(level = Level::DEBUG)]
 pub async fn create(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
@@ -16,6 +17,7 @@ pub async fn create(
     Ok(state.insert::<Device>(device.into()).await?)
 }
 
+#[instrument(level = Level::DEBUG)]
 pub async fn create_all_devices(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
@@ -47,6 +49,7 @@ pub async fn create_all_devices(
     Ok(QueryResult::Insert(len as u64))
 }
 
+#[instrument(level = Level::DEBUG)]
 pub async fn update(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
@@ -116,6 +119,7 @@ pub async fn update(
     }
 }
 
+#[instrument(level = Level::DEBUG)]
 pub async fn get(
     State(state): State<RepositoryType>,
     Query(params): Query<ParamsDevice>,
@@ -130,6 +134,7 @@ pub async fn get(
     Ok(device.into())
 }
 
+#[instrument(level = Level::INFO)]
 pub async fn delete(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
