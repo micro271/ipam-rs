@@ -647,6 +647,12 @@ pub mod type_net {
             }
         }
 
+        impl std::cmp::PartialEq for HostCount {
+            fn eq(&self, other: &Self) -> bool {
+                self.0.eq(&other.0)
+            }
+        }
+
         #[derive(Debug)]
         pub struct CountOfRange;
 

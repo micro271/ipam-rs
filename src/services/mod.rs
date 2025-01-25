@@ -16,7 +16,7 @@ pub struct Claims {
 impl Claim for Claims {}
 
 pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryError> {
-    if db
+    if let Ok(e) = db
         .get::<User>(
             Some(std::collections::HashMap::from([(
                 "role",
@@ -25,10 +25,9 @@ pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryE
             None,
             None,
         )
-        .await
-        .is_ok()
+        .await.map(|mut x| x.remove(0))
     {
-        println!("nop");
+        tracing::info!("The admin user already exists [ username: {}, password: {}, create_at: {:?} ]", e.username, e.password, e.create_at);
         return Ok(());
     }
 
@@ -41,8 +40,13 @@ pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryE
         is_active: true,
         last_login: None,
     };
-    println!("{:?}", user);
+    let username = user.username.clone();
+    let pass = user.password.clone();
+    let role = user.role.clone();
+
     db.insert::<User>(user).await?;
+
+    tracing::info!("We've created the admin user [ username: {}, password: {}, role: {:?} ]", username, pass, role);
     Ok(())
 }
 

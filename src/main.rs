@@ -6,6 +6,7 @@ mod services;
 mod tracing;
 
 use axum::{
+    http::{header, Method},
     routing::{get, patch, post},
     serve, Router,
 };
@@ -26,15 +27,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         database.username, database.password, database.host, database.port, database.name,
     );
 
-    let cors = {
-        let tmp = CorsLayer::new().allow_headers(Any).allow_headers(Any);
-
-        if let Some(e) = app.allow_origin {
-            tmp.allow_credentials(true).allow_origin(e)
-        } else {
-            tmp.allow_origin(Any)
-        }
-    };
+    let cors = app
+        .allow_origin
+        .map(|x| {
+            CorsLayer::new()
+                .allow_headers([header::CONTENT_TYPE, header::COOKIE, header::AUTHORIZATION])
+                .allow_origin(x)
+                .allow_credentials(true)
+                .allow_methods([Method::GET, Method::OPTIONS, Method::PATCH, Method::POST, Method::DELETE])
+        })
+        .unwrap_or(CorsLayer::new().allow_origin(Any));
 
     let db = RepositoryInjection::new(database_url).await?;
     services::create_default_user(&db).await?;
@@ -42,11 +44,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db = Arc::new(db);
 
     let network = Router::new()
-        .route("/", post(network::create))
         .route("/subnet", post(network::subnetting))
         .route(
-            "/:id",
-            get(network::get)
+            "/",
+            post(network::create)
+                .get(network::get)
                 .delete(network::delete)
                 .patch(network::update),
         );

@@ -186,13 +186,17 @@ fn impl_map_params(input: &syn::DeriveInput) -> TokenStream {
     .collect::<Vec<_>>();
 
     quote! {
-        impl MapQuery for #name {
+        impl crate::handler::entries::params::MapQuery for #name {
             fn get_pairs(self) -> ::std::option::Option<::std::collections::HashMap<&'static str, crate::database::repository::TypeTable>> {
                 let mut condition = ::std::collections::HashMap::new();
 
                 #(#fields)*
 
-                Some(condition)
+                if condition.is_empty() {
+                    None 
+                } else {
+                    Some(condition)
+                }
             }
         }
     }.into()

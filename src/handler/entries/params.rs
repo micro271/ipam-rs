@@ -1,3 +1,4 @@
+use ipnet::IpNet;
 use macros::MapQuery as MapQueryDerive;
 use serde::Deserialize;
 use std::{collections::HashMap, net::IpAddr};
@@ -76,4 +77,11 @@ pub struct OfficeParam {
 pub struct PaginationParams {
     pub offset: Option<i32>,
     pub limit: Option<i32>,
+}
+
+#[derive(Debug, Deserialize, MapQueryDerive)]
+pub struct ParamNetwork {
+    pub network: Option<IpNet>,
+    pub id: Option<Uuid>,
+    pub father: Option<Uuid>,
 }

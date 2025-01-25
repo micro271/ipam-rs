@@ -3,12 +3,13 @@ use std::{net::IpAddr, str::FromStr};
 use super::*;
 use crate::{
     database::{
-        repository::{QueryResult, TypeTable},
+        repository::{QueryResult, Table, TypeTable},
         transaction::Transaction,
     },
-    models::{device::Device, network::*},
+    models::network::*,
 };
-use entries::{models::NetworkCreateEntry, params::Subnet};
+use entries::{models::NetworkCreateEntry, params::{ParamNetwork, Subnet}};
+use tracing::instrument;
 
 pub async fn create(
     State(state): State<RepositoryType>,
@@ -22,54 +23,58 @@ pub async fn create(
             .detail(format!("You cannot create the ip {:?}", network.network))
             .build());
     }
-
+    
     Ok(state.insert::<Network>(network.into()).await?)
 }
 
+#[tracing::instrument]
 pub async fn get(
     State(state): State<RepositoryType>,
-    Path(id): Path<Option<Uuid>>,
+    Query(param): Query<ParamNetwork>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> Result<QueryResult<Network>, ResponseError> {
-    Ok(state
-        .get::<Network>(id.map(|x| HashMap::from([("id", x.into())])), limit, offset)
-        .await?
-        .into())
+    let req = state
+        .get::<Network>(param, limit, offset)
+        .await?;
+
+    tracing::debug!("Get {} fields from table {}", req.len(), Network::name());
+
+    Ok(req.into())
 }
 
+#[tracing::instrument]
 pub async fn update(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
     Query(id): Query<Uuid>,
     Json(updater): Json<UpdateNetwork>,
 ) -> Result<QueryResult<Network>, ResponseError> {
-    let network = state
-        .get::<Network>(Some(HashMap::from([("id", id.into())])), None, None)
-        .await?
-        .remove(0);
 
-    if updater.network.is_some()
-        && (state
-            .get::<Device>(Some(HashMap::from([("network_id", id.into())])), None, None)
-            .await
-            .is_ok()
-            || network.children != 0)
-    {
-        Err(ResponseError::builder()
-            .detail("The network have elements".to_string())
-            .build())
-    } else {
-        Ok(state
-            .update(updater, Some(HashMap::from([("id", id.into())])))
-            .await?)
-    }
+    if updater.network.is_some() {
+        let old = state.get::<Network>(Some(HashMap::from([("id", id.into())])), None, None).await?.remove(0);
+
+        if old.children != 0 {
+            tracing::debug!("The network {:?} have subnets", old.network);
+            return Err(ResponseError::builder().detail("the network have child".into()).status(StatusCode::BAD_REQUEST).build());
+        } else if old.available != old.free {
+            tracing::debug!("The network {:?} have devices", old.network);
+            return Err(ResponseError::builder().detail("the network have devices".into()).status(StatusCode::BAD_REQUEST).build());
+        }
+    } 
+    Ok(state
+        .update::<Network, _>(updater, Some(HashMap::from([("id", id.into())])))
+        .await?)
 }
 
+#[instrument]
 pub async fn delete(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
     Path(id): Path<Uuid>,
 ) -> Result<QueryResult<Network>, ResponseError> {
+    
+    tracing::debug!("delete one network: {}", id);
+
     Ok(state
         .delete::<Network>(Some(HashMap::from([("id", id.into())])))
         .await?)

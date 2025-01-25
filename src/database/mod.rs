@@ -15,7 +15,7 @@ use std::{clone::Clone, collections::HashMap, fmt::Debug};
 use transaction::{BuilderPgTransaction, Transaction};
 
 use crate::MapQuery;
-
+#[derive(Debug)]
 pub struct RepositoryInjection<DB>(Pool<DB>)
 where
     DB: Database;
