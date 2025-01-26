@@ -3,7 +3,7 @@ use crate::{database::repository::QueryResult, models::user::User, services::Cla
 use axum::{extract::Request, middleware::Next, response::Response};
 use cookie::Cookie;
 use libipam::{
-    authentication::{self, create_token, encrypt, verify_passwd}, cookie::Cookie::TOKEN, GetToken, TokenCookie
+    authentication::{self, create_token, encrypt, verify_passwd}, GetToken, TokenCookie, TOKEN_PEER_KEY,
 };
 use models::user::UpdateUser;
 
@@ -88,7 +88,7 @@ pub async fn login(
     if let Some(Ok(e)) =
         verify_passwd(user.password, &resp.password).then_some(create_token(Claims::from(resp)))
     {
-        let c = Cookie::build((TOKEN.to_string(), e.clone()))
+        let c = Cookie::build((TOKEN_PEER_KEY.to_string(), e.clone()))
             .path("/")
             .http_only(true)
             .secure(true)

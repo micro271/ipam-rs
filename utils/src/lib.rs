@@ -1,10 +1,6 @@
 #[cfg(feature = "axum")]
 use axum::{extract::FromRequestParts, http::StatusCode};
 
-
-#[cfg(feature = "axum")]
-use std::convert::Infallible;
-
 #[cfg(feature = "axum")]
 pub struct Token<T: GetToken>(pub T);
 
@@ -32,12 +28,12 @@ pub trait GetToken
 }
 
 #[cfg(feature = "axum")]
-const TOKEN: &str = "jwt";
+pub const TOKEN_PEER_KEY: &str = "jwt";
 
 #[cfg(feature = "axum")]
 impl GetToken for TokenCookie {
     fn find(value: &axum::http::HeaderMap) -> Option<Self> {
-        value.iter().find(|(key,_)| key.eq(&axum::http::header::COOKIE)).map(|(_, value)| value.to_str().ok()).flatten().map(|x| x.split(";").map(str::trim).find(|x| x.starts_with(TOKEN)).map(|x| x.split("=").nth(1).map(|x| Self(x.to_string()))).flatten()).flatten()
+        value.iter().find(|(key,_)| key.eq(&axum::http::header::COOKIE)).map(|(_, value)| value.to_str().ok()).flatten().map(|x| x.split(";").map(str::trim).find(|x| x.starts_with(TOKEN_PEER_KEY)).map(|x| x.split("=").nth(1).map(|x| Self(x.to_string()))).flatten()).flatten()
     }
     fn get(self) -> String {
         self.0
@@ -53,9 +49,6 @@ impl GetToken for TokenAuth {
         self.0
     }
 }
-
-#[cfg(feature = "axum")]
-pub struct Theme(pub theme::Theme);
 
 #[cfg(feature = "axum")]
 impl<S, T> FromRequestParts<S> for Token<T> 
@@ -75,98 +68,6 @@ impl<S, T> FromRequestParts<S> for Token<T>
                 Ok(Token(e))
             },
             _ => Err(crate::response_error::ResponseError::unauthorized(&parts.uri, None))
-        }
-    }
-}
-
-#[cfg(feature = "axum")]
-impl<S> FromRequestParts<S> for Theme
-    where
-        S: Send + Sync,
-{
-    type Rejection = Infallible;
-
-    async fn from_request_parts(
-        parts: &mut axum::http::request::Parts,
-        _state: &S,
-    ) -> Result<Self, Self::Rejection> {
-
-        if let Some(Ok(key_value)) = parts.headers.get(axum::http::header::COOKIE).map(|x| x.to_str().map(|x| x.split(";").collect::<Vec<_>>())) {
-            for i in key_value {
-                let tmp: Vec<_> = i.split('=').collect();
-                if let (Some(Ok(self::cookie::Cookie::THEME)), Some(value)) = (
-                    tmp.first().map(|x| self::cookie::Cookie::try_from(*x)),
-                    tmp.get(1),
-                ) {
-                    return Ok(Self(match self::theme::Theme::try_from(*value) {
-                        Ok(e) => e,
-                        _ => theme::Theme::Light,
-                    }));
-                }
-            }
-        }
-        Ok(Theme(theme::Theme::Light))
-        
-    }
-}
-
-#[cfg(feature = "cookie")]
-pub mod cookie {
-    #[derive(Debug, PartialEq)]
-    pub enum Cookie {
-        TOKEN,
-        THEME,
-    }
-
-    impl std::fmt::Display for Cookie {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            match self {
-                Self::TOKEN => write!(f, "jwt"),
-                Self::THEME => write!(f, "theme"),
-            }
-        }
-    }
-
-    impl TryFrom<&str> for Cookie {
-        type Error = super::error::ParseError;
-        fn try_from(value: &str) -> Result<Self, Self::Error> {
-            match value {
-                "jwt" => Ok(Self::TOKEN),
-                "theme" => Ok(Self::THEME),
-                _ => Err(super::error::ParseError),
-            }
-        }
-    }
-}
-
-#[cfg(feature = "cookie")]
-pub mod theme {
-
-    #[derive(Debug, PartialEq)]
-    pub enum Theme {
-        Dark,
-        Light,
-    }
-
-    impl std::fmt::Display for Theme {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            use Theme::*;
-
-            match self {
-                Dark => write!(f, "dark"),
-                Light => write!(f, "light"),
-            }
-        }
-    }
-
-    impl TryFrom<&str> for Theme {
-        type Error = super::error::ParseError;
-        fn try_from(value: &str) -> Result<Self, Self::Error> {
-            match value {
-                "dark" => Ok(Self::Dark),
-                "light" => Ok(Self::Light),
-                _ => Err(super::error::ParseError),
-            }
         }
     }
 }
