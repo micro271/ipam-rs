@@ -21,11 +21,9 @@ use tower_http::{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    
     let Config { app, database } = config::Config::init().unwrap();
 
     tracing_subscriber::fmt().init();
-    
 
     let lst = tokio::net::TcpListener::bind(format!("{}:{}", app.ip, app.port)).await?;
 
@@ -67,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let network = Router::new()
         .route("/subnet", post(network::subnetting))
         .route("/", post(network::create).get(network::get))
-        .route("/:id", delete(network::delete).patch(network::update));
+        .route("/{id}", delete(network::delete).patch(network::update));
 
     let device = Router::new()
         .route(
@@ -77,11 +75,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .patch(device::update)
                 .delete(device::delete),
         )
-        .route("/:network_id", post(device::create_all_devices));
+        .route("/{network_id}", post(device::create_all_devices));
 
     let user = Router::new()
         .route("/", post(auth::create))
-        .route("/:id", patch(auth::update).delete(auth::delete));
+        .route("/{id}", patch(auth::update).delete(auth::delete));
 
     let location = Router::new().route(
         "/",
@@ -92,7 +90,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let mount_point = Router::new().route("/", post(mount_point::insert)).route(
-        "/:name",
+        "/{name}",
         get(mount_point::get)
             .patch(mount_point::update)
             .delete(mount_point::delete),
@@ -107,7 +105,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let vlan = Router::new().route("/", post(vlan::insert)).route(
-        "/:id",
+        "/{id}",
         get(vlan::get).delete(vlan::delete).patch(vlan::update),
     );
 

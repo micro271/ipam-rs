@@ -3,8 +3,7 @@ use crate::{database::repository::QueryResult, models::user::User, services::Cla
 use axum::{extract::Request, middleware::Next, response::Response};
 use cookie::Cookie;
 use libipam::{
-    authentication::{self, create_token, encrypt, verify_passwd},
-    cookie::Cookie::TOKEN,
+    authentication::{self, create_token, encrypt, verify_passwd}, cookie::Cookie::TOKEN, GetToken, TokenCookie
 };
 use models::user::UpdateUser;
 
@@ -86,7 +85,9 @@ pub async fn login(
         .await?
         .remove(0);
 
-    if let Some(Ok(e)) = verify_passwd(user.password, &resp.password).then_some(create_token(Claims::from(resp))) {
+    if let Some(Ok(e)) =
+        verify_passwd(user.password, &resp.password).then_some(create_token(Claims::from(resp)))
+    {
         let c = Cookie::build((TOKEN.to_string(), e.clone()))
             .path("/")
             .http_only(true)
@@ -97,14 +98,18 @@ pub async fn login(
             .header(axum::http::header::SET_COOKIE, c.to_string())
             .header(axum::http::header::CONTENT_TYPE, "application/json")
             .status(StatusCode::OK)
-            .body(serde_json::json!({
-                "data": {
-                    "token": e,
-                },
-                "status": 200,
-                "success": true,
-            }).to_string().into())
-        .unwrap_or_default())
+            .body(
+                serde_json::json!({
+                    "data": {
+                        "token": e,
+                    },
+                    "status": 200,
+                    "success": true,
+                })
+                .to_string()
+                .into(),
+            )
+            .unwrap_or_default())
     } else {
         Err(ResponseError::unauthorized(
             &uri,
@@ -115,12 +120,13 @@ pub async fn login(
 
 #[instrument(level = Level::DEBUG)]
 pub async fn verify_token(
-    libipam::Token(token): libipam::Token,
+    libipam::Token(token): libipam::Token<TokenCookie>,
     mut req: Request,
     next: Next,
 ) -> Result<axum::response::Response, ResponseError> {
-    match token.map(authentication::verify_token::<Claims, _>) {
-        Ok(Ok(e)) => {
+    let token = token.get();
+    match authentication::verify_token::<Claims, _>(token) {
+        Ok(e) => {
             req.extensions_mut().insert(e.role);
             Ok(next.run(req).await)
         }

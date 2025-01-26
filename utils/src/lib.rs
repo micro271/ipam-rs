@@ -1,46 +1,81 @@
 #[cfg(feature = "axum")]
 use axum::{extract::FromRequestParts, http::StatusCode};
 
-#[cfg(feature = "axum")]
-use error::NotFound;
 
 #[cfg(feature = "axum")]
 use std::convert::Infallible;
 
 #[cfg(feature = "axum")]
-pub struct Token(pub Result<String, NotFound>);
+pub struct Token<T: GetToken>(pub T);
+
+impl<T: GetToken> Token<T> {
+    pub fn get_token(self) -> String {
+        self.0.get()
+    }
+}
+
+#[cfg(feature = "axum")]
+#[derive(Debug)]
+pub struct TokenCookie(String);
+
+#[cfg(feature = "axum")]
+#[derive(Debug)]
+pub struct TokenAuth(String);
+
+#[cfg(feature = "axum")]
+pub trait GetToken 
+    where 
+        Self:Sized,
+{
+    fn find(value: &axum::http::HeaderMap) -> Option<Self>;
+    fn get(self) -> String;
+}
+
+#[cfg(feature = "axum")]
+const TOKEN: &str = "jwt";
+
+#[cfg(feature = "axum")]
+impl GetToken for TokenCookie {
+    fn find(value: &axum::http::HeaderMap) -> Option<Self> {
+        value.iter().find(|(key,_)| key.eq(&axum::http::header::COOKIE)).map(|(_, value)| value.to_str().ok()).flatten().map(|x| x.split(";").map(str::trim).find(|x| x.starts_with(TOKEN)).map(|x| x.split("=").nth(1).map(|x| Self(x.to_string()))).flatten()).flatten()
+    }
+    fn get(self) -> String {
+        self.0
+    }
+}
+
+#[cfg(feature = "axum")]
+impl GetToken for TokenAuth {
+    fn find(value: &axum::http::HeaderMap) -> Option<Self> {
+        value.iter().find(|(x,_)| x.eq(&axum::http::header::AUTHORIZATION)).map(|(_, value)| value.to_str().ok().map(str::trim).map(|x|x.split_whitespace().nth(1).map(|x| Self(x.to_string()))).flatten()).flatten()
+    }
+    fn get(self) -> String {
+        self.0
+    }
+}
 
 #[cfg(feature = "axum")]
 pub struct Theme(pub theme::Theme);
 
 #[cfg(feature = "axum")]
-impl<S> FromRequestParts<S> for Token 
+impl<S, T> FromRequestParts<S> for Token<T> 
     where 
         S: Send + Sync,
+        T: GetToken + Sync + Send,
 {
-    type Rejection = Infallible;
+    type Rejection = crate::response_error::ResponseError;
 
     async fn from_request_parts (
         parts: &mut axum::http::request::Parts,
         _state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let cookies = parts.headers.get(axum::http::header::COOKIE);
-        if let Some(Ok(tmp)) =
-            cookies.map(|e| e.to_str().map(|x| x.split(';').collect::<Vec<_>>()))
-        {
-            for i in tmp {
-                let cookie: Vec<_> = i.split("=").collect();
-                if let (Some(Ok(cookie::Cookie::TOKEN)), Some(value)) = (
-                    cookie.first().map(|x| cookie::Cookie::try_from(*x)),
-                    cookie.get(1),
-                ) {
-                    return Ok(Self(Ok(value.to_string())));
-                }
-            }
+
+        match T::find(&parts.headers) {
+            Some(e) => {
+                Ok(Token(e))
+            },
+            _ => Err(crate::response_error::ResponseError::unauthorized(&parts.uri, None))
         }
-        Ok(Self(Err(NotFound {
-            key: cookie::Cookie::TOKEN.to_string(),
-        })))
     }
 }
 
@@ -56,19 +91,17 @@ impl<S> FromRequestParts<S> for Theme
         _state: &S,
     ) -> Result<Self, Self::Rejection> {
 
-        if let Some(e) = parts.headers.get(axum::http::header::COOKIE) {
-            if let Ok(key_value) = e.to_str().map(|x| x.split(';').collect::<Vec<_>>()) {
-                for i in key_value {
-                    let tmp: Vec<_> = i.split('=').collect();
-                    if let (Some(Ok(self::cookie::Cookie::THEME)), Some(value)) = (
-                        tmp.first().map(|x| self::cookie::Cookie::try_from(*x)),
-                        tmp.get(1),
-                    ) {
-                        return Ok(Self(match self::theme::Theme::try_from(*value) {
-                            Ok(e) => e,
-                            _ => theme::Theme::Light,
-                        }));
-                    }
+        if let Some(Ok(key_value)) = parts.headers.get(axum::http::header::COOKIE).map(|x| x.to_str().map(|x| x.split(";").collect::<Vec<_>>())) {
+            for i in key_value {
+                let tmp: Vec<_> = i.split('=').collect();
+                if let (Some(Ok(self::cookie::Cookie::THEME)), Some(value)) = (
+                    tmp.first().map(|x| self::cookie::Cookie::try_from(*x)),
+                    tmp.get(1),
+                ) {
+                    return Ok(Self(match self::theme::Theme::try_from(*value) {
+                        Ok(e) => e,
+                        _ => theme::Theme::Light,
+                    }));
                 }
             }
         }
