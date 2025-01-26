@@ -4,6 +4,7 @@ use axum::{extract::FromRequestParts, http::StatusCode};
 #[cfg(feature = "axum")]
 pub struct Token<T: GetToken>(pub T);
 
+#[cfg(feature = "axum")]
 impl<T: GetToken> Token<T> {
     pub fn get_token(self) -> String {
         self.0.get()
@@ -69,6 +70,89 @@ impl<S, T> FromRequestParts<S> for Token<T>
             },
             _ => Err(crate::response_error::ResponseError::unauthorized(&parts.uri, None))
         }
+    }
+}
+#[cfg(feature = "axum")]
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::http::header::*;
+
+    #[test]
+    fn search_cookie_token_some() {
+        let mut headers = axum::http::HeaderMap::new();
+        headers.insert(AUTHORIZATION, HeaderValue::from_str("Bearer 12345").unwrap());
+        headers.insert(ORIGIN, HeaderValue::from_str("http://localhost.local").unwrap());
+        headers.insert(COOKIE, HeaderValue::from_str("jwt=123123123123;test=123123123;tr=lnsdlkansdl").unwrap());
+
+        let token = TokenCookie::find(&headers);
+        assert!(token.is_some());
+        assert_eq!(token.unwrap().get(), "123123123123".to_string());
+    }
+
+    #[test]
+    fn search_cookie_token_some_not_eq() {
+        let mut headers = axum::http::HeaderMap::new();
+        headers.insert(AUTHORIZATION, HeaderValue::from_str("Bearer 12345").unwrap());
+        headers.insert(ORIGIN, HeaderValue::from_str("http://localhost.local").unwrap());
+        headers.insert(COOKIE, HeaderValue::from_str("jwt=123123123123;test=123123123;tr=lnsdlkansdl").unwrap());
+
+        let token = TokenCookie::find(&headers);
+
+        assert_ne!(token.unwrap().get(), "123".to_string());
+    }
+
+    #[test]
+    fn search_cookie_token_none() {
+        let mut headers = axum::http::HeaderMap::new();
+        headers.insert(AUTHORIZATION, HeaderValue::from_str("Bearer 12345").unwrap());
+        headers.insert(ORIGIN, HeaderValue::from_str("http://localhost.local").unwrap());
+        headers.insert(CONTENT_LENGTH, HeaderValue::from_str("125").unwrap());
+
+        let token = TokenCookie::find(&headers);
+        assert!(token.is_none());
+    }
+
+    #[test]
+    fn search_cookie_authorization_some() {
+        let mut headers = axum::http::HeaderMap::new();
+        headers.insert(CONTENT_LENGTH, HeaderValue::from_str("125").unwrap());
+        headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json").unwrap());
+        headers.insert(AUTHORIZATION, HeaderValue::from_str("Bearer 12345").unwrap());
+        headers.insert(ORIGIN, HeaderValue::from_str("http://localhost.local").unwrap());
+        headers.insert(COOKIE, HeaderValue::from_str("jwt=123123123123;test=123123123;tr=lnsdlkansdl").unwrap());
+
+        let token = TokenAuth::find(&headers);
+
+        assert!(token.is_some());
+        assert_eq!(token.unwrap().get(), "12345".to_string());
+    }
+
+    #[test]
+    fn search_cookie_authorization_not_eq() {
+        let mut headers = axum::http::HeaderMap::new();
+        headers.insert(CONTENT_LENGTH, HeaderValue::from_str("125").unwrap());
+        headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json").unwrap());
+        headers.insert(AUTHORIZATION, HeaderValue::from_str("Bearer 12345").unwrap());
+        headers.insert(ORIGIN, HeaderValue::from_str("http://localhost.local").unwrap());
+        headers.insert(COOKIE, HeaderValue::from_str("jwt=123123123123;test=123123123;tr=lnsdlkansdl").unwrap());
+
+        let token = TokenAuth::find(&headers);
+
+        assert_ne!(token.unwrap().get(), "fff".to_string());
+    }
+
+    #[test]
+    fn search_cookie_authorization_none() {
+        let mut headers = axum::http::HeaderMap::new();
+        headers.insert(CONTENT_LENGTH, HeaderValue::from_str("125").unwrap());
+        headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json").unwrap());
+        headers.insert(ORIGIN, HeaderValue::from_str("http://localhost.local").unwrap());
+        headers.insert(COOKIE, HeaderValue::from_str("jwt=123123123123;test=123123123;tr=lnsdlkansdl").unwrap());
+
+        let token = TokenAuth::find(&headers);
+
+        assert!(token.is_none());
     }
 }
 
