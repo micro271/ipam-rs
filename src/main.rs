@@ -21,9 +21,15 @@ use tower_http::{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    
     let Config { app, database } = config::Config::init().unwrap();
 
+    tracing_subscriber::fmt().init();
+    
+
     let lst = tokio::net::TcpListener::bind(format!("{}:{}", app.ip, app.port)).await?;
+
+    tracing::info!("Listening: {}:{}", app.ip, app.port);
 
     let database_url = format!(
         "postgres://{}:{}@{}:{}/{}",

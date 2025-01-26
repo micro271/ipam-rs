@@ -5,13 +5,7 @@ use axum::{extract::FromRequestParts, http::StatusCode};
 use error::NotFound;
 
 #[cfg(feature = "axum")]
-use futures::FutureExt;
-
-#[cfg(feature = "axum")]
 use std::convert::Infallible;
-
-#[cfg(feature = "axum")]
-use std::{boxed::Box, future::Future, pin::Pin};
 
 #[cfg(feature = "axum")]
 pub struct Token(pub Result<String, NotFound>);
@@ -20,77 +14,66 @@ pub struct Token(pub Result<String, NotFound>);
 pub struct Theme(pub theme::Theme);
 
 #[cfg(feature = "axum")]
-impl<S> FromRequestParts<S> for Token
-where
-    S: Send,
+impl<S> FromRequestParts<S> for Token 
+    where 
+        S: Send + Sync,
 {
     type Rejection = Infallible;
-    fn from_request_parts<'a, 'b, 'c>(
-        parts: &'a mut axum::http::request::Parts,
-        _state: &'b S,
-    ) -> Pin<Box<dyn Future<Output = Result<Self, Self::Rejection>> + Send + 'c>>
-    where
-        'a: 'c,
-        'b: 'c,
-    {
-        async {
-            let cookies = parts.headers.get(axum::http::header::COOKIE);
-            if let Some(Ok(tmp)) =
-                cookies.map(|e| e.to_str().map(|x| x.split(';').collect::<Vec<_>>()))
-            {
-                for i in tmp {
-                    let cookie: Vec<_> = i.split("=").collect();
-                    if let (Some(Ok(cookie::Cookie::TOKEN)), Some(value)) = (
-                        cookie.first().map(|x| cookie::Cookie::try_from(*x)),
-                        cookie.get(1),
-                    ) {
-                        return Ok(Self(Ok(value.to_string())));
-                    }
+
+    async fn from_request_parts (
+        parts: &mut axum::http::request::Parts,
+        _state: &S,
+    ) -> Result<Self, Self::Rejection> {
+        let cookies = parts.headers.get(axum::http::header::COOKIE);
+        if let Some(Ok(tmp)) =
+            cookies.map(|e| e.to_str().map(|x| x.split(';').collect::<Vec<_>>()))
+        {
+            for i in tmp {
+                let cookie: Vec<_> = i.split("=").collect();
+                if let (Some(Ok(cookie::Cookie::TOKEN)), Some(value)) = (
+                    cookie.first().map(|x| cookie::Cookie::try_from(*x)),
+                    cookie.get(1),
+                ) {
+                    return Ok(Self(Ok(value.to_string())));
                 }
             }
-            Ok(Self(Err(NotFound {
-                key: cookie::Cookie::TOKEN.to_string(),
-            })))
         }
-        .boxed()
+        Ok(Self(Err(NotFound {
+            key: cookie::Cookie::TOKEN.to_string(),
+        })))
     }
 }
 
 #[cfg(feature = "axum")]
 impl<S> FromRequestParts<S> for Theme
-where
-    S: Send,
+    where
+        S: Send + Sync,
 {
     type Rejection = Infallible;
 
-    fn from_request_parts<'a, 'b, 'c>(
-        parts: &'a mut axum::http::request::Parts,
-        _state: &'b S,
-    ) -> Pin<Box<dyn Future<Output = Result<Self, Self::Rejection>> + Send + 'c>>
-    where
-        'a: 'c,
-        'b: 'c,
-    {
-        async {
-            if let Some(e) = parts.headers.get(axum::http::header::COOKIE) {
-                if let Ok(key_value) = e.to_str().map(|x| x.split(';').collect::<Vec<_>>()) {
-                    for i in key_value {
-                        let tmp: Vec<_> = i.split('=').collect();
-                        if let (Some(Ok(self::cookie::Cookie::THEME)), Some(value)) = (
-                            tmp.first().map(|x| self::cookie::Cookie::try_from(*x)),
-                            tmp.get(1),
-                        ) {
-                            return Ok(Self(match self::theme::Theme::try_from(*value) {
-                                Ok(e) => e,
-                                _ => theme::Theme::Light,
-                            }));
-                        }
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        _state: &S,
+    ) -> Result<Self, Self::Rejection> {
+
+        if let Some(e) = parts.headers.get(axum::http::header::COOKIE) {
+            if let Ok(key_value) = e.to_str().map(|x| x.split(';').collect::<Vec<_>>()) {
+                for i in key_value {
+                    let tmp: Vec<_> = i.split('=').collect();
+                    if let (Some(Ok(self::cookie::Cookie::THEME)), Some(value)) = (
+                        tmp.first().map(|x| self::cookie::Cookie::try_from(*x)),
+                        tmp.get(1),
+                    ) {
+                        return Ok(Self(match self::theme::Theme::try_from(*value) {
+                            Ok(e) => e,
+                            _ => theme::Theme::Light,
+                        }));
                     }
                 }
             }
-            Ok(Theme(theme::Theme::Light))
         }
-        .boxed()
+        Ok(Theme(theme::Theme::Light))
+        
     }
 }
 

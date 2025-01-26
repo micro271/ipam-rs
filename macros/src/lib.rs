@@ -142,11 +142,7 @@ fn impl_updatable(input: &syn::DeriveInput) -> TokenStream {
                     }
                 )*
 
-                if !resp.is_empty() {
-                    Some(resp)
-                } else {
-                    None
-                }
+                (!resp.is_empty()).then_some(resp)
             }
         }
     }.into()
@@ -192,11 +188,7 @@ fn impl_map_params(input: &syn::DeriveInput) -> TokenStream {
 
                 #(#fields)*
 
-                if condition.is_empty() {
-                    None 
-                } else {
-                    Some(condition)
-                }
+                (!condition.is_empty()).then_some(condition)
             }
         }
     }.into()
