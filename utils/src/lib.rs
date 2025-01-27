@@ -1,25 +1,22 @@
-#[cfg(feature = "axum")]
-use axum::{extract::FromRequestParts, http::StatusCode};
-
-#[cfg(feature = "axum")]
+#[cfg(feature = "token")]
 pub struct Token<T: GetToken>(pub T);
 
-#[cfg(feature = "axum")]
+#[cfg(feature = "token")]
 impl<T: GetToken> Token<T> {
     pub fn get_token(self) -> String {
         self.0.get()
     }
 }
 
-#[cfg(feature = "axum")]
+#[cfg(feature = "token")]
 #[derive(Debug)]
 pub struct TokenCookie(String);
 
-#[cfg(feature = "axum")]
+#[cfg(feature = "token")]
 #[derive(Debug)]
 pub struct TokenAuth(String);
 
-#[cfg(feature = "axum")]
+#[cfg(feature = "token")]
 pub trait GetToken 
     where 
         Self:Sized,
@@ -28,10 +25,10 @@ pub trait GetToken
     fn get(self) -> String;
 }
 
-#[cfg(feature = "axum")]
+#[cfg(feature = "token")]
 pub const TOKEN_PEER_KEY: &str = "jwt";
 
-#[cfg(feature = "axum")]
+#[cfg(feature = "token")]
 impl GetToken for TokenCookie {
     fn find(value: &axum::http::HeaderMap) -> Option<Self> {
         value.iter().find(|(key,_)| key.eq(&axum::http::header::COOKIE)).map(|(_, value)| value.to_str().ok()).flatten().map(|x| x.split(";").map(str::trim).find(|x| x.starts_with(TOKEN_PEER_KEY)).map(|x| x.split("=").nth(1).map(|x| Self(x.to_string()))).flatten()).flatten()
@@ -41,7 +38,7 @@ impl GetToken for TokenCookie {
     }
 }
 
-#[cfg(feature = "axum")]
+#[cfg(feature = "token")]
 impl GetToken for TokenAuth {
     fn find(value: &axum::http::HeaderMap) -> Option<Self> {
         value.iter().find(|(x,_)| x.eq(&axum::http::header::AUTHORIZATION)).map(|(_, value)| value.to_str().ok().map(str::trim).map(|x|x.split_whitespace().nth(1).map(|x| Self(x.to_string()))).flatten()).flatten()
@@ -51,8 +48,8 @@ impl GetToken for TokenAuth {
     }
 }
 
-#[cfg(feature = "axum")]
-impl<S, T> FromRequestParts<S> for Token<T> 
+#[cfg(feature = "token")]
+impl<S, T> axum::extract::FromRequestParts<S> for Token<T> 
     where 
         S: Send + Sync,
         T: GetToken + Sync + Send,
@@ -72,7 +69,7 @@ impl<S, T> FromRequestParts<S> for Token<T>
         }
     }
 }
-#[cfg(feature = "axum")]
+#[cfg(feature = "token")]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -80,7 +77,7 @@ mod tests {
 
     #[test]
     fn search_cookie_token_some() {
-        let mut headers = axum::http::HeaderMap::new();
+        let mut headers = HeaderMap::new();
         headers.insert(AUTHORIZATION, HeaderValue::from_str("Bearer 12345").unwrap());
         headers.insert(ORIGIN, HeaderValue::from_str("http://localhost.local").unwrap());
         headers.insert(COOKIE, HeaderValue::from_str("jwt=123123123123;test=123123123;tr=lnsdlkansdl").unwrap());
@@ -92,7 +89,7 @@ mod tests {
 
     #[test]
     fn search_cookie_token_some_not_eq() {
-        let mut headers = axum::http::HeaderMap::new();
+        let mut headers = HeaderMap::new();
         headers.insert(AUTHORIZATION, HeaderValue::from_str("Bearer 12345").unwrap());
         headers.insert(ORIGIN, HeaderValue::from_str("http://localhost.local").unwrap());
         headers.insert(COOKIE, HeaderValue::from_str("jwt=123123123123;test=123123123;tr=lnsdlkansdl").unwrap());
@@ -104,7 +101,7 @@ mod tests {
 
     #[test]
     fn search_cookie_token_none() {
-        let mut headers = axum::http::HeaderMap::new();
+        let mut headers = HeaderMap::new();
         headers.insert(AUTHORIZATION, HeaderValue::from_str("Bearer 12345").unwrap());
         headers.insert(ORIGIN, HeaderValue::from_str("http://localhost.local").unwrap());
         headers.insert(CONTENT_LENGTH, HeaderValue::from_str("125").unwrap());
@@ -115,7 +112,7 @@ mod tests {
 
     #[test]
     fn search_cookie_authorization_some() {
-        let mut headers = axum::http::HeaderMap::new();
+        let mut headers = HeaderMap::new();
         headers.insert(CONTENT_LENGTH, HeaderValue::from_str("125").unwrap());
         headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json").unwrap());
         headers.insert(AUTHORIZATION, HeaderValue::from_str("Bearer 12345").unwrap());
@@ -130,7 +127,7 @@ mod tests {
 
     #[test]
     fn search_cookie_authorization_not_eq() {
-        let mut headers = axum::http::HeaderMap::new();
+        let mut headers = HeaderMap::new();
         headers.insert(CONTENT_LENGTH, HeaderValue::from_str("125").unwrap());
         headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json").unwrap());
         headers.insert(AUTHORIZATION, HeaderValue::from_str("Bearer 12345").unwrap());
@@ -144,7 +141,7 @@ mod tests {
 
     #[test]
     fn search_cookie_authorization_none() {
-        let mut headers = axum::http::HeaderMap::new();
+        let mut headers = HeaderMap::new();
         headers.insert(CONTENT_LENGTH, HeaderValue::from_str("125").unwrap());
         headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json").unwrap());
         headers.insert(ORIGIN, HeaderValue::from_str("http://localhost.local").unwrap());
@@ -156,25 +153,6 @@ mod tests {
     }
 }
 
-#[cfg(feature = "axum")]
-pub mod error {
-    use super::StatusCode;
-    use axum::response::IntoResponse;
-
-    #[derive(Debug)]
-    pub struct NotFound {
-        pub key: String,
-    }
-
-    impl IntoResponse for NotFound {
-        fn into_response(self) -> axum::response::Response {
-            (StatusCode::NOT_FOUND, format!("{} not found", self.key)).into_response()
-        }
-    }
-
-    #[derive(Debug)]
-    pub struct ParseError;
-}
 
 #[cfg(feature = "auth")]
 pub mod authentication {
@@ -263,13 +241,11 @@ pub mod authentication {
     }
 }
 
-#[cfg(feature = "axum")]
+#[cfg(feature = "error")]
 #[allow(dead_code)]
 pub mod response_error {
-    use axum::{
-        http::StatusCode,
-        response::{IntoResponse, Response},
-    };
+    use axum::http::{StatusCode, Response};
+    
     use serde::{Deserialize, Serialize};
     use time::{OffsetDateTime, UtcOffset};
 
@@ -364,7 +340,8 @@ pub mod response_error {
         }
     }
 
-    impl IntoResponse for ResponseError {
+    #[cfg(feature = "axum")]
+    impl axum::response::IntoResponse for ResponseError {
         fn into_response(self) -> axum::response::Response {
             Response::builder()
                 .header(axum::http::header::CONTENT_TYPE, "application/problem+json")
