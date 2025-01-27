@@ -1,6 +1,6 @@
 CREATE TYPE STATUS as ENUM ('Reserved', 'Unknown', 'Online', 'Offline');
 CREATE TYPE ROLE AS ENUM ('Admin', 'Operator', 'Guest');
-CREATE TYPE TO AS ENUM ('Device', 'Nat');
+CREATE TYPE NETWORKTO AS ENUM ('Device', 'Nat');
 
 CREATE TABLE IF NOT EXISTS vlans (
     id INTEGER,
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS networks (
     description VARCHAR,
     father UUID,
     children INTEGER,
-    to TO,
+    "to" NETWORKTO,
     FOREIGN KEY (father) REFERENCES networks(id) ON DELETE CASCADE,
     FOREIGN KEY (vlan) REFERENCES vlans(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
