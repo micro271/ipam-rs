@@ -9,7 +9,7 @@ pub struct Vlan {
     pub description: Option<String>,
 }
 
-#[derive(Deserialize, Debug, Updatable)]
+#[derive(Deserialize, Debug, Default, Updatable)]
 pub struct UpdateVlan {
     pub id: Option<VlanId>,
     pub description: Option<String>,

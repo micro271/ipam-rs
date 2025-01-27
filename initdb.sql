@@ -1,4 +1,6 @@
 CREATE TYPE STATUS as ENUM ('Reserved', 'Unknown', 'Online', 'Offline');
+CREATE TYPE ROLE AS ENUM ('Admin', 'Operator', 'Guest');
+CREATE TYPE TO AS ENUM ('Device', 'Nat');
 
 CREATE TABLE IF NOT EXISTS vlans (
     id INTEGER,
@@ -16,6 +18,7 @@ CREATE TABLE IF NOT EXISTS networks (
     description VARCHAR,
     father UUID,
     children INTEGER,
+    to TO,
     FOREIGN KEY (father) REFERENCES networks(id) ON DELETE CASCADE,
     FOREIGN KEY (vlan) REFERENCES vlans(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -65,9 +68,6 @@ CREATE TABLE IF NOT EXISTS devices (
     FOREIGN KEY (network_id) REFERENCES networks(id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (label, room_name, mount_point) REFERENCES locations(label, room_name, mount_point) ON DELETE SET NULL ON UPDATE SET NULL
 );
-
-
-CREATE TYPE ROLE AS ENUM ('Admin', 'Operator', 'Guest');
 
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,

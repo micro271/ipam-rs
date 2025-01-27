@@ -1,6 +1,6 @@
 use super::PgRow;
 use crate::{
-    models::{device::Status, user::Role},
+    models::{device::Status, network::To, user::Role},
     MapQuery,
 };
 use axum::{
@@ -200,7 +200,14 @@ pub enum TypeTable {
     OptionTime(Option<time::OffsetDateTime>),
     Time(time::OffsetDateTime),
     Bool(bool),
+    To(To),
     Null,
+}
+
+impl From<To> for TypeTable {
+    fn from(value: To) -> Self {
+        Self::To(value)
+    }
 }
 
 impl From<bool> for TypeTable {

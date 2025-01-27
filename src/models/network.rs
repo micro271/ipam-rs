@@ -24,6 +24,14 @@ pub struct Network {
     pub description: Option<String>,
     pub father: Option<Uuid>,
     pub children: i32,
+    pub to: To,
+}
+
+#[derive(Debug, Clone, sqlx::Type, Deserialize, Serialize, PartialEq, Default)]
+pub enum To {
+    Nat,
+    #[default]
+    Device,
 }
 
 impl std::cmp::PartialEq for Network {
@@ -64,6 +72,7 @@ impl From<IpNet> for Network {
             description: None,
             father: None,
             children: 0,
+            to: To::default(),
         }
     }
 }

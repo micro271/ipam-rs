@@ -1,3 +1,5 @@
+use crate::models::network::To;
+
 use super::super::models::{
     device::{Device, Status},
     network::Network,
@@ -19,6 +21,7 @@ pub struct NetworkCreateEntry {
     pub network: IpNet,
     pub description: Option<String>,
     pub vlan: Option<VlanId>,
+    pub to: Option<To>,
 }
 
 impl From<NetworkCreateEntry> for Network {
@@ -34,6 +37,7 @@ impl From<NetworkCreateEntry> for Network {
             vlan: value.vlan,
             father: None,
             children: 0,
+            to: value.to.unwrap_or_default(),
         }
     }
 }

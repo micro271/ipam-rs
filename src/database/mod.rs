@@ -51,6 +51,7 @@ impl Repository for RepositoryInjection<Postgres> {
                 TypeTable::OptionTime(e) => tmp.bind(e),
                 TypeTable::Time(e) => tmp.bind(e),
                 TypeTable::Null => tmp,
+                TypeTable::To(e) => tmp.bind(e),
                 TypeTable::I64(e) => tmp.bind(e),
                 TypeTable::OptionVlanId(e) => tmp.bind(e),
                 TypeTable::VlanId(e) => tmp.bind(e),
@@ -143,6 +144,7 @@ impl Repository for RepositoryInjection<Postgres> {
             for i in 1..pos {
                 sql = match pos_values.get(&i).unwrap() {
                     TypeTable::OptionVlanId(e) => sql.bind(e),
+                    TypeTable::To(e) => sql.bind(e),
                     TypeTable::VlanId(e) => sql.bind(e),
                     TypeTable::String(s) => sql.bind(s),
                     TypeTable::OptionString(value) => sql.bind(value),
@@ -205,6 +207,7 @@ impl Repository for RepositoryInjection<Postgres> {
                 for i in 1..pos {
                     ex = match pos_column.get(&i).unwrap() {
                         TypeTable::OptionVlanId(e) => ex.bind(e),
+                        TypeTable::To(e) => ex.bind(e),
                         TypeTable::VlanId(e) => ex.bind(e),
                         TypeTable::OptionUuid(e) => ex.bind(e),
                         TypeTable::String(s) => ex.bind(s),
