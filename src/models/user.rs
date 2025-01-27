@@ -1,3 +1,5 @@
+use time::OffsetDateTime;
+
 use super::*;
 
 #[derive(Deserialize, Serialize, Debug, Clone, Table, FromPgRow)]
@@ -35,9 +37,10 @@ impl std::cmp::PartialEq for User {
     }
 }
 
-#[derive(Debug, Deserialize, Updatable)]
+#[derive(Debug, Deserialize, Updatable, Default)]
 pub struct UpdateUser {
     pub username: Option<String>,
     pub password: Option<String>,
     pub role: Option<Role>,
+    pub last_login: Option<OffsetDateTime>,
 }

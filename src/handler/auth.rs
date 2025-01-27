@@ -3,7 +3,8 @@ use crate::{database::repository::QueryResult, models::user::User, services::Cla
 use axum::{extract::Request, middleware::Next, response::Response};
 use cookie::Cookie;
 use libipam::{
-    authentication::{self, create_token, encrypt, verify_passwd}, GetToken, TokenCookie, TOKEN_PEER_KEY,
+    authentication::{self, create_token, encrypt, verify_passwd},
+    GetToken, TokenCookie, TOKEN_PEER_KEY,
 };
 use models::user::UpdateUser;
 
@@ -74,11 +75,11 @@ pub async fn delete(
 pub async fn login(
     State(state): State<RepositoryType>,
     uri: Uri,
-    Json(user): Json<entries::models::User>,
+    Json(entries::models::User { username, password }): Json<entries::models::User>,
 ) -> Result<Response, ResponseError> {
     let resp = state
         .get::<User>(
-            Some(HashMap::from([("username", user.username.into())])),
+            Some(HashMap::from([("username", username.clone().into())])),
             None,
             None,
         )
@@ -86,8 +87,20 @@ pub async fn login(
         .remove(0);
 
     if let Some(Ok(e)) =
-        verify_passwd(user.password, &resp.password).then_some(create_token(Claims::from(resp)))
+        verify_passwd(password, &resp.password).then_some(create_token(Claims::from(resp)))
     {
+        let last_login = Some(time::OffsetDateTime::now_utc());
+
+        state
+            .update::<User, _>(
+                UpdateUser {
+                    last_login,
+                    ..Default::default()
+                },
+                Some(HashMap::from([("", username.into())])),
+            )
+            .await?;
+
         let c = Cookie::build((TOKEN_PEER_KEY.to_string(), e.clone()))
             .path("/")
             .http_only(true)
