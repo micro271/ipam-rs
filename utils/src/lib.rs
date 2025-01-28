@@ -93,6 +93,7 @@ where
         )
     }
 }
+
 #[cfg(feature = "token")]
 #[cfg(test)]
 mod tests {
@@ -965,6 +966,15 @@ pub mod ipam_services {
     impl std::error::Error for SubnettingError {}
 
     pub fn subnetting(ipnet: IpNet, prefix: u8) -> Result<Vec<IpNet>, SubnettingError> {
+        if ipnet.prefix_len() >= prefix {
+            return Err(SubnettingError(format!(
+                "The network {:?}/{} does not belong to the network {:?}",
+                ipnet.network(),
+                prefix,
+                ipnet
+            )));
+        }
+
         let ip = match ipnet.network() {
             IpAddr::V4(ipv4) => ipv4,
             IpAddr::V6(_) => {
@@ -974,29 +984,16 @@ pub mod ipam_services {
             }
         };
 
-        let mut resp = Vec::new();
-
-        let mut subnet =
-            IpNet::new(ip.into(), prefix).map_err(|x| SubnettingError(x.to_string()))?;
-
-        if !ipnet.contains(&subnet) {
-            return Err(SubnettingError(format!(
-                "The network {} doesnt belong to the network {}",
-                subnet, ipnet
-            )));
-        }
-
         let sub = 2u32.pow((prefix - ipnet.prefix_len()) as u32);
-        let hosts = 2u32.pow((subnet.max_prefix_len() - prefix) as u32);
+        let hosts = 2u32.pow((32 - prefix) as u32);
 
-        resp.push(subnet);
-
-        for i in 1..sub {
-            let new = u32::from(ip) + i * hosts;
-            subnet = IpNet::new(Ipv4Addr::from(new).into(), prefix).unwrap();
-            resp.push(subnet);
-        }
-        Ok(resp)
+        Ok((0..sub)
+            .into_iter()
+            .map(|i| {
+                let new = u32::from(ip) + i * hosts;
+                IpNet::new(Ipv4Addr::from(new).into(), prefix).unwrap()
+            })
+            .collect::<Vec<IpNet>>())
     }
 
     pub async fn ping(ip: IpAddr, timeout_ms: u64) -> Ping {
