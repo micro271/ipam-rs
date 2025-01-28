@@ -6,6 +6,10 @@ impl<T: GetToken> Token<T> {
     pub fn get_token(self) -> String {
         self.0.get()
     }
+
+    pub fn into_inner(self) -> T {
+        self.0
+    }
 }
 
 #[cfg(feature = "token")]
@@ -17,11 +21,10 @@ pub struct TokenCookie(String);
 pub struct TokenAuth(String);
 
 #[cfg(feature = "token")]
-pub trait GetToken 
-    where 
-        Self:Sized,
-{
-    fn find(value: &axum::http::HeaderMap) -> Option<Self>;
+pub trait GetToken: Send + Sync {
+    fn find(value: &axum::http::HeaderMap) -> Option<Self>
+    where
+        Self: Sized;
     fn get(self) -> String;
 }
 
@@ -31,7 +34,16 @@ pub const TOKEN_PEER_KEY: &str = "jwt";
 #[cfg(feature = "token")]
 impl GetToken for TokenCookie {
     fn find(value: &axum::http::HeaderMap) -> Option<Self> {
-        value.iter().find(|(key,_)| key.eq(&axum::http::header::COOKIE)).map(|(_, value)| value.to_str().ok()).flatten().map(|x| x.split(";").map(str::trim).find(|x| x.starts_with(TOKEN_PEER_KEY)).map(|x| x.split("=").nth(1).map(|x| Self(x.to_string()))).flatten()).flatten()
+        value
+            .iter()
+            .find(|(key, _)| key.eq(&axum::http::header::COOKIE))
+            .and_then(|(_, value)| value.to_str().ok())
+            .and_then(|x| {
+                x.split(";")
+                    .map(str::trim)
+                    .find(|x| x.starts_with(TOKEN_PEER_KEY))
+                    .and_then(|x| x.split("=").nth(1).map(|x| Self(x.to_string())))
+            })
     }
     fn get(self) -> String {
         self.0
@@ -41,7 +53,16 @@ impl GetToken for TokenCookie {
 #[cfg(feature = "token")]
 impl GetToken for TokenAuth {
     fn find(value: &axum::http::HeaderMap) -> Option<Self> {
-        value.iter().find(|(x,_)| x.eq(&axum::http::header::AUTHORIZATION)).map(|(_, value)| value.to_str().ok().map(str::trim).map(|x|x.split_whitespace().nth(1).map(|x| Self(x.to_string()))).flatten()).flatten()
+        value
+            .iter()
+            .find(|(x, _)| x.eq(&axum::http::header::AUTHORIZATION))
+            .and_then(|(_, value)| {
+                value
+                    .to_str()
+                    .ok()
+                    .map(str::trim)
+                    .and_then(|x| x.split_whitespace().nth(1).map(|x| Self(x.to_string())))
+            })
     }
     fn get(self) -> String {
         self.0
@@ -49,24 +70,27 @@ impl GetToken for TokenAuth {
 }
 
 #[cfg(feature = "token")]
-impl<S, T> axum::extract::FromRequestParts<S> for Token<T> 
-    where 
-        S: Send + Sync,
-        T: GetToken + Sync + Send,
+impl<S, T> axum::extract::FromRequestParts<S> for Token<T>
+where
+    S: Send + Sync,
+    T: GetToken,
 {
+    #[cfg(feature = "error")]
     type Rejection = crate::response_error::ResponseError;
 
-    async fn from_request_parts (
+    #[cfg(not(feature = "error"))]
+    type Rejection = axum::http::StatusCode;
+
+    async fn from_request_parts(
         parts: &mut axum::http::request::Parts,
         _state: &S,
     ) -> Result<Self, Self::Rejection> {
-
-        match T::find(&parts.headers) {
-            Some(e) => {
-                Ok(Token(e))
-            },
-            _ => Err(crate::response_error::ResponseError::unauthorized(&parts.uri, None))
-        }
+        T::find(&parts.headers).map(Token).ok_or(
+            #[cfg(feature = "error")]
+            crate::response_error::ResponseError::unauthorized(&parts.uri, None),
+            #[cfg(not(feature = "error"))]
+            axum::http::status::StatusCode::UNAUTHORIZED,
+        )
     }
 }
 #[cfg(feature = "token")]
@@ -78,9 +102,18 @@ mod tests {
     #[test]
     fn search_cookie_token_some() {
         let mut headers = HeaderMap::new();
-        headers.insert(AUTHORIZATION, HeaderValue::from_str("Bearer 12345").unwrap());
-        headers.insert(ORIGIN, HeaderValue::from_str("http://localhost.local").unwrap());
-        headers.insert(COOKIE, HeaderValue::from_str("jwt=123123123123;test=123123123;tr=lnsdlkansdl").unwrap());
+        headers.insert(
+            AUTHORIZATION,
+            HeaderValue::from_str("Bearer 12345").unwrap(),
+        );
+        headers.insert(
+            ORIGIN,
+            HeaderValue::from_str("http://localhost.local").unwrap(),
+        );
+        headers.insert(
+            COOKIE,
+            HeaderValue::from_str("jwt=123123123123;test=123123123;tr=lnsdlkansdl").unwrap(),
+        );
 
         let token = TokenCookie::find(&headers);
         assert!(token.is_some());
@@ -90,9 +123,18 @@ mod tests {
     #[test]
     fn search_cookie_token_some_not_eq() {
         let mut headers = HeaderMap::new();
-        headers.insert(AUTHORIZATION, HeaderValue::from_str("Bearer 12345").unwrap());
-        headers.insert(ORIGIN, HeaderValue::from_str("http://localhost.local").unwrap());
-        headers.insert(COOKIE, HeaderValue::from_str("jwt=123123123123;test=123123123;tr=lnsdlkansdl").unwrap());
+        headers.insert(
+            AUTHORIZATION,
+            HeaderValue::from_str("Bearer 12345").unwrap(),
+        );
+        headers.insert(
+            ORIGIN,
+            HeaderValue::from_str("http://localhost.local").unwrap(),
+        );
+        headers.insert(
+            COOKIE,
+            HeaderValue::from_str("jwt=123123123123;test=123123123;tr=lnsdlkansdl").unwrap(),
+        );
 
         let token = TokenCookie::find(&headers);
 
@@ -102,8 +144,14 @@ mod tests {
     #[test]
     fn search_cookie_token_none() {
         let mut headers = HeaderMap::new();
-        headers.insert(AUTHORIZATION, HeaderValue::from_str("Bearer 12345").unwrap());
-        headers.insert(ORIGIN, HeaderValue::from_str("http://localhost.local").unwrap());
+        headers.insert(
+            AUTHORIZATION,
+            HeaderValue::from_str("Bearer 12345").unwrap(),
+        );
+        headers.insert(
+            ORIGIN,
+            HeaderValue::from_str("http://localhost.local").unwrap(),
+        );
         headers.insert(CONTENT_LENGTH, HeaderValue::from_str("125").unwrap());
 
         let token = TokenCookie::find(&headers);
@@ -114,10 +162,22 @@ mod tests {
     fn search_cookie_authorization_some() {
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_LENGTH, HeaderValue::from_str("125").unwrap());
-        headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json").unwrap());
-        headers.insert(AUTHORIZATION, HeaderValue::from_str("Bearer 12345").unwrap());
-        headers.insert(ORIGIN, HeaderValue::from_str("http://localhost.local").unwrap());
-        headers.insert(COOKIE, HeaderValue::from_str("jwt=123123123123;test=123123123;tr=lnsdlkansdl").unwrap());
+        headers.insert(
+            CONTENT_TYPE,
+            HeaderValue::from_str("application/json").unwrap(),
+        );
+        headers.insert(
+            AUTHORIZATION,
+            HeaderValue::from_str("Bearer 12345").unwrap(),
+        );
+        headers.insert(
+            ORIGIN,
+            HeaderValue::from_str("http://localhost.local").unwrap(),
+        );
+        headers.insert(
+            COOKIE,
+            HeaderValue::from_str("jwt=123123123123;test=123123123;tr=lnsdlkansdl").unwrap(),
+        );
 
         let token = TokenAuth::find(&headers);
 
@@ -129,10 +189,22 @@ mod tests {
     fn search_cookie_authorization_not_eq() {
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_LENGTH, HeaderValue::from_str("125").unwrap());
-        headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json").unwrap());
-        headers.insert(AUTHORIZATION, HeaderValue::from_str("Bearer 12345").unwrap());
-        headers.insert(ORIGIN, HeaderValue::from_str("http://localhost.local").unwrap());
-        headers.insert(COOKIE, HeaderValue::from_str("jwt=123123123123;test=123123123;tr=lnsdlkansdl").unwrap());
+        headers.insert(
+            CONTENT_TYPE,
+            HeaderValue::from_str("application/json").unwrap(),
+        );
+        headers.insert(
+            AUTHORIZATION,
+            HeaderValue::from_str("Bearer 12345").unwrap(),
+        );
+        headers.insert(
+            ORIGIN,
+            HeaderValue::from_str("http://localhost.local").unwrap(),
+        );
+        headers.insert(
+            COOKIE,
+            HeaderValue::from_str("jwt=123123123123;test=123123123;tr=lnsdlkansdl").unwrap(),
+        );
 
         let token = TokenAuth::find(&headers);
 
@@ -143,16 +215,24 @@ mod tests {
     fn search_cookie_authorization_none() {
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_LENGTH, HeaderValue::from_str("125").unwrap());
-        headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json").unwrap());
-        headers.insert(ORIGIN, HeaderValue::from_str("http://localhost.local").unwrap());
-        headers.insert(COOKIE, HeaderValue::from_str("jwt=123123123123;test=123123123;tr=lnsdlkansdl").unwrap());
+        headers.insert(
+            CONTENT_TYPE,
+            HeaderValue::from_str("application/json").unwrap(),
+        );
+        headers.insert(
+            ORIGIN,
+            HeaderValue::from_str("http://localhost.local").unwrap(),
+        );
+        headers.insert(
+            COOKIE,
+            HeaderValue::from_str("jwt=123123123123;test=123123123;tr=lnsdlkansdl").unwrap(),
+        );
 
         let token = TokenAuth::find(&headers);
 
         assert!(token.is_none());
     }
 }
-
 
 #[cfg(feature = "auth")]
 pub mod authentication {
@@ -244,8 +324,8 @@ pub mod authentication {
 #[cfg(feature = "error")]
 #[allow(dead_code)]
 pub mod response_error {
-    use axum::http::{StatusCode, Response};
-    
+    use axum::http::{Response, StatusCode};
+
     use serde::{Deserialize, Serialize};
     use time::{OffsetDateTime, UtcOffset};
 
