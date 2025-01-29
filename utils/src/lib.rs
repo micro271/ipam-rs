@@ -87,7 +87,10 @@ where
     ) -> Result<Self, Self::Rejection> {
         T::find(&parts.headers).map(Token).ok_or(
             #[cfg(feature = "error")]
-            crate::response_error::ResponseError::unauthorized(&parts.uri, None),
+            crate::response_error::ResponseError::unauthorized(
+                &parts.uri,
+                Some("Token doesn't present".to_string()),
+            ),
             #[cfg(not(feature = "error"))]
             axum::http::status::StatusCode::UNAUTHORIZED,
         )

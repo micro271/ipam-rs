@@ -137,15 +137,9 @@ pub async fn verify_token(
     mut req: Request,
     next: Next,
 ) -> Result<axum::response::Response, ResponseError> {
-    let token = token.get();
-    match authentication::verify_token::<Claims, _>(token) {
-        Ok(e) => {
-            req.extensions_mut().insert(e.role);
-            Ok(next.run(req).await)
-        }
-        _ => Err(ResponseError::unauthorized(
-            req.uri(),
-            Some("invalid username o password".to_string()),
-        )),
-    }
+    let claim = authentication::verify_token::<Claims, _>(token.get()).map_err(|_| {
+        ResponseError::unauthorized(req.uri(), Some("Username or password invalid".to_string()))
+    })?;
+    req.extensions_mut().insert(claim.role);
+    Ok(next.run(req).await)
 }
