@@ -18,12 +18,15 @@ use tower_http::{
     cors::{Any, CorsLayer},
     trace::TraceLayer,
 };
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let Config { app, database } = config::Config::init().unwrap();
 
-    tracing_subscriber::fmt().init();
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::try_from_env("LOG_LEVEL").unwrap_or(EnvFilter::new("info")))
+        .init();
 
     let lst = tokio::net::TcpListener::bind(format!("{}:{}", app.ip, app.port)).await?;
 

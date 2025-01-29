@@ -89,6 +89,7 @@ pub trait Updatable {
     fn get_pair(self) -> Option<HashMap<&'static str, TypeTable>>;
 }
 
+#[derive(Debug)]
 pub enum QueryResult<T> {
     Insert(u64),
     Update(u64),

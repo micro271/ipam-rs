@@ -97,7 +97,7 @@ pub async fn login(
                     last_login,
                     ..Default::default()
                 },
-                Some(HashMap::from([("", username.into())])),
+                Some(HashMap::from([("username", username.into())])),
             )
             .await?;
 

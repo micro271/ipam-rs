@@ -989,10 +989,7 @@ pub mod ipam_services {
 
         Ok((0..sub)
             .into_iter()
-            .map(|i| {
-                let new = u32::from(ip) + i * hosts;
-                IpNet::new(Ipv4Addr::from(new).into(), prefix).unwrap()
-            })
+            .map(|i| IpNet::new(Ipv4Addr::from(u32::from(ip) + i * hosts).into(), prefix).unwrap())
             .collect::<Vec<IpNet>>())
     }
 
