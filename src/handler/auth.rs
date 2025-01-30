@@ -1,4 +1,4 @@
-use super::*;
+use super::{entries::models::UserEntry, *};
 use crate::{database::repository::QueryResult, models::user::User, services::Claims};
 use axum::{extract::Request, middleware::Next, response::Response};
 use cookie::Cookie;
@@ -13,21 +13,25 @@ pub async fn create(
     State(state): State<RepositoryType>,
     uri: Uri,
     _: IsAdministrator,
-    Json(mut user): Json<User>,
+    Json(mut user): Json<UserEntry>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    user.password = match encrypt(user.password) {
-        Ok(e) => e,
-        Err(e) => {
-            return Err(ResponseError::builder()
-                .detail(e.to_string())
-                .title("Encrypting error".to_string())
+    user.password = tokio::task::spawn_blocking(move || {
+        encrypt(user.password).map_err(|_| {
+            ResponseError::builder()
+                .detail("Encrypt error".to_string())
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .instance(uri.to_string())
-                .build())
-        }
-    };
+                .build()
+        })
+    })
+    .await
+    .map_err(|_| {
+        ResponseError::builder()
+            .detail("Thread pool error".to_string())
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .build()
+    })??;
 
-    Ok(state.insert(user).await?)
+    Ok(state.insert(User::from(user)).await?)
 }
 #[instrument(level = Level::INFO)]
 pub async fn update(
@@ -75,7 +79,7 @@ pub async fn delete(
 pub async fn login(
     State(state): State<RepositoryType>,
     uri: Uri,
-    Json(entries::models::User { username, password }): Json<entries::models::User>,
+    Json(entries::models::UserEntry { username, password }): Json<entries::models::UserEntry>,
 ) -> Result<Response, ResponseError> {
     let resp = state
         .get::<User>(
@@ -137,9 +141,15 @@ pub async fn verify_token(
     mut req: Request,
     next: Next,
 ) -> Result<axum::response::Response, ResponseError> {
-    let claim = authentication::verify_token::<Claims, _>(token.get()).map_err(|_| {
-        ResponseError::unauthorized(req.uri(), Some("Username or password invalid".to_string()))
-    })?;
+    let uri = req.uri().clone();
+    let claim = tokio::task::spawn_blocking(move || {
+        authentication::verify_token::<Claims, _>(token.get()).map_err(|_| {
+            ResponseError::unauthorized(&uri, Some("Username or password invalid".to_string()))
+        })
+    })
+    .await
+    .map_err(|_| ResponseError::builder().build())??;
+
     req.extensions_mut().insert(claim.role);
     Ok(next.run(req).await)
 }

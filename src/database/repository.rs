@@ -25,24 +25,24 @@ pub trait Repository {
         offset: Option<i32>,
     ) -> impl Future<Output = ResultRepository<Vec<T>>>
     where
-        T: Table + From<PgRow> + Send + Debug + Clone;
+        T: Table + From<PgRow> + Send + Sync + Debug + Clone;
     fn insert<T>(&self, data: T) -> impl Future<Output = ResultRepository<QueryResult<T>>>
     where
-        T: Table + Send + Debug + Clone;
+        T: Table + Sync + Send + Debug + Clone;
     fn update<T, U>(
         &self,
         updater: U,
         condition: Option<HashMap<&'static str, TypeTable>>,
     ) -> impl Future<Output = ResultRepository<QueryResult<T>>>
     where
-        T: Table + Send + Debug + Clone,
-        U: Updatable + Send + Debug;
+        T: Table + Send + Sync + Debug + Clone,
+        U: Updatable + Send + Sync + Debug;
     fn delete<T>(
         &self,
         condition: Option<HashMap<&'static str, TypeTable>>,
     ) -> impl Future<Output = ResultRepository<QueryResult<T>>>
     where
-        T: Table + Send + Debug + Clone;
+        T: Table + Send + Sync + Debug + Clone;
 }
 
 pub trait Table {
@@ -162,6 +162,7 @@ pub mod error {
         Sqlx(String),
         RowNotFound,
         ColumnNotFound(String),
+        UpdaterEmpty,
     }
 
     impl std::fmt::Display for RepositoryError {
@@ -170,6 +171,7 @@ pub mod error {
                 RepositoryError::Sqlx(txt) => write!(f, "Sqlx error: {}", txt),
                 Self::RowNotFound => write!(f, "Row not found"),
                 Self::ColumnNotFound(e) => write!(f, "The column {} is invalid", e),
+                Self::UpdaterEmpty => write!(f, "There isn't element to change"),
             }
         }
     }

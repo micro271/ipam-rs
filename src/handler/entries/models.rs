@@ -1,9 +1,9 @@
-use crate::models::network::To;
-
 use super::super::models::{
     device::{Device, Status},
     network::Network,
+    user::User,
 };
+use crate::models::network::To;
 use ipnet::IpNet;
 use libipam::type_net::vlan::VlanId;
 use serde::{Deserialize, Serialize};
@@ -11,9 +11,23 @@ use std::net::IpAddr;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct User {
+pub struct UserEntry {
     pub username: String,
     pub password: String,
+}
+
+impl From<UserEntry> for User {
+    fn from(value: UserEntry) -> Self {
+        User {
+            id: Uuid::new_v4(),
+            username: value.username,
+            password: value.password,
+            role: crate::models::user::Role::Operator,
+            is_active: true,
+            create_at: time::OffsetDateTime::now_utc(),
+            last_login: None,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]

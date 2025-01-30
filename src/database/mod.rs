@@ -2,6 +2,7 @@ pub mod repository;
 pub mod sql;
 pub mod transaction;
 
+use crate::MapQuery;
 use futures::stream::StreamExt;
 use repository::{
     error::RepositoryError, QueryResult, Repository, ResultRepository, Table, TypeTable, Updatable,
@@ -14,7 +15,6 @@ use sqlx::{
 use std::{clone::Clone, collections::HashMap, fmt::Debug};
 use transaction::{BuilderPgTransaction, Transaction};
 
-use crate::MapQuery;
 #[derive(Debug)]
 pub struct RepositoryInjection<DB>(Pool<DB>)
 where
@@ -34,33 +34,17 @@ impl RepositoryInjection<Postgres> {
 impl Repository for RepositoryInjection<Postgres> {
     async fn insert<T>(&self, data: T) -> ResultRepository<QueryResult<T>>
     where
-        T: Table + Send + Debug + Clone,
+        T: Table + Send + Sync + Debug + Clone,
     {
+        tracing::trace!("REPOSITORY");
+        tracing::trace!("1 input (data) - {:?}", data);
+
         let query = T::query_insert();
-        let mut tmp = sqlx::query(&query);
-        let data = data.get_fields();
-        for i in data {
-            tmp = match i {
-                TypeTable::String(s) => tmp.bind(s),
-                TypeTable::OptionString(opt) => tmp.bind(opt),
-                TypeTable::Status(status) => tmp.bind(status),
-                TypeTable::Uuid(e) => tmp.bind(e),
-                TypeTable::Role(r) => tmp.bind(r),
-                TypeTable::OptionUuid(e) => tmp.bind(e),
-                TypeTable::Bool(e) => tmp.bind(e),
-                TypeTable::OptionTime(e) => tmp.bind(e),
-                TypeTable::Time(e) => tmp.bind(e),
-                TypeTable::Null => tmp,
-                TypeTable::To(e) => tmp.bind(e),
-                TypeTable::I64(e) => tmp.bind(e),
-                TypeTable::OptionVlanId(e) => tmp.bind(e),
-                TypeTable::VlanId(e) => tmp.bind(e),
-                TypeTable::I32(e) => tmp.bind(e),
-            };
-        }
-        Ok(QueryResult::Insert(
-            tmp.execute(&self.0).await?.rows_affected(),
-        ))
+        let res = SqlOperations::insert(data, &query).execute(&self.0).await?;
+
+        tracing::debug!("sql query result - {:?}", res);
+
+        Ok(QueryResult::Insert(res.rows_affected()))
     }
 
     async fn get<T>(
@@ -70,15 +54,23 @@ impl Repository for RepositoryInjection<Postgres> {
         offset: Option<i32>,
     ) -> ResultRepository<Vec<T>>
     where
-        T: Table + From<PgRow> + Send + Debug,
+        T: Table + From<PgRow> + Send + Sync + Debug,
     {
+        tracing::trace!("REPOSITORY");
+        tracing::trace!("1 input (column_data) - {:?}", column_data);
+        tracing::trace!("2 input (limit) - {:?}", limit);
+        tracing::trace!("3 input (offset) - {:?}", offset);
+
         let mut query = format!("SELECT * FROM {}", T::name());
         let mut vec_resp = Vec::new();
-        let query = SqlOperations::get(&mut query, column_data, limit, offset);
-        let mut fetch = query.fetch(&self.0);
-        while let Some(Ok(e)) = fetch.next().await {
+        let mut query = SqlOperations::get(&mut query, column_data, limit, offset).fetch(&self.0);
+
+        while let Some(Ok(e)) = query.next().await {
             vec_resp.push(T::from(e));
         }
+
+        tracing::debug!("sql query result - {:?}", vec_resp);
+
         if !vec_resp.is_empty() {
             Ok(vec_resp)
         } else {
@@ -92,82 +84,25 @@ impl Repository for RepositoryInjection<Postgres> {
         condition: Option<HashMap<&'static str, TypeTable>>,
     ) -> ResultRepository<QueryResult<T>>
     where
-        T: Table + Send + Debug,
-        U: Updatable + Send + Debug,
+        T: Table + Send + Sync + Debug,
+        U: Updatable + Send + Sync + Debug,
     {
-        tracing::debug!(
-            "Update element % new_data: {:?} - condition {:?} %",
-            updater,
-            condition
-        );
-        if let Some(pair) = updater.get_pair() {
-            let cols = T::columns();
+        tracing::trace!("REPOSITORY");
+        tracing::trace!("1 input (updater) - {:?}", updater);
+        tracing::trace!("2 input (condition) - {:?}", condition);
 
-            let mut query = T::query_update();
+        let mut query = T::query_update();
+        let result = SqlOperations::update(
+            updater.get_pair().ok_or(RepositoryError::UpdaterEmpty)?,
+            condition,
+            &mut query,
+        )
+        .execute(&self.0)
+        .await?;
 
-            let mut pos_values = HashMap::new();
+        tracing::debug!("sql query result - {:?}", result);
 
-            let mut pos = 1;
-            let len = pair.len();
-            for i in pair.keys() {
-                if !cols.contains(i) {
-                    return Err(RepositoryError::ColumnNotFound(i.to_string()));
-                }
-
-                query.push_str(&format!(" {} = ${}", i, pos));
-                pos_values.insert(pos, pair.get(i).unwrap());
-                if len > pos {
-                    query.push(',');
-                }
-                pos += 1
-            }
-
-            let condition = match condition {
-                Some(e) => {
-                    query.push_str(" WHERE");
-                    e
-                }
-                None => HashMap::new(),
-            };
-
-            let len = condition.len() + pos - 1;
-            for i in condition.keys() {
-                pos_values.insert(pos, condition.get(i).unwrap());
-                query.push_str(&format!(" {} = ${}", i, pos));
-                if pos < len {
-                    query.push_str(" AND");
-                }
-                pos += 1;
-            }
-
-            let mut sql = sqlx::query(&query);
-            for i in 1..pos {
-                sql = match pos_values.get(&i).unwrap() {
-                    TypeTable::OptionVlanId(e) => sql.bind(e),
-                    TypeTable::To(e) => sql.bind(e),
-                    TypeTable::VlanId(e) => sql.bind(e),
-                    TypeTable::String(s) => sql.bind(s),
-                    TypeTable::OptionString(value) => sql.bind(value),
-                    TypeTable::Status(value) => sql.bind(value),
-                    TypeTable::Uuid(e) => sql.bind(e),
-                    TypeTable::Role(value) => sql.bind(value),
-                    TypeTable::OptionUuid(e) => sql.bind(e),
-                    TypeTable::Bool(e) => sql.bind(e),
-                    TypeTable::OptionTime(e) => sql.bind(e),
-                    TypeTable::Time(e) => sql.bind(e),
-                    TypeTable::Null => sql,
-                    TypeTable::I64(e) => sql.bind(e),
-                    TypeTable::I32(e) => sql.bind(e),
-                };
-            }
-
-            match sql.execute(&self.0).await {
-                Ok(e) => Ok(QueryResult::Update(e.rows_affected())),
-                Err(e) => Err(RepositoryError::Sqlx(e.to_string())),
-            }
-        } else {
-            Err(RepositoryError::ColumnNotFound("".to_string()))
-        }
+        Ok(QueryResult::Update(result.rows_affected()))
     }
 
     async fn delete<T>(
@@ -175,67 +110,19 @@ impl Repository for RepositoryInjection<Postgres> {
         condition: Option<HashMap<&'static str, TypeTable>>,
     ) -> ResultRepository<QueryResult<T>>
     where
-        T: Table + Send + Debug,
+        T: Table + Sync + Send + Debug,
     {
+        tracing::trace!("REPOSITORY");
+        tracing::trace!("1 input (condition) - {:?}", condition);
+
         let mut query = T::query_delete();
+        let res = SqlOperations::delete(condition, &mut query)
+            .execute(&self.0)
+            .await?;
 
-        match condition {
-            Some(condition) if !condition.is_empty() => {
-                let columns = T::columns();
+        tracing::debug!("sql operation result - {:?}", res);
 
-                query.push_str(" WHERE");
-
-                let mut pos_column = HashMap::new();
-                let mut pos = 1;
-
-                let len = condition.len();
-                for t in condition.keys() {
-                    if !columns.contains(t) {
-                        return Err(RepositoryError::ColumnNotFound(t.to_string()));
-                    }
-
-                    query.push_str(&format!(" {} = ${}", t, pos));
-                    pos_column.insert(pos, condition.get(t).unwrap());
-                    if pos < len {
-                        query.push_str(" AND");
-                    }
-                    pos += 1;
-                }
-
-                let mut ex = sqlx::query(&query);
-
-                for i in 1..pos {
-                    ex = match pos_column.get(&i).unwrap() {
-                        TypeTable::OptionVlanId(e) => ex.bind(e),
-                        TypeTable::To(e) => ex.bind(e),
-                        TypeTable::VlanId(e) => ex.bind(e),
-                        TypeTable::OptionUuid(e) => ex.bind(e),
-                        TypeTable::String(s) => ex.bind(s),
-                        TypeTable::OptionString(s) => ex.bind(s),
-                        TypeTable::Uuid(e) => ex.bind(e),
-                        TypeTable::Status(status) => ex.bind(status),
-                        TypeTable::Role(role) => ex.bind(role),
-                        TypeTable::Bool(e) => ex.bind(e),
-                        TypeTable::OptionTime(e) => ex.bind(e),
-                        TypeTable::Time(e) => ex.bind(e),
-                        TypeTable::I64(e) => ex.bind(e),
-                        TypeTable::I32(e) => ex.bind(e),
-                        TypeTable::Null => ex,
-                    };
-                }
-
-                match ex.execute(&self.0).await {
-                    Ok(e) => Ok(QueryResult::Delete(e.rows_affected())),
-                    Err(e) => Err(RepositoryError::Sqlx(e.to_string())),
-                }
-            }
-
-            None => match sqlx::query(&query).execute(&self.0).await {
-                Ok(e) => Ok(QueryResult::Delete(e.rows_affected())),
-                Err(e) => Err(RepositoryError::Sqlx(e.to_string())),
-            },
-            _ => Err(RepositoryError::ColumnNotFound("".to_string())),
-        }
+        Ok(QueryResult::Delete(res.rows_affected()))
     }
 }
 

@@ -1,12 +1,12 @@
 use ipnet::IpNet;
 use macros::MapQuery as MapQueryDerive;
 use serde::Deserialize;
-use std::{collections::HashMap, net::IpAddr};
+use std::{collections::HashMap, fmt::Debug, net::IpAddr};
 use uuid::Uuid;
 
 use crate::database::repository::TypeTable;
 
-pub trait MapQuery {
+pub trait MapQuery: Debug {
     fn get_pairs(
         self,
     ) -> Option<std::collections::HashMap<&'static str, crate::database::repository::TypeTable>>;

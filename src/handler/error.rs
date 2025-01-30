@@ -17,6 +17,9 @@ impl From<RepositoryError> for ResponseError {
             RepositoryError::ColumnNotFound(e) => {
                 builder.status(StatusCode::BAD_REQUEST).title(e.to_string())
             }
+            RepositoryError::UpdaterEmpty => builder
+                .detail(value.to_string())
+                .status(StatusCode::BAD_REQUEST),
         };
 
         builder.build()
