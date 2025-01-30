@@ -13,9 +13,17 @@ impl SqlOperations {
         limit: Option<i32>,
         offset: Option<i32>,
     ) -> Query<'_, Postgres, PgArguments> {
+        tracing::trace!("SQL OPERATIONS");
+        tracing::trace!("1 input (query) - {}", query);
+        tracing::trace!("2 input (condition) - {:?}", condition);
+        tracing::trace!("3 input (limit) - {:?}", limit);
+        tracing::trace!("4 input (offset) - {:?}", offset);
+
         let condition = condition.get_pairs();
 
         if let Some(col) = condition {
+            tracing::trace!("5 if (condition exists) - {:?}", col);
+
             query.push_str(" WHERE");
 
             let mut data_pos = HashMap::new();
@@ -37,11 +45,15 @@ impl SqlOperations {
                 }
             }
 
+            tracing::trace!("6 update (query) - {}", query);
+
             if let Some(limit) = limit {
                 query.push_str(&format!(" LIMIT {}", limit));
+                tracing::trace!("6 update (query) - {}", query);
             }
             if let Some(offset) = offset {
                 query.push_str(&format!(" OFFSET {}", offset));
+                tracing::trace!("6 update (query) - {}", query);
             }
             let mut sql = sqlx::query(query);
 
@@ -133,7 +145,7 @@ impl SqlOperations {
 
         if let Some(condition) = condition {
             let len = condition.len() - 1;
-            tracing::trace!("3 (condition exists) - {:?}", condition);
+            tracing::trace!("3 if (condition exists) - {:?}", condition);
 
             query.push_str(" WHERE");
 
@@ -151,7 +163,7 @@ impl SqlOperations {
                 }
             }
 
-            tracing::trace!("3 (query update) - {}", query);
+            tracing::trace!("4 update (query) - {}", query);
         }
 
         let mut sql = sqlx::query(query);
