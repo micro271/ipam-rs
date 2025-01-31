@@ -10,7 +10,7 @@ pub async fn update(
     Json(updater): Json<UpdateOffice>,
 ) -> Result<QueryResult<Office>, ResponseError> {
     Ok(state
-        .update::<Office, _>(updater, Some(HashMap::from([("id", id.into())])))
+        .update::<Office, _>(updater, Some([("id", id.into())].into()))
         .await?)
 }
 
@@ -40,6 +40,6 @@ pub async fn delete(
     Path(id): Path<Uuid>,
 ) -> Result<QueryResult<Office>, ResponseError> {
     Ok(state
-        .delete::<Office>(Some(HashMap::from([("id", id.into())])))
+        .delete::<Office>(Some([("id", id.into())].into()))
         .await?)
 }

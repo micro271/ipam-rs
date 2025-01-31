@@ -32,9 +32,7 @@ pub async fn get(
     Query(param): Query<ParamNetwork>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> Result<QueryResult<Network>, ResponseError> {
-    let req = state.get::<Network>(param, limit, offset).await?;
-
-    Ok(req.into())
+    Ok(state.get::<Network>(param, limit, offset).await?.into())
 }
 
 #[instrument(level = Level::DEBUG)]
@@ -46,7 +44,7 @@ pub async fn update(
 ) -> Result<QueryResult<Network>, ResponseError> {
     if updater.network.is_some() {
         let old = state
-            .get::<Network>(Some(HashMap::from([("id", id.into())])), None, None)
+            .get::<Network>(Some([("id", id.into())].into()), None, None)
             .await?
             .remove(0);
 
@@ -65,7 +63,7 @@ pub async fn update(
         }
     }
     Ok(state
-        .update::<Network, _>(updater, Some(HashMap::from([("id", id.into())])))
+        .update::<Network, _>(updater, Some([("id", id.into())].into()))
         .await?)
 }
 
@@ -78,7 +76,7 @@ pub async fn delete(
     tracing::debug!("delete one network: {}", id);
 
     Ok(state
-        .delete::<Network>(Some(HashMap::from([("id", id.into())])))
+        .delete::<Network>(Some([("id", id.into())].into()))
         .await?)
 }
 
@@ -89,7 +87,7 @@ pub async fn subnetting(
     Query(Subnet { father, prefix }): Query<Subnet>,
 ) -> Result<QueryResult<Network>, ResponseError> {
     let father = state
-        .get::<Network>(Some(HashMap::from([("id", father.into())])), None, None)
+        .get::<Network>(Some([("id", father.into())].into()), None, None)
         .await?
         .remove(0);
 
@@ -112,7 +110,7 @@ pub async fn subnetting(
     state
         .update::<Network, _>(
             HashMap::from([("children", (len as i32).into())]),
-            Some(HashMap::from([("id", father.id.into())])),
+            Some([("id", father.id.into())].into()),
         )
         .await?;
 

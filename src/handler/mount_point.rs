@@ -8,11 +8,7 @@ pub async fn get(
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> Result<QueryResult<MountPoint>, ResponseError> {
     Ok(state
-        .get::<MountPoint>(
-            name.map(|x| HashMap::from([("name", x.into())])),
-            limit,
-            offset,
-        )
+        .get::<MountPoint>(name.map(|x| [("name", x.into())].into()), limit, offset)
         .await?
         .into())
 }
@@ -24,7 +20,7 @@ pub async fn update(
     Json(updater): Json<UpdateMountPoint>,
 ) -> Result<QueryResult<MountPoint>, ResponseError> {
     Ok(state
-        .update::<MountPoint, _>(updater, Some(HashMap::from([("name", name.into())])))
+        .update::<MountPoint, _>(updater, Some([("name", name.into())].into()))
         .await?)
 }
 
@@ -34,7 +30,7 @@ pub async fn delete(
     Path(name): Path<String>,
 ) -> Result<QueryResult<MountPoint>, ResponseError> {
     Ok(state
-        .delete::<MountPoint>(Some(HashMap::from([("name", name.into())])))
+        .delete::<MountPoint>(Some([("name", name.into())].into()))
         .await?)
 }
 

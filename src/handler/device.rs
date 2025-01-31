@@ -24,7 +24,7 @@ pub async fn create_all_devices(
     Path(network_id): Path<Uuid>,
 ) -> Result<QueryResult<Device>, ResponseError> {
     let network = state
-        .get::<Network>(Some(HashMap::from([("id", network_id.into())])), None, None)
+        .get::<Network>(Some([("id", network_id.into())].into()), None, None)
         .await?
         .remove(0);
 
@@ -79,7 +79,7 @@ pub async fn update(
     if new.ip.is_some() || new.network_id.is_some() {
         let dev = state
             .get::<Device>(
-                Some(HashMap::from([("network_id", network.network.into())])),
+                Some([("network_id", network.network.into())].into()),
                 None,
                 None,
             )
@@ -90,11 +90,8 @@ pub async fn update(
             let mut tr = state.transaction().await?;
 
             if let Err(e) = async {
-                tr.delete::<Device>(Some(HashMap::from([(
-                    "network_id",
-                    network.network.into(),
-                )])))
-                .await?;
+                tr.delete::<Device>(Some([("network_id", network.network.into())].into()))
+                    .await?;
 
                 tr.update::<Device, _>(new, param.get_pairs()).await?;
 

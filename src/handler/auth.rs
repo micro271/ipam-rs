@@ -50,17 +50,13 @@ pub async fn delete(
     Path(id): Path<Uuid>,
 ) -> Result<QueryResult<User>, ResponseError> {
     let user = state
-        .get::<User>(Some(HashMap::from([("id", id.into())])), None, None)
+        .get::<User>(Some([("id", id.into())].into()), None, None)
         .await?
         .remove(0);
 
     if user.is_admin() {
         let user = state
-            .get::<User>(
-                Some(HashMap::from([("role", Role::Admin.into())])),
-                None,
-                None,
-            )
+            .get::<User>(Some([("role", Role::Admin.into())].into()), None, None)
             .await
             .unwrap_or_default();
         if user.len() <= 1 {
@@ -70,9 +66,7 @@ pub async fn delete(
         }
     }
 
-    Ok(state
-        .delete(Some(HashMap::from([("id", id.into())])))
-        .await?)
+    Ok(state.delete(Some([("id", id.into())].into())).await?)
 }
 
 #[instrument(level = Level::INFO)]
@@ -83,7 +77,7 @@ pub async fn login(
 ) -> Result<Response, ResponseError> {
     let resp = state
         .get::<User>(
-            Some(HashMap::from([("username", username.clone().into())])),
+            Some([("username", username.clone().into())].into()),
             None,
             None,
         )
@@ -101,7 +95,7 @@ pub async fn login(
                     last_login,
                     ..Default::default()
                 },
-                Some(HashMap::from([("username", username.into())])),
+                Some([("username", username.into())].into()),
             )
             .await?;
 
@@ -148,7 +142,14 @@ pub async fn verify_token(
         })
     })
     .await
-    .map_err(|_| ResponseError::builder().build())??;
+    .map_err(|_| {
+        ResponseError::builder()
+            .detail("Thread Pool Error".to_string())
+            .instance(req.uri().to_string())
+            .title("Login error".to_string())
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .build()
+    })??;
 
     req.extensions_mut().insert(claim.role);
     Ok(next.run(req).await)
