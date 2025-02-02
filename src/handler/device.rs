@@ -120,12 +120,12 @@ pub async fn update(
         let mut tr = state.transaction().await?;
 
         if let Err(e) = {
-            tr.delete::<Device>(Some(
+            tr.delete::<Device, _>(Some(
                 [("network_id", network_id.into()), ("ip", ip.into())].into(),
             ))
             .await?;
 
-            tr.update::<Device, _>(new, param.get_pairs()).await?;
+            tr.update::<Device, _, _>(new, param).await?;
 
             tr.insert::<Device>((param.ip, param.network_id).into())
                 .await?;
@@ -138,7 +138,7 @@ pub async fn update(
         }
     } else {
         Ok(state
-            .update::<Device, _>(new, param.get_pairs())
+            .update::<Device, _>(new, param)
             .await
             .map(|_| StatusCode::OK)?)
     }
@@ -150,9 +150,7 @@ pub async fn get(
     Query(params): Query<ParamsDevice>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> Result<QueryResult<Device>, ResponseError> {
-    let mut device = state
-        .get::<Device>(params.get_pairs(), limit, offset)
-        .await?;
+    let mut device = state.get::<Device>(params, limit, offset).await?;
 
     device.sort_by_key(|x| x.ip);
 
@@ -165,5 +163,5 @@ pub async fn delete(
     _: IsAdministrator,
     Query(param): Query<ParamsDeviceStrict>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    Ok(state.delete::<Device>(param.get_pairs()).await?)
+    Ok(state.delete::<Device>(param).await?)
 }

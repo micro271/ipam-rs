@@ -111,7 +111,7 @@ pub async fn subnetting(
     }
 
     state
-        .update::<Network, _>(
+        .update::<Network, _, _>(
             HashMap::from([("children", (len as i32).into())]),
             Some([("id", father.id.into())].into()),
         )

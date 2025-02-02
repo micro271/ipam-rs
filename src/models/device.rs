@@ -133,11 +133,11 @@ impl TryFrom<IpNet> for DeviceRange {
             _ => return Err(DeviceRangeError::InvalidNetwork),
         };
 
-        let len = 2u32.pow((value.max_prefix_len() - value.prefix_len()) as u32) - 1;
+        let len = 2u32.pow((value.max_prefix_len() - value.prefix_len()) as u32) - 2;
 
         Ok(DeviceRange {
             start,
-            end: start + len - 1,
+            end: start + len,
             network_id: Uuid::default(),
             step: 0,
         })

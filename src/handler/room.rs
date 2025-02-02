@@ -2,7 +2,7 @@ use axum::extract::Query;
 
 use super::{
     entries::params::{PaginationParams, ParamRoom, ParamRoomStrict},
-    instrument, Json, Level, MapQuery, RepositoryType, ResponseError, State,
+    instrument, Json, Level, RepositoryType, ResponseError, State,
 };
 use crate::{
     database::repository::{QueryResult, Repository},
@@ -23,7 +23,7 @@ pub async fn update(
     Query(param): Query<ParamRoomStrict>,
     Json(room): Json<UpdateRoom>,
 ) -> Result<QueryResult<Room>, ResponseError> {
-    Ok(state.update::<Room, _>(room, param.get_pairs()).await?)
+    Ok(state.update::<Room, _>(room, param).await?)
 }
 
 #[instrument(level = Level::DEBUG)]
@@ -32,7 +32,7 @@ pub async fn get(
     Query(param): Query<ParamRoom>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> Result<QueryResult<Room>, ResponseError> {
-    Ok(state.get(param.get_pairs(), limit, offset).await?.into())
+    Ok(state.get(param, limit, offset).await?.into())
 }
 
 #[instrument(level = Level::INFO)]
@@ -40,5 +40,5 @@ pub async fn delete(
     State(state): State<RepositoryType>,
     Query(param): Query<ParamRoomStrict>,
 ) -> Result<QueryResult<Room>, ResponseError> {
-    Ok(state.delete::<Room>(param.get_pairs()).await?)
+    Ok(state.delete::<Room>(param).await?)
 }

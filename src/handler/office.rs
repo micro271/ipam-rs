@@ -20,10 +20,7 @@ pub async fn get(
     Query(of): Query<OfficeParam>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> Result<QueryResult<Office>, ResponseError> {
-    Ok(state
-        .get::<Office>(of.get_pairs(), limit, offset)
-        .await?
-        .into())
+    Ok(state.get::<Office>(of, limit, offset).await?.into())
 }
 
 #[instrument(level = Level::DEBUG)]

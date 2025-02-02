@@ -83,7 +83,7 @@ impl SqlOperations {
     }
     pub fn insert<T>(data: T, query: &str) -> Query<'_, Postgres, PgArguments>
     where
-        T: Table + std::fmt::Debug + Clone,
+        T: Table + std::fmt::Debug,
     {
         tracing::trace!("1 input (data) - {:?}", data);
         tracing::trace!("2 input (query) - {}", query);

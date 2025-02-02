@@ -12,7 +12,7 @@ use sqlx::{
     postgres::{PgPool, PgPoolOptions, PgRow},
     Database, Pool, Postgres,
 };
-use std::{clone::Clone, collections::HashMap, fmt::Debug};
+use std::{collections::HashMap, fmt::Debug};
 use transaction::{BuilderPgTransaction, Transaction};
 
 #[derive(Debug)]
@@ -34,7 +34,7 @@ impl RepositoryInjection<Postgres> {
 impl Repository for RepositoryInjection<Postgres> {
     async fn insert<T>(&self, data: T) -> ResultRepository<QueryResult<T>>
     where
-        T: Table + Send + Sync + Debug + Clone,
+        T: Table + Debug,
     {
         tracing::trace!("REPOSITORY");
         tracing::trace!("1 input (data) - {:?}", data);
@@ -54,7 +54,7 @@ impl Repository for RepositoryInjection<Postgres> {
         offset: Option<i32>,
     ) -> ResultRepository<Vec<T>>
     where
-        T: Table + From<PgRow> + Send + Sync + Debug,
+        T: Table + From<PgRow> + Debug,
     {
         tracing::trace!("REPOSITORY");
         tracing::trace!("1 input (column_data) - {:?}", column_data);
@@ -81,17 +81,18 @@ impl Repository for RepositoryInjection<Postgres> {
     async fn update<T, U>(
         &self,
         updater: U,
-        condition: Option<HashMap<&'static str, TypeTable>>,
+        condition: impl MapQuery,
     ) -> ResultRepository<QueryResult<T>>
     where
-        T: Table + Send + Sync + Debug,
-        U: Updatable + Send + Sync + Debug,
+        T: Table + Debug,
+        U: Updatable + Debug,
     {
         tracing::trace!("REPOSITORY");
         tracing::trace!("1 input (updater) - {:?}", updater);
         tracing::trace!("2 input (condition) - {:?}", condition);
 
         let mut query = T::query_update();
+        let condition = condition.get_pairs();
         let result = SqlOperations::update(
             updater.get_pair().ok_or(RepositoryError::UpdaterEmpty)?,
             condition,
@@ -105,16 +106,14 @@ impl Repository for RepositoryInjection<Postgres> {
         Ok(QueryResult::Update(result.rows_affected()))
     }
 
-    async fn delete<T>(
-        &self,
-        condition: Option<HashMap<&'static str, TypeTable>>,
-    ) -> ResultRepository<QueryResult<T>>
+    async fn delete<T>(&self, condition: impl MapQuery) -> ResultRepository<QueryResult<T>>
     where
-        T: Table + Sync + Send + Debug,
+        T: Table + Debug,
     {
         tracing::trace!("REPOSITORY");
         tracing::trace!("1 input (condition) - {:?}", condition);
 
+        let condition = condition.get_pairs();
         let mut query = T::query_delete();
         let res = SqlOperations::delete(condition, &mut query)
             .execute(&self.0)

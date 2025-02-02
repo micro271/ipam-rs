@@ -1,12 +1,13 @@
 pub mod error;
+use crate::handler::MapQuery;
+
 use super::{
     repository::{error::RepositoryError, QueryResult, Repository},
     sql::SqlOperations,
-    Table, TypeTable, Updatable,
+    Table, Updatable,
 };
 use sqlx::{Postgres, Transaction as SqlxTransaction};
 use std::{
-    collections::HashMap,
     future::Future,
     pin::Pin,
     sync::Arc,
@@ -70,20 +71,25 @@ impl<'b> BuilderPgTransaction<'b> {
         })
     }
 
-    pub fn update<T, U>(
+    pub fn update<T, U, M>(
         &mut self,
         updater: U,
-        condition: Option<HashMap<&'static str, TypeTable>>,
-    ) -> impl Future<Output = TransactionTaskResult<T>> + use<'_, T, U>
+        condition: M,
+    ) -> impl Future<Output = TransactionTaskResult<T>> + use<'_, T, U, M>
     where
-        T: Table + std::fmt::Debug + Clone,
-        U: Updatable + Send + std::fmt::Debug + 'static,
+        T: Table + std::fmt::Debug,
+        U: Updatable + Send + std::fmt::Debug + 'b,
+        M: MapQuery + Send + std::fmt::Debug + 'b,
     {
         let transaction = self.transaction.clone();
 
         TransactionTask::new(async move {
             let mut query = T::query_update();
-            let sql = SqlOperations::update(updater.get_pair().unwrap(), condition, &mut query);
+            let sql = SqlOperations::update(
+                updater.get_pair().unwrap(),
+                condition.get_pairs(),
+                &mut query,
+            );
 
             let mut transaction = transaction.lock().await;
             Ok(QueryResult::Update(
@@ -92,17 +98,18 @@ impl<'b> BuilderPgTransaction<'b> {
         })
     }
 
-    pub fn delete<T>(
+    pub fn delete<T, M>(
         &mut self,
-        condition: Option<HashMap<&'static str, TypeTable>>,
-    ) -> impl Future<Output = TransactionTaskResult<T>> + use<'_, T>
+        condition: M,
+    ) -> impl Future<Output = TransactionTaskResult<T>> + use<'_, T, M>
     where
-        T: Table + 'b + Send + std::fmt::Debug + Clone,
+        T: Table + 'b + Send + std::fmt::Debug,
+        M: MapQuery + 'b + Send + std::fmt::Debug,
     {
         let transaction = self.transaction.clone();
         TransactionTask::new(async move {
             let mut query = T::query_delete();
-            let sql = SqlOperations::delete(condition, &mut query);
+            let sql = SqlOperations::delete(condition.get_pairs(), &mut query);
             let mut transaction = transaction.lock().await;
             Ok(QueryResult::Delete(
                 sql.execute(&mut **transaction).await?.rows_affected(),

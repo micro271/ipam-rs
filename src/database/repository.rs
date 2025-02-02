@@ -25,27 +25,27 @@ pub trait Repository {
         offset: Option<i32>,
     ) -> impl Future<Output = ResultRepository<Vec<T>>>
     where
-        T: Table + From<PgRow> + Send + Sync + Debug + Clone;
+        T: Table + From<PgRow> + Debug;
     fn insert<T>(&self, data: T) -> impl Future<Output = ResultRepository<QueryResult<T>>>
     where
-        T: Table + Sync + Send + Debug + Clone;
+        T: Table + Debug + Clone;
     fn update<T, U>(
         &self,
         updater: U,
-        condition: Option<HashMap<&'static str, TypeTable>>,
+        condition: impl MapQuery,
     ) -> impl Future<Output = ResultRepository<QueryResult<T>>>
     where
-        T: Table + Send + Sync + Debug + Clone,
-        U: Updatable + Send + Sync + Debug;
+        T: Table + Debug,
+        U: Updatable + Debug;
     fn delete<T>(
         &self,
-        condition: Option<HashMap<&'static str, TypeTable>>,
+        condition: impl MapQuery,
     ) -> impl Future<Output = ResultRepository<QueryResult<T>>>
     where
-        T: Table + Send + Sync + Debug + Clone;
+        T: Table + Debug + Clone;
 }
 
-pub trait Table {
+pub trait Table: Send + Sync {
     fn name() -> String;
 
     fn query_insert() -> String
@@ -85,7 +85,7 @@ pub trait Table {
     }
 }
 
-pub trait Updatable {
+pub trait Updatable: Sync + Send {
     fn get_pair(self) -> Option<HashMap<&'static str, TypeTable>>;
 }
 
