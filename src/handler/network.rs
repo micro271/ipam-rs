@@ -7,6 +7,7 @@ use entries::{
     models::NetworkCreateEntry,
     params::{ParamNetwork, Subnet},
 };
+use libipam::ipam_services::SubnetList;
 use models::network::*;
 
 #[instrument(level = Level::INFO)]
@@ -110,7 +111,13 @@ pub async fn subnetting(
         .await?
         .remove(0);
 
-    let networks = libipam::ipam_services::subnetting(father.network, prefix as u8)
+    if father.to == To::Device {
+        return Err(ResponseError::builder()
+            .detail("The father is to device".to_string())
+            .build());
+    }
+
+    let networks = SubnetList::try_from((father.network, prefix as u8))
         .map_err(|x| ResponseError::builder().detail(x.to_string()).build())?;
 
     let mut state = state.transaction().await?;
