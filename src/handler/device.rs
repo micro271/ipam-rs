@@ -1,10 +1,13 @@
 use super::*;
 use crate::{
     database::{repository::QueryResult, transaction::Transaction},
-    models::{device::*, network::Network},
+    models::{
+        device::*,
+        network::{Network, To},
+    },
 };
 use entries::{
-    models::{self, DeviceCreateEntry},
+    models::DeviceCreateEntry,
     params::{ParamsDevice, ParamsDeviceStrict},
 };
 
@@ -28,7 +31,15 @@ pub async fn create_all_devices(
         .await?
         .remove(0);
 
-    let devices = models::create_all_devices(network.network, network_id)
+    if network.to != To::Device {
+        return Err(ResponseError::builder()
+            .detail("The network is designed for devices".to_string())
+            .status(StatusCode::BAD_REQUEST)
+            .build());
+    }
+
+    let devices = network
+        .devices()
         .map_err(|x| ResponseError::builder().detail(x.to_string()).build())?;
 
     let mut transaction = state.transaction().await?;
@@ -54,59 +65,76 @@ pub async fn update(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
     Query(param): Query<ParamsDeviceStrict>,
-    Json(mut new): Json<UpdateDevice>,
+    Json(new): Json<UpdateDevice>,
 ) -> Result<StatusCode, ResponseError> {
-    let network = state
-        .get::<Network>(
-            Some(HashMap::from([(
-                "id",
-                new.network_id.unwrap_or(param.network_id).into(),
-            )])),
-            None,
-            None,
-        )
-        .await?
-        .remove(0);
-
-    if new.ip.is_some_and(|x| x == param.ip) {
-        new.ip = None;
+    if new
+        .status
+        .is_some_and(|x| x != Status::Unknown && x != Status::Reserved)
+    {
+        return Err(ResponseError::builder()
+            .detail(format!(
+                "The status cannot change to {:?}",
+                new.status.unwrap()
+            ))
+            .build());
     }
 
-    if network.id == param.network_id {
-        new.network_id = None;
-    }
-
-    if new.ip.is_some() || new.network_id.is_some() {
-        let dev = state
+    if new.ip.is_some_and(|x| x == param.ip)
+        && new.network_id.is_some_and(|x| x == param.network_id)
+    {
+        return Err(ResponseError::builder()
+            .detail("The new ip and network are the same".to_string())
+            .status(StatusCode::BAD_REQUEST)
+            .build());
+    } else if new.ip.is_some() || new.network_id.is_some() {
+        let Device {
+            ip,
+            network_id,
+            status,
+            ..
+        } = state
             .get::<Device>(
-                Some([("network_id", network.network.into())].into()),
+                Some(
+                    [
+                        (
+                            "network_id",
+                            new.network_id.unwrap_or(param.network_id).into(),
+                        ),
+                        ("ip", new.ip.unwrap_or(param.ip).into()),
+                    ]
+                    .into(),
+                ),
                 None,
                 None,
             )
             .await?
             .remove(0);
 
-        if dev.status == Status::Unknown {
-            let mut tr = state.transaction().await?;
+        if status != Status::Unknown {
+            return Err(ResponseError::builder()
+                .detail("The device to replace isn't unknown".to_string())
+                .status(StatusCode::FORBIDDEN)
+                .build());
+        }
 
-            if let Err(e) = async {
-                tr.delete::<Device>(Some([("network_id", network.network.into())].into()))
-                    .await?;
+        let mut tr = state.transaction().await?;
 
-                tr.update::<Device, _>(new, param.get_pairs()).await?;
+        if let Err(e) = {
+            tr.delete::<Device>(Some(
+                [("network_id", network_id.into()), ("ip", ip.into())].into(),
+            ))
+            .await?;
 
-                Ok::<(), ResponseError>(())
-            }
-            .await
-            {
-                Err(tr.rollback().await.map(|_| e)?)
-            } else {
-                Ok(tr.commit().await.map(|_| StatusCode::OK)?)
-            }
+            tr.update::<Device, _>(new, param.get_pairs()).await?;
+
+            tr.insert::<Device>((param.ip, param.network_id).into())
+                .await?;
+
+            Ok::<(), ResponseError>(())
+        } {
+            Err(tr.rollback().await.map(|_| e)?)
         } else {
-            Err(ResponseError::builder()
-                .detail(format!("The device {:?} is used", dev))
-                .build())
+            Ok(tr.commit().await.map(|_| StatusCode::OK)?)
         }
     } else {
         Ok(state

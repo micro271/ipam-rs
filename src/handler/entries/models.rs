@@ -83,30 +83,3 @@ impl From<DeviceCreateEntry> for Device {
         }
     }
 }
-
-pub fn create_all_devices(network: IpNet, id: Uuid) -> Result<Vec<Device>, &'static str> {
-    if network.network().is_ipv6() {
-        return Err("You cannot create all devices of an network ipv6");
-    }
-
-    let ips = network.hosts().collect::<Vec<IpAddr>>();
-
-    if ips.is_empty() {
-        return Err("The network doesn't have devices");
-    }
-
-    Ok(ips
-        .into_iter()
-        .map(|ip| Device {
-            ip,
-            description: None,
-            mount_point: None,
-            label: None,
-            room: None,
-            status: Status::default(),
-            network_id: id,
-            password: None,
-            username: None,
-        })
-        .collect())
-}

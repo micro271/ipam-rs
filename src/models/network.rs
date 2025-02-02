@@ -1,4 +1,7 @@
-use super::*;
+use super::{
+    device::{DeviceRange, DeviceRangeError},
+    *,
+};
 use ipnet::IpNet;
 use libipam::type_net::{host_count::HostCount, vlan::VlanId};
 
@@ -7,6 +10,7 @@ pub struct UpdateNetwork {
     pub network: Option<IpNet>,
     pub description: Option<String>,
     pub vlan: Option<VlanId>,
+    pub to: Option<To>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Table, FromPgRow)]
@@ -27,7 +31,7 @@ pub struct Network {
     pub to: To,
 }
 
-#[derive(Debug, Clone, sqlx::Type, Deserialize, Serialize, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, sqlx::Type, Deserialize, Serialize, PartialEq, Default)]
 pub enum To {
     Nat,
     #[default]
@@ -74,5 +78,13 @@ impl From<IpNet> for Network {
             children: 0,
             to: To::default(),
         }
+    }
+}
+
+impl Network {
+    pub fn devices(&self) -> Result<DeviceRange, DeviceRangeError> {
+        let mut aux: DeviceRange = self.network.try_into()?;
+        aux.set_network_id(self.id);
+        Ok(aux)
     }
 }

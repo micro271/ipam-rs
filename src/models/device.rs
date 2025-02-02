@@ -1,6 +1,7 @@
 use super::*;
+use ipnet::IpNet;
 use macros::FromPgRow;
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv4Addr};
 
 #[derive(Deserialize, Serialize, Debug, Updatable)]
 pub struct UpdateDevice {
@@ -55,16 +56,105 @@ impl std::cmp::PartialOrd<IpAddr> for Device {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, sqlx::Type, PartialEq, Clone)]
+#[derive(Debug, Deserialize, Serialize, sqlx::Type, PartialEq, Clone, Copy, Default)]
 pub enum Status {
     Reserved,
+
+    #[default]
     Unknown,
+
     Online,
     Offline,
 }
 
-impl Default for Status {
-    fn default() -> Self {
-        Self::Unknown
+impl From<(IpAddr, uuid::Uuid)> for Device {
+    fn from(value: (IpAddr, uuid::Uuid)) -> Self {
+        Device {
+            ip: value.0,
+            description: None,
+            label: None,
+            room: None,
+            mount_point: None,
+            status: Default::default(),
+            network_id: value.1,
+            username: None,
+            password: None,
+        }
     }
 }
+
+pub struct DeviceRange {
+    start: u32,
+    end: u32,
+    step: u32,
+    network_id: Uuid,
+}
+
+impl DeviceRange {
+    pub fn set_network_id(&mut self, network_id: Uuid) {
+        self.network_id = network_id;
+    }
+}
+
+impl Iterator for DeviceRange {
+    type Item = Device;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.end == self.start + self.step {
+            None
+        } else {
+            self.step += 1;
+            Some(Device {
+                ip: IpAddr::from(Ipv4Addr::from(self.start + self.step)),
+                description: None,
+                label: None,
+                room: None,
+                mount_point: None,
+                status: Default::default(),
+                network_id: self.network_id,
+                username: None,
+                password: None,
+            })
+        }
+    }
+}
+
+impl ExactSizeIterator for DeviceRange {
+    fn len(&self) -> usize {
+        (self.start - self.end) as usize
+    }
+}
+
+impl TryFrom<IpNet> for DeviceRange {
+    type Error = DeviceRangeError;
+    fn try_from(value: IpNet) -> Result<Self, Self::Error> {
+        let start = match value.network() {
+            IpAddr::V4(e) => u32::from(e),
+            _ => return Err(DeviceRangeError::InvalidNetwork),
+        };
+
+        let len = 2u32.pow((value.max_prefix_len() - value.prefix_len()) as u32) - 1;
+
+        Ok(DeviceRange {
+            start,
+            end: start + len - 1,
+            network_id: Uuid::default(),
+            step: 0,
+        })
+    }
+}
+
+#[derive(Debug)]
+pub enum DeviceRangeError {
+    InvalidNetwork,
+}
+
+impl std::fmt::Display for DeviceRangeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DeviceRangeError::InvalidNetwork => write!(f, "Only support ipv4 network"),
+        }
+    }
+}
+
+impl std::error::Error for DeviceRangeError {}

@@ -1,5 +1,5 @@
 use crate::database::transaction::Transaction as _;
-use std::{net::IpAddr, str::FromStr};
+use std::net::{Ipv4Addr, Ipv6Addr};
 
 use super::*;
 
@@ -17,9 +17,12 @@ pub async fn create(
 ) -> Result<QueryResult<Network>, ResponseError> {
     let net = network.network.network();
 
-    if net == IpAddr::from_str("0.0.0.0").unwrap() || net == IpAddr::from_str("::").unwrap() {
+    if net == Ipv4Addr::LOCALHOST || net == Ipv6Addr::LOCALHOST {
         return Err(ResponseError::builder()
-            .detail(format!("You cannot create the ip {:?}", network.network))
+            .detail(format!(
+                "You cannot create the network {:?}",
+                network.network
+            ))
             .build());
     }
 

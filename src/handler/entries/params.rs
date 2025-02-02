@@ -39,7 +39,7 @@ pub struct ParamsDevice {
     pub network_id: Option<uuid::Uuid>,
 }
 
-#[derive(Debug, Deserialize, MapQueryDerive)]
+#[derive(Debug, Deserialize, MapQueryDerive, Copy, Clone)]
 pub struct ParamsDeviceStrict {
     pub ip: IpAddr,
     pub network_id: uuid::Uuid,
