@@ -78,8 +78,8 @@ impl<'b> BuilderPgTransaction<'b> {
     ) -> impl Future<Output = TransactionTaskResult<T>> + use<'_, T, U, M>
     where
         T: Table + std::fmt::Debug,
-        U: Updatable + Send + std::fmt::Debug + 'b,
-        M: MapQuery + Send + std::fmt::Debug + 'b,
+        U: Updatable + std::fmt::Debug + 'b,
+        M: MapQuery + std::fmt::Debug + 'b,
     {
         let transaction = self.transaction.clone();
 
@@ -103,8 +103,8 @@ impl<'b> BuilderPgTransaction<'b> {
         condition: M,
     ) -> impl Future<Output = TransactionTaskResult<T>> + use<'_, T, M>
     where
-        T: Table + 'b + Send + std::fmt::Debug,
-        M: MapQuery + 'b + Send + std::fmt::Debug,
+        T: Table + 'b + std::fmt::Debug,
+        M: MapQuery + 'b + std::fmt::Debug,
     {
         let transaction = self.transaction.clone();
         TransactionTask::new(async move {

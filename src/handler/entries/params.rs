@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::database::repository::TypeTable;
 
-pub trait MapQuery: Debug {
+pub trait MapQuery: Debug + Send + Sync {
     fn get_pairs(
         self,
     ) -> Option<std::collections::HashMap<&'static str, crate::database::repository::TypeTable>>;

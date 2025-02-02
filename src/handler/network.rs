@@ -17,13 +17,29 @@ pub async fn create(
 ) -> Result<QueryResult<Network>, ResponseError> {
     let net = network.network.network();
 
-    if net == Ipv4Addr::LOCALHOST || net == Ipv6Addr::LOCALHOST {
-        return Err(ResponseError::builder()
-            .detail(format!(
-                "You cannot create the network {:?}",
-                network.network
-            ))
-            .build());
+    match net {
+        std::net::IpAddr::V4(ipv4_addr) => {
+            if [
+                Ipv4Addr::BROADCAST,
+                Ipv4Addr::LOCALHOST,
+                Ipv4Addr::UNSPECIFIED,
+            ]
+            .contains(&ipv4_addr)
+            {
+                return Err(ResponseError::builder()
+                    .title("Invalid network".to_string())
+                    .detail(format!("We cannot create the network {}", ipv4_addr))
+                    .build());
+            }
+        }
+        std::net::IpAddr::V6(ipv6_addr) => {
+            if [Ipv6Addr::LOCALHOST, Ipv6Addr::UNSPECIFIED].contains(&ipv6_addr) {
+                return Err(ResponseError::builder()
+                    .title("Invalid network".to_string())
+                    .detail(format!("We cannot create the network {}", ipv6_addr))
+                    .build());
+            }
+        }
     }
 
     Ok(state.insert::<Network>(network.into()).await?)
