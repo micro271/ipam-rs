@@ -7,7 +7,6 @@ use entries::{
     models::NetworkCreateEntry,
     params::{ParamNetwork, Subnet},
 };
-use libipam::ipam_services::SubnetList;
 use models::network::*;
 
 #[instrument(level = Level::INFO)]
@@ -117,8 +116,12 @@ pub async fn subnetting(
             .build());
     }
 
-    let networks = SubnetList::try_from((father.network, prefix as u8))
-        .map_err(|x| ResponseError::builder().detail(x.to_string()).build())?;
+    let networks = father.subnets(prefix).map_err(|x| {
+        ResponseError::builder()
+            .detail(x.to_string())
+            .status(StatusCode::BAD_REQUEST)
+            .build()
+    })?;
 
     let mut state = state.transaction().await?;
     let len = networks.len();

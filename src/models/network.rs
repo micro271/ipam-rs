@@ -3,7 +3,10 @@ use super::{
     *,
 };
 use ipnet::IpNet;
-use libipam::type_net::{host_count::HostCount, vlan::VlanId};
+use libipam::{
+    ipam_services::{SubnetList, SubnettingError},
+    type_net::{host_count::HostCount, vlan::VlanId},
+};
 
 #[derive(Debug, Deserialize, Serialize, Updatable)]
 pub struct UpdateNetwork {
@@ -86,5 +89,9 @@ impl Network {
         let mut aux: DeviceRange = self.network.try_into()?;
         aux.set_network_id(self.id);
         Ok(aux)
+    }
+
+    pub fn subnets(&self, prefix: u8) -> Result<SubnetList, SubnettingError> {
+        SubnetList::new(self.network, prefix)
     }
 }

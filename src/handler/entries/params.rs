@@ -45,10 +45,10 @@ pub struct ParamsDeviceStrict {
     pub network_id: uuid::Uuid,
 }
 
-#[derive(Deserialize, Debug, MapQueryDerive)]
+#[derive(Deserialize, Debug)]
 pub struct Subnet {
     pub father: uuid::Uuid,
-    pub prefix: i32,
+    pub prefix: u8,
 }
 
 #[derive(Debug, Deserialize, MapQueryDerive)]

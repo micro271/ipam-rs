@@ -969,12 +969,8 @@ pub mod ipam_services {
         step: u32,
     }
 
-    impl TryFrom<(IpNet, u8)> for SubnetList {
-        type Error = SubnettingError;
-
-        fn try_from(value: (IpNet, u8)) -> Result<Self, Self::Error> {
-            let prefix = value.1;
-            let network = value.0;
+    impl SubnetList {
+        pub fn new(network: IpNet, prefix: u8) -> Result<Self, SubnettingError> {
             let network_prefix = network.prefix_len();
 
             if prefix <= network_prefix {
@@ -1013,7 +1009,6 @@ pub mod ipam_services {
 
         fn next(&mut self) -> Option<Self::Item> {
             if (self.start + (self.step * self.hosts)) >= self.end {
-                println!("entro none");
                 None
             } else {
                 let resp = IpNet::new(
