@@ -58,23 +58,7 @@ impl SqlOperations {
             let mut sql = sqlx::query(query);
 
             for i in 1..pos {
-                sql = match data_pos.remove(&i).unwrap() {
-                    TypeTable::OptionUuid(e) => sql.bind(e),
-                    TypeTable::To(e) => sql.bind(e),
-                    TypeTable::Uuid(e) => sql.bind(e),
-                    TypeTable::String(s) => sql.bind(s),
-                    TypeTable::OptionString(opt) => sql.bind(opt),
-                    TypeTable::Status(status) => sql.bind(status),
-                    TypeTable::Role(role) => sql.bind(role),
-                    TypeTable::OptionVlanId(e) => sql.bind(e),
-                    TypeTable::Bool(e) => sql.bind(e),
-                    TypeTable::OptionTime(e) => sql.bind(e),
-                    TypeTable::Time(e) => sql.bind(e),
-                    TypeTable::VlanId(e) => sql.bind(e),
-                    TypeTable::HostCount(e) => sql.bind(e),
-                    TypeTable::I32(e) => sql.bind(e),
-                    TypeTable::Null => sql,
-                };
+                sql = data_pos.remove(&i).unwrap().bind_to_query(sql);
             }
             sql
         } else {
@@ -91,23 +75,7 @@ impl SqlOperations {
         let mut sql = sqlx::query(query);
         let fields = data.get_fields();
         for element in fields {
-            sql = match element {
-                TypeTable::String(value) => sql.bind(value),
-                TypeTable::OptionUuid(value) => sql.bind(value),
-                TypeTable::Uuid(value) => sql.bind(value),
-                TypeTable::OptionString(value) => sql.bind(value),
-                TypeTable::To(e) => sql.bind(e),
-                TypeTable::Status(value) => sql.bind(value),
-                TypeTable::Role(value) => sql.bind(value),
-                TypeTable::I32(e) => sql.bind(e),
-                TypeTable::OptionVlanId(value) => sql.bind(value),
-                TypeTable::VlanId(e) => sql.bind(e),
-                TypeTable::HostCount(value) => sql.bind(value),
-                TypeTable::Bool(e) => sql.bind(e),
-                TypeTable::OptionTime(e) => sql.bind(e),
-                TypeTable::Time(e) => sql.bind(e),
-                TypeTable::Null => sql,
-            };
+            sql = element.bind_to_query(sql);
         }
 
         sql
@@ -168,23 +136,7 @@ impl SqlOperations {
 
         let mut sql = sqlx::query(query);
         for i in 1..pos {
-            sql = match pos_values.remove(&i).unwrap() {
-                TypeTable::OptionVlanId(e) => sql.bind(e),
-                TypeTable::VlanId(e) => sql.bind(e),
-                TypeTable::String(s) => sql.bind(s),
-                TypeTable::OptionString(value) => sql.bind(value),
-                TypeTable::Status(value) => sql.bind(value),
-                TypeTable::Uuid(e) => sql.bind(e),
-                TypeTable::I32(e) => sql.bind(e),
-                TypeTable::To(e) => sql.bind(e),
-                TypeTable::Role(value) => sql.bind(value),
-                TypeTable::OptionUuid(e) => sql.bind(e),
-                TypeTable::Bool(e) => sql.bind(e),
-                TypeTable::OptionTime(e) => sql.bind(e),
-                TypeTable::Time(e) => sql.bind(e),
-                TypeTable::Null => sql,
-                TypeTable::HostCount(e) => sql.bind(e),
-            };
+            sql = pos_values.remove(&i).unwrap().bind_to_query(sql);
         }
 
         sql
@@ -225,23 +177,7 @@ impl SqlOperations {
             let mut sql = sqlx::query(query);
 
             for i in 1..pos {
-                sql = match pos_column.remove(&i).unwrap() {
-                    TypeTable::OptionVlanId(e) => sql.bind(e),
-                    TypeTable::VlanId(e) => sql.bind(e),
-                    TypeTable::OptionUuid(e) => sql.bind(e),
-                    TypeTable::Bool(e) => sql.bind(e),
-                    TypeTable::OptionTime(e) => sql.bind(e),
-                    TypeTable::Time(e) => sql.bind(e),
-                    TypeTable::String(s) => sql.bind(s),
-                    TypeTable::To(e) => sql.bind(e),
-                    TypeTable::I32(e) => sql.bind(e),
-                    TypeTable::OptionString(s) => sql.bind(s),
-                    TypeTable::Uuid(e) => sql.bind(e),
-                    TypeTable::Status(status) => sql.bind(status),
-                    TypeTable::Role(role) => sql.bind(role),
-                    TypeTable::HostCount(e) => sql.bind(e),
-                    TypeTable::Null => sql,
-                };
+                sql = pos_column.remove(&i).unwrap().bind_to_query(sql);
             }
             sql
         } else {
