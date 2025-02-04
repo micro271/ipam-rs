@@ -1,5 +1,5 @@
 use super::repository::{Table, TypeTable};
-use crate::MapQuery;
+use crate::{bind_query, MapQuery};
 use sqlx::{postgres::PgArguments, query::Query, Postgres};
 use std::collections::HashMap;
 
@@ -58,7 +58,7 @@ impl SqlOperations {
             let mut sql = sqlx::query(query);
 
             for i in 1..pos {
-                sql = data_pos.remove(&i).unwrap().bind_to_query(sql);
+                sql = bind_query!(sql, data_pos.remove(&i).unwrap());
             }
             sql
         } else {
@@ -75,7 +75,7 @@ impl SqlOperations {
         let mut sql = sqlx::query(query);
         let fields = data.get_fields();
         for element in fields {
-            sql = element.bind_to_query(sql);
+            sql = bind_query!(sql, element);
         }
 
         sql
@@ -136,7 +136,7 @@ impl SqlOperations {
 
         let mut sql = sqlx::query(query);
         for i in 1..pos {
-            sql = pos_values.remove(&i).unwrap().bind_to_query(sql);
+            sql = bind_query!(sql, pos_values.remove(&i).unwrap());
         }
 
         sql
@@ -177,7 +177,7 @@ impl SqlOperations {
             let mut sql = sqlx::query(query);
 
             for i in 1..pos {
-                sql = pos_column.remove(&i).unwrap().bind_to_query(sql);
+                sql = bind_query!(sql, pos_column.remove(&i).unwrap());
             }
             sql
         } else {

@@ -12,7 +12,6 @@ use ipnet::IpNet;
 use libipam::type_net::{host_count::HostCount, vlan::VlanId};
 use serde::Serialize;
 use serde_json::json;
-use sqlx::{postgres::PgArguments, Postgres};
 use std::{clone::Clone, collections::HashMap, fmt::Debug, future::Future, net::IpAddr};
 use uuid::Uuid;
 
@@ -208,29 +207,27 @@ pub enum TypeTable {
     Null,
 }
 
-impl TypeTable {
-    pub fn bind_to_query(
-        self,
-        query: sqlx::query::Query<'_, Postgres, PgArguments>,
-    ) -> sqlx::query::Query<'_, Postgres, PgArguments> {
-        match self {
-            TypeTable::OptionUuid(e) => query.bind(e),
-            TypeTable::To(e) => query.bind(e),
-            TypeTable::Uuid(e) => query.bind(e),
-            TypeTable::String(s) => query.bind(s),
-            TypeTable::OptionString(opt) => query.bind(opt),
-            TypeTable::Status(status) => query.bind(status),
-            TypeTable::Role(role) => query.bind(role),
-            TypeTable::OptionVlanId(e) => query.bind(e),
-            TypeTable::Bool(e) => query.bind(e),
-            TypeTable::OptionTime(e) => query.bind(e),
-            TypeTable::Time(e) => query.bind(e),
-            TypeTable::VlanId(e) => query.bind(e),
-            TypeTable::HostCount(e) => query.bind(e),
-            TypeTable::I32(e) => query.bind(e),
-            TypeTable::Null => query,
+#[macro_export]
+macro_rules! bind_query {
+    ($query:expr, $value:expr) => {
+        match $value {
+            TypeTable::OptionUuid(e) => $query.bind(e),
+            TypeTable::To(e) => $query.bind(e),
+            TypeTable::Uuid(e) => $query.bind(e),
+            TypeTable::String(s) => $query.bind(s),
+            TypeTable::OptionString(opt) => $query.bind(opt),
+            TypeTable::Status(status) => $query.bind(status),
+            TypeTable::Role(role) => $query.bind(role),
+            TypeTable::OptionVlanId(e) => $query.bind(e),
+            TypeTable::Bool(e) => $query.bind(e),
+            TypeTable::OptionTime(e) => $query.bind(e),
+            TypeTable::Time(e) => $query.bind(e),
+            TypeTable::VlanId(e) => $query.bind(e),
+            TypeTable::HostCount(e) => $query.bind(e),
+            TypeTable::I32(e) => $query.bind(e),
+            TypeTable::Null => $query,
         }
-    }
+    };
 }
 
 impl From<To> for TypeTable {
