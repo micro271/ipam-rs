@@ -138,7 +138,7 @@ pub async fn subnetting(
 
     state
         .update::<Network, _, _>(
-            HashMap::from([("children", (len as i32).into())]),
+            HashMap::from([("children", (len as i32).into())]), /* TODO: we've updated the free and available ips */
             Some([("id", father.id.into())].into()),
         )
         .await?;

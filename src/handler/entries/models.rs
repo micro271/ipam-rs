@@ -40,14 +40,14 @@ pub struct NetworkCreateEntry {
 
 impl From<NetworkCreateEntry> for Network {
     fn from(value: NetworkCreateEntry) -> Self {
-        let avl = 2_u32.pow(32 - value.network.prefix_len() as u32) - 2;
+        let avl = value.network.into();
         Self {
             id: Uuid::new_v4(),
             network: value.network,
             description: value.description,
-            available: avl.into(),
-            used: 0.into(),
-            free: avl.into(),
+            available: avl,
+            used: 0.try_into().unwrap(),
+            free: avl,
             vlan: value.vlan,
             father: None,
             children: 0,

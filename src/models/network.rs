@@ -67,13 +67,13 @@ impl std::cmp::PartialOrd<IpNet> for Network {
 
 impl From<IpNet> for Network {
     fn from(value: IpNet) -> Self {
-        let avl = HostCount::new((&value).into());
+        let avl = value.into();
 
         Self {
             network: value,
             id: uuid::Uuid::new_v4(),
-            available: avl.clone(),
-            used: 0.into(),
+            available: avl,
+            used: 0.try_into().unwrap(),
             free: avl,
             vlan: None,
             description: None,

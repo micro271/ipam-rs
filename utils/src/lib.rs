@@ -579,126 +579,59 @@ pub mod type_net {
         use ipnet::IpNet;
         use serde::{Deserialize, Serialize};
 
-        pub struct Prefix {
-            host_part: u8,
-            network_part: u8,
-        }
-
-        impl Prefix {
-            const MAX: u8 = 128;
-
-            pub fn part_host(&self) -> u8 {
-                self.host_part
-            }
-            pub fn set(&mut self, network: &IpNet) {
-                *self = Prefix::from(network);
-            }
-            pub fn set_from_prefix(&mut self, prefix: &Prefix) {
-                *self = Self { ..*prefix };
-            }
-        }
-        #[derive(Debug)]
-        pub struct InvalidPrefix;
-
-        impl PartialEq for Prefix {
-            fn eq(&self, other: &Self) -> bool {
-                self.network_part == other.network_part
-            }
-        }
-
-        impl PartialEq<u8> for Prefix {
-            fn eq(&self, other: &u8) -> bool {
-                *other == self.network_part
-            }
-        }
-
-        impl PartialOrd for Prefix {
-            fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-                Some(self.cmp(other))
-            }
-        }
-
-        impl PartialOrd<u8> for Prefix {
-            fn partial_cmp(&self, other: &u8) -> Option<std::cmp::Ordering> {
-                Some(self.cmp(other))
-            }
-        }
-
-        impl From<&IpNet> for Prefix {
-            fn from(value: &IpNet) -> Self {
-                Self {
-                    host_part: value.max_prefix_len() - value.prefix_len(),
-                    network_part: value.prefix_len(),
-                }
-            }
-        }
-
-        impl std::ops::Deref for Prefix {
-            type Target = u8;
-            fn deref(&self) -> &Self::Target {
-                &self.network_part
-            }
-        }
-
-        #[derive(Deserialize, Serialize, Debug, Clone)]
+        #[derive(Deserialize, Serialize, Debug, Clone, Copy)]
         #[cfg_attr(feature = "sqlx_type", derive(sqlx::Type))]
         #[cfg_attr(feature = "sqlx_type", sqlx(transparent))]
         pub struct HostCount(i32);
 
         impl HostCount {
-            pub const MAX: i32 = 0x00FFFFFF;
+            pub const MAX: u32 = 0x00FFFFFF;
 
-            pub fn new(prefix: Prefix) -> Self {
-                if prefix.part_host() >= 24 {
-                    Self(Self::MAX)
-                } else {
-                    Self(2i32.pow(prefix.part_host().into()) - 2)
-                }
+            pub fn new(bits: u8, prefix: u8) -> Self {
+                let value = 2_i32
+                    .checked_pow(bits.saturating_sub(prefix) as u32)
+                    .map(|x| x - 2)
+                    .unwrap_or(Self::MAX as i32);
+
+                Self(value.min(Self::MAX as i32))
             }
 
-            pub fn add(&mut self, value: u32) -> Result<(), CountOfRange> {
-                let tmp = self.0.checked_add_unsigned(value);
-                match tmp {
-                    Some(e) if e <= Self::MAX => {
-                        self.0 = e;
-                        Ok(())
-                    }
-                    _ => {
-                        self.0 = Self::MAX;
-                        Err(CountOfRange)
-                    }
-                }
+            pub fn add(&self, value: u32) -> Self {
+                Self(
+                    value
+                        .try_into()
+                        .ok()
+                        .and_then(|x| self.0.checked_add(x))
+                        .unwrap_or(Self::MAX as i32)
+                        .min(Self::MAX as i32),
+                )
             }
 
-            pub fn sub(&mut self, value: u32) -> Result<(), CountOfRange> {
-                let tmp = self.0.checked_sub_unsigned(value);
-                match tmp {
-                    Some(e) => {
-                        self.0 = e;
-                        Ok(())
-                    }
-                    None => {
-                        self.0 = 0;
-                        Err(CountOfRange)
-                    }
-                }
+            pub fn sub(&self, value: u32) -> Self {
+                Self(
+                    value
+                        .try_into()
+                        .ok()
+                        .and_then(|x| self.0.checked_sub(x))
+                        .unwrap_or(0)
+                        .max(0),
+                )
             }
         }
 
-        impl From<u32> for HostCount {
-            fn from(value: u32) -> Self {
-                Self(value as i32)
-            }
-        }
-
-        impl TryFrom<i32> for HostCount {
+        impl TryFrom<u32> for HostCount {
             type Error = CountOfRange;
-            fn try_from(value: i32) -> Result<Self, Self::Error> {
-                if !(0..=Self::MAX).contains(&value) {
-                    Err(CountOfRange)
-                } else {
-                    Ok(Self(value))
-                }
+            fn try_from(value: u32) -> Result<Self, Self::Error> {
+                (..=Self::MAX)
+                    .contains(&value)
+                    .then(|| Self(value as i32))
+                    .ok_or(CountOfRange)
+            }
+        }
+
+        impl From<IpNet> for HostCount {
+            fn from(value: IpNet) -> Self {
+                Self::new(value.max_prefix_len(), value.prefix_len())
             }
         }
 
@@ -715,100 +648,46 @@ pub mod type_net {
             }
         }
 
+        impl std::cmp::PartialEq<i32> for HostCount {
+            fn eq(&self, other: &i32) -> bool {
+                self.0.eq(other)
+            }
+        }
+
         #[derive(Debug)]
         pub struct CountOfRange;
 
         #[cfg(test)]
         mod test {
             use crate::type_net::host_count::HostCount;
-
-            use super::Prefix;
-            use ipnet::IpNet; //dev-dependencies
-            #[test]
-            fn test_prefix_instance_exit() {
-                let ipnet: IpNet = "172.30.0.30/24".parse().unwrap();
-                let pref = Prefix::from(&ipnet);
-
-                let ipnet: IpNet = "172.30.0.30/16".parse().unwrap();
-                let pref_2 = Prefix::from(&ipnet);
-                assert_eq!(24, *pref);
-                assert_eq!(16, *pref_2);
-            }
-
-            #[test]
-            fn test_prefix_instance_fail() {
-                let ipnet: IpNet = "172.30.0.30/25".parse().unwrap();
-                let pref = Prefix::from(&ipnet);
-
-                let ipnet: IpNet = "172.30.0.30/13".parse().unwrap();
-                let pref_2 = Prefix::from(&ipnet);
-                assert_ne!(16, *pref);
-                assert_ne!(24, *pref_2);
-            }
-
-            #[test]
-            fn test_prefix_partial_eq_with_prefix() {
-                let ipnet: IpNet = "172.30.0.30/25".parse().unwrap();
-                let pref = Prefix::from(&ipnet);
-
-                let ipnet: IpNet = "172.30.0.30/25".parse().unwrap();
-                let pref_2 = Prefix::from(&ipnet);
-                assert!(pref_2 == pref);
-            }
-
-            #[test]
-            fn test_prefix_partial_eq_with_integer() {
-                let ipnet: IpNet = "172.30.0.30/25".parse().unwrap();
-                let pref_2 = Prefix::from(&ipnet);
-                assert!(pref_2 == 25);
-            }
-
-            #[test]
-            fn test_prefix_partial_partial_ord_with_prefix() {
-                let ipnet: IpNet = "172.30.0.30/24".parse().unwrap();
-                let pref = Prefix::from(&ipnet);
-
-                let ipnet: IpNet = "172.30.0.30/25".parse().unwrap();
-                let pref_2 = Prefix::from(&ipnet);
-                assert_eq!(pref_2 > pref, true);
-                assert_eq!(pref_2 < pref, false);
-                assert_ne!(pref_2 < pref, true);
-                assert_ne!(pref_2 > pref, false);
-                assert!(pref_2 > pref);
-            }
-
-            #[test]
-            fn test_prefix_partial_partial_ord_with_integer() {
-                let ipnet: IpNet = "172.30.0.30/24".parse().unwrap();
-                let pref = Prefix::from(&ipnet);
-                assert_eq!(pref > 10, true);
-                assert_eq!(pref < 10, false);
-                assert!(pref > 10);
-            }
+            use ipnet::IpNet;
 
             #[test]
             fn host_counter_instance_from_prefix() {
-                let pref = HostCount::new(Prefix::from(&"172.30.0.0/24".parse::<IpNet>().unwrap()));
+                let ipnet = "172.30.0.0/24".parse::<IpNet>().unwrap();
+                let pref = HostCount::new(ipnet.max_prefix_len(), ipnet.prefix_len());
                 assert_eq!(*pref, 254);
             }
             #[test]
             fn host_counter_instance_from_u32() {
-                let pref: HostCount = 10.into();
+                let pref: HostCount = 10.try_into().unwrap();
                 assert_eq!(*pref, 10);
                 assert_ne!(15, *pref);
             }
 
             #[test]
             fn host_counter_addition_is_err() {
-                let mut pref: HostCount = 10.into();
-                assert!(pref.add(HostCount::MAX as u32).is_err());
+                let pref: HostCount = 5000.try_into().unwrap();
+                let resp = pref.add(HostCount::MAX.try_into().unwrap());
+                assert_eq!(*pref, 5000);
+                assert_eq!(*resp, HostCount::MAX as i32);
             }
 
             #[test]
             fn host_counter_addition_overflow() {
-                let mut pref: HostCount = HostCount::MAX.try_into().unwrap();
-                assert!(pref.add(20).is_err());
-                assert_eq!(HostCount::MAX, *pref);
+                let pref: HostCount = HostCount::MAX.try_into().unwrap();
+                assert_eq!(*pref.add(20), HostCount::MAX as i32);
+                assert_eq!(HostCount::MAX as i32, *pref);
             }
         }
     }
