@@ -198,8 +198,8 @@ pub enum TypeTable {
     Role(Role),
     OptionVlanId(Option<VlanId>),
     VlanId(VlanId),
-    I64(i64),
     I32(i32),
+    HostCount(HostCount),
     OptionTime(Option<time::OffsetDateTime>),
     Time(time::OffsetDateTime),
     Bool(bool),
@@ -251,7 +251,7 @@ impl From<Option<VlanId>> for TypeTable {
 
 impl From<HostCount> for TypeTable {
     fn from(value: HostCount) -> Self {
-        Self::I64(*value as i64)
+        Self::HostCount(value)
     }
 }
 

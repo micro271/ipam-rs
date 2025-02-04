@@ -71,7 +71,7 @@ impl SqlOperations {
                     TypeTable::OptionTime(e) => sql.bind(e),
                     TypeTable::Time(e) => sql.bind(e),
                     TypeTable::VlanId(e) => sql.bind(e),
-                    TypeTable::I64(e) => sql.bind(e),
+                    TypeTable::HostCount(e) => sql.bind(e),
                     TypeTable::I32(e) => sql.bind(e),
                     TypeTable::Null => sql,
                 };
@@ -102,7 +102,7 @@ impl SqlOperations {
                 TypeTable::I32(e) => sql.bind(e),
                 TypeTable::OptionVlanId(value) => sql.bind(value),
                 TypeTable::VlanId(e) => sql.bind(e),
-                TypeTable::I64(value) => sql.bind(value),
+                TypeTable::HostCount(value) => sql.bind(value),
                 TypeTable::Bool(e) => sql.bind(e),
                 TypeTable::OptionTime(e) => sql.bind(e),
                 TypeTable::Time(e) => sql.bind(e),
@@ -183,7 +183,7 @@ impl SqlOperations {
                 TypeTable::OptionTime(e) => sql.bind(e),
                 TypeTable::Time(e) => sql.bind(e),
                 TypeTable::Null => sql,
-                TypeTable::I64(e) => sql.bind(e),
+                TypeTable::HostCount(e) => sql.bind(e),
             };
         }
 
@@ -239,7 +239,7 @@ impl SqlOperations {
                     TypeTable::Uuid(e) => sql.bind(e),
                     TypeTable::Status(status) => sql.bind(status),
                     TypeTable::Role(role) => sql.bind(role),
-                    TypeTable::I64(e) => sql.bind(e),
+                    TypeTable::HostCount(e) => sql.bind(e),
                     TypeTable::Null => sql,
                 };
             }

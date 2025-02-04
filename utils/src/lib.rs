@@ -585,53 +585,56 @@ pub mod type_net {
         pub struct HostCount(i32);
 
         impl HostCount {
-            pub const MAX: u32 = 0x00FFFFFF;
+            pub const MAX: i32 = 0x00FFFFFF;
 
-            pub fn new(bits: u8, prefix: u8) -> Self {
-                let value = 2_i32
-                    .checked_pow(bits.saturating_sub(prefix) as u32)
-                    .map(|x| x - 2)
-                    .unwrap_or(Self::MAX as i32);
-
-                Self(value.min(Self::MAX as i32))
+            pub fn new(bits: u8, prefix: u8) -> Option<Self> {
+                2_i32
+                    .checked_pow(bits.checked_sub(prefix)? as u32)
+                    .map(|x| {
+                        Self({
+                            if x > 2 {
+                                (x - 2).min(Self::MAX)
+                            } else {
+                                x.max(0)
+                            }
+                        })
+                    })
             }
 
-            pub fn add(&self, value: u32) -> Self {
+            pub fn add(self, value: u32) -> Self {
                 Self(
                     value
                         .try_into()
                         .ok()
-                        .and_then(|x| self.0.checked_add(x))
-                        .unwrap_or(Self::MAX as i32)
-                        .min(Self::MAX as i32),
+                        .and_then(|x| self.0.checked_add(x).map(|x| x.min(Self::MAX)))
+                        .unwrap_or(Self::MAX),
                 )
             }
 
-            pub fn sub(&self, value: u32) -> Self {
+            pub fn sub(self, value: u32) -> Self {
                 Self(
                     value
                         .try_into()
                         .ok()
-                        .and_then(|x| self.0.checked_sub(x))
-                        .unwrap_or(0)
-                        .max(0),
+                        .and_then(|x| self.0.checked_sub(x).map(|x| x.max(0)))
+                        .unwrap_or(0),
                 )
             }
         }
 
-        impl TryFrom<u32> for HostCount {
+        impl TryFrom<i32> for HostCount {
             type Error = CountOfRange;
-            fn try_from(value: u32) -> Result<Self, Self::Error> {
+            fn try_from(value: i32) -> Result<Self, Self::Error> {
                 (..=Self::MAX)
                     .contains(&value)
-                    .then(|| Self(value as i32))
+                    .then(|| Self(value))
                     .ok_or(CountOfRange)
             }
         }
 
         impl From<IpNet> for HostCount {
             fn from(value: IpNet) -> Self {
-                Self::new(value.max_prefix_len(), value.prefix_len())
+                Self::new(value.max_prefix_len(), value.prefix_len()).unwrap()
             }
         }
 
@@ -665,9 +668,24 @@ pub mod type_net {
             #[test]
             fn host_counter_instance_from_prefix() {
                 let ipnet = "172.30.0.0/24".parse::<IpNet>().unwrap();
-                let pref = HostCount::new(ipnet.max_prefix_len(), ipnet.prefix_len());
+                let pref = HostCount::new(ipnet.max_prefix_len(), ipnet.prefix_len()).unwrap();
                 assert_eq!(*pref, 254);
             }
+
+            #[test]
+            fn host_counter_instance_from_prefix_31() {
+                let ipnet = "172.30.0.0/31".parse::<IpNet>().unwrap();
+                let pref = HostCount::new(ipnet.max_prefix_len(), ipnet.prefix_len()).unwrap();
+                assert_eq!(*pref, 2);
+            }
+
+            #[test]
+            fn host_counter_instance_from_prefix_32() {
+                let ipnet = "172.30.0.0/32".parse::<IpNet>().unwrap();
+                let pref = HostCount::new(ipnet.max_prefix_len(), ipnet.prefix_len()).unwrap();
+                assert_eq!(*pref, 1);
+            }
+
             #[test]
             fn host_counter_instance_from_u32() {
                 let pref: HostCount = 10.try_into().unwrap();
