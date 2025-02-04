@@ -1,4 +1,7 @@
-use super::*;
+use super::{
+    entries, instrument, models, Json, Level, PaginationParams, Query, QueryResult, Repository,
+    RepositoryType, ResponseError, State,
+};
 use entries::params::{LocationParam, LocationParamStict};
 use models::location::{Location, LocationUpdate};
 

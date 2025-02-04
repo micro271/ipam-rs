@@ -59,7 +59,7 @@ pub trait Table: Send + Sync {
             { columns.join(", ") },
             {
                 (1..=columns.len())
-                    .map(|x| format!("${}", x))
+                    .map(|x| format!("${x}"))
                     .collect::<Vec<String>>()
                     .join(", ")
             },
@@ -168,9 +168,9 @@ pub mod error {
     impl std::fmt::Display for RepositoryError {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             match self {
-                RepositoryError::Sqlx(txt) => write!(f, "Sqlx error: {}", txt),
+                RepositoryError::Sqlx(txt) => write!(f, "Sqlx error: {txt}"),
                 Self::RowNotFound => write!(f, "Row not found"),
-                Self::ColumnNotFound(e) => write!(f, "The column {} is invalid", e),
+                Self::ColumnNotFound(e) => write!(f, "The column {e} is invalid"),
                 Self::UpdaterEmpty => write!(f, "There isn't element to change"),
             }
         }

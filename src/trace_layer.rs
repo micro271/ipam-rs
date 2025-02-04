@@ -6,8 +6,7 @@ pub fn make_span(req: &axum::http::Request<axum::body::Body>) -> Span {
     let peer = tracing::field::display(
         req.extensions()
             .get::<ConnectInfo<SocketAddr>>()
-            .map(|x| x.ip().to_string())
-            .unwrap_or("Unknown".to_string()),
+            .map_or("Unknown".to_string(), |x| x.ip().to_string()),
     );
 
     tracing::info_span!("http_log", uri = %req.uri(), method = %req.method(), peer = %peer, latency = tracing::field::Empty,
@@ -24,5 +23,5 @@ pub fn on_response(
         tracing::field::display(format!("{}ms", dur.as_millis())),
     );
     span.record("status", tracing::field::display(req.status()));
-    tracing::info!("Response")
+    tracing::info!("Response");
 }

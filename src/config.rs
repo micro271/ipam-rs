@@ -8,10 +8,10 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn init() -> Result<Self, std::io::Error> {
+    pub fn init() -> Self {
         dotenv::dotenv().ok();
 
-        Ok(Self {
+        Self {
             database: Database {
                 name: var("DATABASE_NAME").expect("Database name not define"),
                 port: var("DATABASE_PORT")
@@ -26,23 +26,23 @@ impl Config {
                 port: var("APPLICATION_PORT")
                     .ok()
                     .filter(|x| !x.is_empty())
-                    .map(|x| x.parse().expect("Invalid port for application"))
-                    .unwrap_or(3000),
+                    .map_or(3000, |x| x.parse().expect("Invalid port for application")),
                 ip: var("APPLICATION_IP")
                     .ok()
                     .filter(|x| !x.is_empty())
-                    .map(|x| x.parse().expect("Invalid ip to backend"))
-                    .unwrap_or("0.0.0.0".parse().unwrap()),
+                    .map_or("0.0.0.0".parse().unwrap(), |x| {
+                        x.parse().expect("Invalid ip to backend")
+                    }),
                 allow_origin: var("ALLOW_ORIGIN")
                     .ok()
-                    .filter(|x| !x.is_empty() && !x.contains("*"))
+                    .filter(|x| !x.is_empty() && !x.contains('*'))
                     .map(|x| {
                         x.split_whitespace()
                             .filter_map(|x| x.parse::<HeaderValue>().ok())
                             .collect()
                     }),
             },
-        })
+        }
     }
 }
 

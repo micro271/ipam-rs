@@ -1,4 +1,4 @@
-use super::*;
+use super::{Deserialize, FromPgRow, Serialize, Table, Updatable};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Table, FromPgRow)]
 #[table_name("locations")]

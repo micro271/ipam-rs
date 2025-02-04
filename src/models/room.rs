@@ -1,4 +1,4 @@
-use super::*;
+use super::{Deserialize, FromPgRow, Serialize, Table, Updatable};
 
 #[derive(Debug, Deserialize, Serialize, Clone, Table, FromPgRow)]
 pub struct Room {

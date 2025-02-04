@@ -1,4 +1,4 @@
-use super::*;
+use super::{Deserialize, Serialize, Table, Updatable, Uuid};
 use ipnet::IpNet;
 use macros::FromPgRow;
 use std::net::{IpAddr, Ipv4Addr};
@@ -75,7 +75,7 @@ impl From<(IpAddr, uuid::Uuid)> for Device {
             label: None,
             room: None,
             mount_point: None,
-            status: Default::default(),
+            status: Status::default(),
             network_id: value.1,
             username: None,
             password: None,
@@ -110,7 +110,7 @@ impl Iterator for DeviceRange {
                 label: None,
                 room: None,
                 mount_point: None,
-                status: Default::default(),
+                status: Status::default(),
                 network_id: self.network_id,
                 username: None,
                 password: None,
@@ -130,10 +130,10 @@ impl TryFrom<IpNet> for DeviceRange {
     fn try_from(value: IpNet) -> Result<Self, Self::Error> {
         let start = match value.network() {
             IpAddr::V4(e) => u32::from(e),
-            _ => return Err(DeviceRangeError::InvalidNetwork),
+            IpAddr::V6(_) => return Err(DeviceRangeError::InvalidNetwork),
         };
 
-        let len = 2u32.pow((value.max_prefix_len() - value.prefix_len()) as u32) - 2;
+        let len = 2u32.pow(u32::from(value.max_prefix_len() - value.prefix_len())) - 2;
 
         Ok(DeviceRange {
             start,

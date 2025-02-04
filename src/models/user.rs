@@ -1,6 +1,6 @@
 use time::OffsetDateTime;
 
-use super::*;
+use super::{Deserialize, FromPgRow, Serialize, Table, Updatable, Uuid};
 
 #[derive(Deserialize, Serialize, Debug, Clone, Table, FromPgRow)]
 #[table_name("users")]

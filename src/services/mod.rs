@@ -1,6 +1,6 @@
 use crate::{
     database::repository::{error::RepositoryError, Repository},
-    models::user::*,
+    models::user::{Role, User},
 };
 use libipam::authentication::{encrypt, Claim};
 use serde::{Deserialize, Serialize};
@@ -64,8 +64,10 @@ pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryE
 impl From<User> for Claims {
     fn from(value: User) -> Self {
         Self {
-            exp: (time::OffsetDateTime::now_utc() + time::Duration::hours(6)).unix_timestamp()
-                as usize,
+            exp: usize::try_from(
+                (time::OffsetDateTime::now_utc() + time::Duration::hours(6)).unix_timestamp(),
+            )
+            .unwrap(),
             id: value.id,
             role: value.role,
         }

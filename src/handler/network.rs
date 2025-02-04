@@ -1,13 +1,16 @@
 use crate::database::transaction::Transaction as _;
 use std::net::{Ipv4Addr, Ipv6Addr};
 
-use super::*;
+use super::{
+    entries, instrument, models, HashMap, IsAdministrator, Json, Level, PaginationParams, Path,
+    Query, QueryResult, Repository, RepositoryType, ResponseError, State, StatusCode, Uuid,
+};
 
 use entries::{
     models::NetworkCreateEntry,
     params::{ParamNetwork, Subnet},
 };
-use models::network::*;
+use models::network::{Network, To, UpdateNetwork};
 
 #[instrument(level = Level::INFO)]
 pub async fn create(
@@ -28,7 +31,7 @@ pub async fn create(
             {
                 return Err(ResponseError::builder()
                     .title("Invalid network".to_string())
-                    .detail(format!("We cannot create the network {}", ipv4_addr))
+                    .detail(format!("We cannot create the network {ipv4_addr}"))
                     .build());
             }
         }
@@ -36,7 +39,7 @@ pub async fn create(
             if [Ipv6Addr::LOCALHOST, Ipv6Addr::UNSPECIFIED].contains(&ipv6_addr) {
                 return Err(ResponseError::builder()
                     .title("Invalid network".to_string())
-                    .detail(format!("We cannot create the network {}", ipv6_addr))
+                    .detail(format!("We cannot create the network {ipv6_addr}"))
                     .build());
             }
         }
@@ -138,7 +141,7 @@ pub async fn subnetting(
 
     state
         .update::<Network, _, _>(
-            HashMap::from([("children", (len as i32).into())]), /* TODO: we've updated the free and available ips */
+            HashMap::from([("children", i32::try_from(len).unwrap_or_default().into())]), /* TODO: we've updated the free and available ips */
             Some([("id", father.id.into())].into()),
         )
         .await?;

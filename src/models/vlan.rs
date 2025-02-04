@@ -1,4 +1,4 @@
-use super::*;
+use super::{FromPgRow, Table, Updatable};
 use libipam::type_net::vlan::VlanId;
 use serde::{Deserialize, Serialize};
 

@@ -33,9 +33,9 @@ impl SqlOperations {
 
             for (i, (key, value)) in col.into_iter().enumerate() {
                 if value == TypeTable::Null {
-                    query.push_str(&format!(" {} IS NULL", key));
+                    query.push_str(&format!(" {key} IS NULL"));
                 } else {
-                    query.push_str(&format!(" {} = ${}", key, pos));
+                    query.push_str(&format!(" {key} = ${pos}"));
                     data_pos.insert(pos, value);
                     pos += 1;
                 }
@@ -48,12 +48,12 @@ impl SqlOperations {
             tracing::trace!("6 update (query) - {}", query);
 
             if let Some(limit) = limit {
-                query.push_str(&format!(" LIMIT {}", limit));
-                tracing::trace!("6 update (query) - {}", query);
+                query.push_str(&format!(" LIMIT {limit}"));
+                tracing::trace!("6 update (query) - {query}");
             }
             if let Some(offset) = offset {
-                query.push_str(&format!(" OFFSET {}", offset));
-                tracing::trace!("6 update (query) - {}", query);
+                query.push_str(&format!(" OFFSET {offset}"));
+                tracing::trace!("6 update (query) - {query}");
             }
             let mut sql = sqlx::query(query);
 
@@ -97,9 +97,9 @@ impl SqlOperations {
 
         for (i, (key, value)) in pair_updater.into_iter().enumerate() {
             if value == TypeTable::Null {
-                query.push_str(&format!(" {} IS NULL", key));
+                query.push_str(&format!(" {key} IS NULL"));
             } else {
-                query.push_str(&format!(" {} = ${}", key, pos));
+                query.push_str(&format!(" {key} = ${pos}"));
                 pos_values.insert(pos, value);
                 pos += 1;
             }
@@ -119,9 +119,9 @@ impl SqlOperations {
 
             for (i, (key, value)) in condition.into_iter().enumerate() {
                 if value == TypeTable::Null {
-                    query.push_str(&format!(" {} IS NULL", key));
+                    query.push_str(&format!(" {key} IS NULL"));
                 } else {
-                    query.push_str(&format!(" {} = ${}", key, pos));
+                    query.push_str(&format!(" {key} = ${pos}"));
                     pos_values.insert(pos, value);
                     pos += 1;
                 }
@@ -135,6 +135,7 @@ impl SqlOperations {
         }
 
         let mut sql = sqlx::query(query);
+
         for i in 1..pos {
             sql = bind_query!(sql, pos_values.remove(&i).unwrap());
         }
@@ -160,9 +161,9 @@ impl SqlOperations {
             let len = condition.len();
             for (key, value) in condition {
                 if value == TypeTable::Null {
-                    query.push_str(&format!(" {} IS NULL", key));
+                    query.push_str(&format!(" {key} IS NULL"));
                 } else {
-                    query.push_str(&format!(" {} = ${}", key, pos));
+                    query.push_str(&format!(" {key} = ${pos}"));
                     pos_column.insert(pos, value);
 
                     if pos < len {

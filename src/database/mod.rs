@@ -71,10 +71,10 @@ impl Repository for RepositoryInjection<Postgres> {
 
         tracing::debug!("sql query result - {:?}", vec_resp);
 
-        if !vec_resp.is_empty() {
-            Ok(vec_resp)
-        } else {
+        if vec_resp.is_empty() {
             Err(RepositoryError::RowNotFound)
+        } else {
+            Ok(vec_resp)
         }
     }
 

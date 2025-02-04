@@ -1,4 +1,4 @@
-use super::*;
+use super::{Deserialize, FromPgRow, Serialize, Table, Updatable};
 
 #[derive(Debug, Clone, Deserialize, Serialize, Table, FromPgRow)]
 #[table_name("mount_point")]

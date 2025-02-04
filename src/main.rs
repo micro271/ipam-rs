@@ -12,7 +12,7 @@ use axum::{
 };
 use config::Config;
 use database::RepositoryInjection;
-use handler::*;
+use handler::{auth, device, location, mount_point, network, room, vlan, MapQuery};
 use std::sync::Arc;
 use tower_http::{
     cors::{Any, CorsLayer},
@@ -22,7 +22,7 @@ use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let Config { app, database } = config::Config::init().unwrap();
+    let Config { app, database } = config::Config::init();
 
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::try_from_env("LOG_LEVEL").unwrap_or(EnvFilter::new("info")))
@@ -39,7 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let cors = app
         .allow_origin
-        .map(|x| {
+        .map_or(CorsLayer::new().allow_origin(Any), |x| {
             CorsLayer::new()
                 .allow_headers([header::CONTENT_TYPE, header::COOKIE, header::AUTHORIZATION])
                 .allow_origin(x)
@@ -51,8 +51,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Method::POST,
                     Method::DELETE,
                 ])
-        })
-        .unwrap_or(CorsLayer::new().allow_origin(Any));
+        });
 
     let trace_layer = TraceLayer::new_for_http()
         .make_span_with(trace_layer::make_span)

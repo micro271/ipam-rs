@@ -1,8 +1,11 @@
-use super::*;
+use super::{
+    entries, instrument, IntoResponse, IsAdministrator, Json, Level, PaginationParams, Path, Query,
+    Repository, RepositoryType, ResponseError, State, StatusCode, Uuid,
+};
 use crate::{
     database::{repository::QueryResult, transaction::Transaction},
     models::{
-        device::*,
+        device::{Device, Status, UpdateDevice},
         network::{Network, To},
     },
 };
@@ -46,7 +49,7 @@ pub async fn create_all_devices(
     let len = devices.len();
     for device in devices {
         if let Err(e) = transaction.insert(device).await {
-            return Err(transaction.rollback().await.map(|_| {
+            return Err(transaction.rollback().await.map(|()| {
                 ResponseError::builder()
                     .detail(e.to_string())
                     .title("Device create error".to_string())
@@ -132,9 +135,9 @@ pub async fn update(
 
             Ok::<(), ResponseError>(())
         } {
-            Err(tr.rollback().await.map(|_| e)?)
+            Err(tr.rollback().await.map(|()| e)?)
         } else {
-            Ok(tr.commit().await.map(|_| StatusCode::OK)?)
+            Ok(tr.commit().await.map(|()| StatusCode::OK)?)
         }
     } else {
         Ok(state

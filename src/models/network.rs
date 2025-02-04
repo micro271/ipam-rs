@@ -1,6 +1,6 @@
 use super::{
     device::{DeviceRange, DeviceRangeError},
-    *,
+    Deserialize, FromPgRow, Serialize, Table, Updatable, Uuid,
 };
 use ipnet::IpNet;
 use libipam::{
@@ -16,6 +16,7 @@ pub struct UpdateNetwork {
     pub to: Option<To>,
 }
 
+#[allow(clippy::struct_field_names)]
 #[derive(Debug, Deserialize, Serialize, Clone, Table, FromPgRow)]
 #[table_name("networks")]
 pub struct Network {
