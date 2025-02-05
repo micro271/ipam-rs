@@ -35,7 +35,7 @@ pub struct NetworkCreateEntry {
     pub network: IpNet,
     pub description: Option<String>,
     pub vlan: Option<VlanId>,
-    pub to: Option<To>,
+    pub use_to: Option<To>,
 }
 
 impl From<NetworkCreateEntry> for Network {
@@ -51,7 +51,7 @@ impl From<NetworkCreateEntry> for Network {
             vlan: value.vlan,
             father: None,
             children: 0,
-            to: value.to.unwrap_or_default(),
+            use_to: value.use_to.unwrap_or_default(),
         }
     }
 }

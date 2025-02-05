@@ -34,7 +34,7 @@ pub async fn create_all_devices(
         .await?
         .remove(0);
 
-    if network.to != To::Device {
+    if network.use_to != To::Device {
         return Err(ResponseError::builder()
             .detail("The network is designed for devices".to_string())
             .status(StatusCode::BAD_REQUEST)

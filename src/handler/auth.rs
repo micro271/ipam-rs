@@ -8,7 +8,7 @@ use axum::{extract::Request, middleware::Next, response::Response};
 use cookie::Cookie;
 use libipam::{
     authentication::{self, create_token, encrypt, verify_passwd},
-    GetToken, TokenCookie, TOKEN_PEER_KEY,
+    GetToken, TokenAuth, TokenCookie, TOKEN_PEER_KEY,
 };
 use models::user::UpdateUser;
 
@@ -135,7 +135,7 @@ pub async fn login(
 
 #[instrument(level = Level::DEBUG)]
 pub async fn verify_token(
-    libipam::Token(token): libipam::Token<TokenCookie>,
+    libipam::Token(token): libipam::Token<TokenAuth>,
     mut req: Request,
     next: Next,
 ) -> Result<axum::response::Response, ResponseError> {

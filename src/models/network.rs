@@ -32,10 +32,11 @@ pub struct Network {
     pub description: Option<String>,
     pub father: Option<Uuid>,
     pub children: i32,
-    pub to: To,
+    pub use_to: To,
 }
 
 #[derive(Debug, Clone, Copy, sqlx::Type, Deserialize, Serialize, PartialEq, Default)]
+#[sqlx(type_name = "NETWORKTO")]
 pub enum To {
     Nat,
     #[default]
@@ -80,7 +81,7 @@ impl From<IpNet> for Network {
             description: None,
             father: None,
             children: 0,
-            to: To::default(),
+            use_to: To::default(),
         }
     }
 }
