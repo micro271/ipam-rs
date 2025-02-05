@@ -8,7 +8,7 @@ use axum::{extract::Request, middleware::Next, response::Response};
 use cookie::Cookie;
 use libipam::{
     authentication::{self, create_token, encrypt, verify_passwd},
-    GetToken, TokenAuth, TokenCookie, TOKEN_PEER_KEY,
+    GetToken, TokenAuth, TOKEN_PEER_KEY,
 };
 use models::user::UpdateUser;
 

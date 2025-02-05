@@ -601,6 +601,16 @@ pub mod type_net {
                     })
             }
 
+            pub fn new_with_sub(bits: u8, prefix: u8, sub: u32) -> Option<Self> {
+                2_i32
+                    .checked_pow(bits.checked_sub(prefix)? as u32)
+                    .and_then(|x| {
+                        let tmp = (x > 2).then_some(x - 2).unwrap_or(x);
+                        let tmp = (tmp - i32::try_from(sub).ok()?).min(Self::MAX);
+                        (tmp >= 0).then_some(Self(tmp))
+                    })
+            }
+
             pub fn add(self, value: u32) -> Self {
                 Self(
                     value
@@ -713,7 +723,7 @@ pub mod type_net {
     pub mod vlan {
         use serde::{Deserialize, Serialize};
 
-        #[derive(Debug, Deserialize, Serialize, Clone)]
+        #[derive(Debug, Deserialize, Serialize, Clone, Copy)]
         #[cfg_attr(feature = "sqlx_type", derive(sqlx::Type))]
         #[cfg_attr(feature = "sqlx_type", sqlx(transparent))]
         pub struct VlanId(i16);
@@ -726,11 +736,11 @@ pub mod type_net {
             }
 
             pub fn set_vlan(&mut self, id: i16) -> Result<(), OutOfRange> {
-                if !(2..=Self::MAX).contains(&id) {
-                    Err(OutOfRange)
-                } else {
+                if (2..=Self::MAX).contains(&id) {
                     self.0 = id;
                     Ok(())
+                } else {
+                    Err(OutOfRange)
                 }
             }
         }
@@ -768,6 +778,12 @@ pub mod type_net {
             type Target = i16;
             fn deref(&self) -> &Self::Target {
                 &self.0
+            }
+        }
+
+        impl std::fmt::Display for VlanId {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "{}", self.0)
             }
         }
 
