@@ -667,6 +667,12 @@ pub mod type_net {
             }
         }
 
+        impl std::fmt::Display for HostCount {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "{}", self.0)
+            }
+        }
+
         #[derive(Debug)]
         pub struct CountOfRange;
 
