@@ -47,10 +47,7 @@ impl<'b> BuilderPgTransaction<'b> {
         Ok(())
     }
 
-    pub fn insert<T>(&mut self, data: T) -> impl Future<Output = TransactionResult<T>>
-    where
-        T: Table + Send + std::fmt::Debug + Clone + 'b,
-    {
+    pub fn insert<T: Table>(&mut self, data: T) -> impl Future<Output = TransactionResult<T>> {
         let transaction = self.transaction.clone();
         async move {
             let mut transaction = transaction.lock().await;
@@ -61,16 +58,11 @@ impl<'b> BuilderPgTransaction<'b> {
         }
     }
 
-    pub fn update<T, U, M>(
+    pub fn update<T: Table, U: Updatable, M: MapQuery>(
         &mut self,
         updater: U,
         condition: M,
-    ) -> impl Future<Output = TransactionResult<T>>
-    where
-        T: Table + std::fmt::Debug + 'b,
-        U: Updatable + std::fmt::Debug + 'b,
-        M: MapQuery + std::fmt::Debug + 'b,
-    {
+    ) -> impl Future<Output = TransactionResult<T>> {
         let transaction = self.transaction.clone();
 
         async move {
@@ -87,11 +79,10 @@ impl<'b> BuilderPgTransaction<'b> {
         }
     }
 
-    pub fn delete<T, M>(&mut self, condition: M) -> impl Future<Output = TransactionResult<T>>
-    where
-        T: Table + 'b + std::fmt::Debug,
-        M: MapQuery + 'b + std::fmt::Debug,
-    {
+    pub fn delete<T: Table, M: MapQuery>(
+        &mut self,
+        condition: M,
+    ) -> impl Future<Output = TransactionResult<T>> {
         let transaction = self.transaction.clone();
         async move {
             let mut query = T::query_delete();

@@ -1,7 +1,7 @@
 use super::PgRow;
 use crate::{
-    models::{device::Status, network::To, user::Role},
     MapQuery,
+    models::{device::Status, network::To, user::Role},
 };
 use axum::{
     http::StatusCode,
@@ -12,40 +12,34 @@ use ipnet::IpNet;
 use libipam::type_net::{host_count::HostCount, vlan::VlanId};
 use serde::Serialize;
 use serde_json::json;
-use std::{clone::Clone, collections::HashMap, fmt::Debug, future::Future, net::IpAddr};
+use std::{collections::HashMap, fmt::Debug, future::Future, net::IpAddr};
 use uuid::Uuid;
 
 pub type ResultRepository<T> = Result<T, RepositoryError>;
 
 pub trait Repository {
-    fn get<T>(
+    fn get<T: Table + From<PgRow>>(
         &self,
         primary_key: impl MapQuery,
         limit: Option<i32>,
         offset: Option<i32>,
-    ) -> impl Future<Output = ResultRepository<Vec<T>>>
-    where
-        T: Table + From<PgRow> + Debug;
-    fn insert<T>(&self, data: T) -> impl Future<Output = ResultRepository<QueryResult<T>>>
-    where
-        T: Table + Debug + Clone;
-    fn update<T, U>(
+    ) -> impl Future<Output = ResultRepository<Vec<T>>>;
+
+    fn insert<T: Table>(&self, data: T) -> impl Future<Output = ResultRepository<QueryResult<T>>>;
+
+    fn update<T: Table, U: Updatable>(
         &self,
         updater: U,
         condition: impl MapQuery,
-    ) -> impl Future<Output = ResultRepository<QueryResult<T>>>
-    where
-        T: Table + Debug,
-        U: Updatable + Debug;
-    fn delete<T>(
+    ) -> impl Future<Output = ResultRepository<QueryResult<T>>>;
+
+    fn delete<T: Table>(
         &self,
         condition: impl MapQuery,
-    ) -> impl Future<Output = ResultRepository<QueryResult<T>>>
-    where
-        T: Table + Debug + Clone;
+    ) -> impl Future<Output = ResultRepository<QueryResult<T>>>;
 }
 
-pub trait Table: Send + Sync {
+pub trait Table: Send + Sync + Debug {
     fn name() -> String;
 
     fn query_insert() -> String
@@ -85,7 +79,7 @@ pub trait Table: Send + Sync {
     }
 }
 
-pub trait Updatable: Sync + Send {
+pub trait Updatable: Sync + Send + Debug {
     fn get_pair(self) -> Option<HashMap<&'static str, TypeTable>>;
 }
 

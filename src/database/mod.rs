@@ -32,10 +32,7 @@ impl RepositoryInjection<Postgres> {
 }
 
 impl Repository for RepositoryInjection<Postgres> {
-    async fn insert<T>(&self, data: T) -> ResultRepository<QueryResult<T>>
-    where
-        T: Table + Debug,
-    {
+    async fn insert<T: Table>(&self, data: T) -> ResultRepository<QueryResult<T>> {
         tracing::trace!("REPOSITORY");
         tracing::trace!("1 input (data) - {:?}", data);
 
@@ -47,15 +44,12 @@ impl Repository for RepositoryInjection<Postgres> {
         Ok(QueryResult::Insert(res.rows_affected()))
     }
 
-    async fn get<T>(
+    async fn get<T: Table + From<PgRow>>(
         &self,
         column_data: impl MapQuery,
         limit: Option<i32>,
         offset: Option<i32>,
-    ) -> ResultRepository<Vec<T>>
-    where
-        T: Table + From<PgRow> + Debug,
-    {
+    ) -> ResultRepository<Vec<T>> {
         tracing::trace!("REPOSITORY");
         tracing::trace!("1 input (column_data) - {:?}", column_data);
         tracing::trace!("2 input (limit) - {:?}", limit);
@@ -78,15 +72,11 @@ impl Repository for RepositoryInjection<Postgres> {
         }
     }
 
-    async fn update<T, U>(
+    async fn update<T: Table, U: Updatable>(
         &self,
         updater: U,
         condition: impl MapQuery,
-    ) -> ResultRepository<QueryResult<T>>
-    where
-        T: Table + Debug,
-        U: Updatable + Debug,
-    {
+    ) -> ResultRepository<QueryResult<T>> {
         tracing::trace!("REPOSITORY");
         tracing::trace!("1 input (updater) - {:?}", updater);
         tracing::trace!("2 input (condition) - {:?}", condition);
@@ -106,10 +96,7 @@ impl Repository for RepositoryInjection<Postgres> {
         Ok(QueryResult::Update(result.rows_affected()))
     }
 
-    async fn delete<T>(&self, condition: impl MapQuery) -> ResultRepository<QueryResult<T>>
-    where
-        T: Table + Debug,
-    {
+    async fn delete<T: Table>(&self, condition: impl MapQuery) -> ResultRepository<QueryResult<T>> {
         tracing::trace!("REPOSITORY");
         tracing::trace!("1 input (condition) - {:?}", condition);
 
