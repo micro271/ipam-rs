@@ -65,9 +65,9 @@ impl Repository for RepositoryInjection<Postgres> {
         let mut vec_resp = Vec::new();
         let mut query = SqlOperations::get(&mut query, column_data, limit, offset).fetch(&self.0);
 
-        while let Some(Ok(e)) = query.next().await {
-            vec_resp.push(T::from(e));
-        }
+        // while let Some(Ok(e)) = query.next().await {
+        //     vec_resp.push(T::from(e));
+        // }
 
         tracing::debug!("sql query result - {:?}", vec_resp);
 
