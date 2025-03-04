@@ -5,12 +5,12 @@ pub mod transaction;
 use crate::MapQuery;
 use futures::stream::StreamExt;
 use repository::{
-    error::RepositoryError, QueryResult, Repository, ResultRepository, Table, TypeTable, Updatable,
+    QueryResult, Repository, ResultRepository, Table, TypeTable, Updatable, error::RepositoryError,
 };
 use sql::SqlOperations;
 use sqlx::{
-    postgres::{PgPool, PgPoolOptions, PgRow},
     Database, Pool, Postgres,
+    postgres::{PgPool, PgPoolOptions, PgRow},
 };
 use std::{collections::HashMap, fmt::Debug};
 use transaction::{BuilderPgTransaction, Transaction};
@@ -65,9 +65,9 @@ impl Repository for RepositoryInjection<Postgres> {
         let mut vec_resp = Vec::new();
         let mut query = SqlOperations::get(&mut query, column_data, limit, offset).fetch(&self.0);
 
-        // while let Some(Ok(e)) = query.next().await {
-        //     vec_resp.push(T::from(e));
-        // }
+        while let Some(Ok(e)) = query.next().await {
+            vec_resp.push(T::from(e));
+        }
 
         tracing::debug!("sql query result - {:?}", vec_resp);
 
