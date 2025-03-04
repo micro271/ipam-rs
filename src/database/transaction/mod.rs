@@ -7,15 +7,10 @@ use super::{
     Table, Updatable,
 };
 use sqlx::{Postgres, Transaction as SqlxTransaction};
-use std::{
-    future::Future,
-    pin::Pin,
-    sync::Arc,
-    task::{Context, Poll},
-};
+use std::{future::Future, pin::Pin, sync::Arc};
 use tokio::sync::Mutex;
 
-type TransactionTaskResult<T> = Result<QueryResult<T>, RepositoryError>;
+type TransactionResult<T> = Result<QueryResult<T>, RepositoryError>;
 
 pub trait Transaction<'a>: Repository {
     fn transaction(
@@ -52,15 +47,12 @@ impl<'b> BuilderPgTransaction<'b> {
         Ok(())
     }
 
-    pub fn insert<T>(
-        &mut self,
-        data: T,
-    ) -> impl Future<Output = TransactionTaskResult<T>> + use<'_, T>
+    pub fn insert<T>(&mut self, data: T) -> impl Future<Output = TransactionResult<T>> + use<'b, T>
     where
         T: Table + Send + std::fmt::Debug + Clone + 'b,
     {
         let transaction = self.transaction.clone();
-        TransactionTask::new(async move {
+        async move {
             let mut transaction = transaction.lock().await;
             let q_insert = T::query_insert();
             let query = SqlOperations::insert(data, &q_insert);
@@ -68,22 +60,22 @@ impl<'b> BuilderPgTransaction<'b> {
             Ok(QueryResult::Insert(
                 query.execute(&mut **transaction).await?.rows_affected(),
             ))
-        })
+        }
     }
 
     pub fn update<T, U, M>(
         &mut self,
         updater: U,
         condition: M,
-    ) -> impl Future<Output = TransactionTaskResult<T>> + use<'_, T, U, M>
+    ) -> impl Future<Output = TransactionResult<T>> + use<'b, T, U, M>
     where
-        T: Table + std::fmt::Debug,
+        T: Table + std::fmt::Debug + 'b,
         U: Updatable + std::fmt::Debug + 'b,
         M: MapQuery + std::fmt::Debug + 'b,
     {
         let transaction = self.transaction.clone();
 
-        TransactionTask::new(async move {
+        async move {
             let mut query = T::query_update();
             let sql = SqlOperations::update(
                 updater.get_pair().unwrap(),
@@ -95,48 +87,25 @@ impl<'b> BuilderPgTransaction<'b> {
             Ok(QueryResult::Update(
                 sql.execute(&mut **transaction).await?.rows_affected(),
             ))
-        })
+        }
     }
 
     pub fn delete<T, M>(
         &mut self,
         condition: M,
-    ) -> impl Future<Output = TransactionTaskResult<T>> + use<'_, T, M>
+    ) -> impl Future<Output = TransactionResult<T>> + use<'b, T, M>
     where
         T: Table + 'b + std::fmt::Debug,
         M: MapQuery + 'b + std::fmt::Debug,
     {
         let transaction = self.transaction.clone();
-        TransactionTask::new(async move {
+        async move {
             let mut query = T::query_delete();
             let sql = SqlOperations::delete(condition.get_pairs(), &mut query);
             let mut transaction = transaction.lock().await;
             Ok(QueryResult::Delete(
                 sql.execute(&mut **transaction).await?.rows_affected(),
             ))
-        })
-    }
-}
-
-pub struct TransactionTask<'a, T> {
-    future: Pin<Box<dyn Future<Output = TransactionTaskResult<T>> + 'a + Send>>,
-}
-
-impl<'a, T> TransactionTask<'a, T> {
-    pub fn new<F>(future: F) -> Self
-    where
-        F: Future<Output = TransactionTaskResult<T>> + 'a + Send,
-    {
-        Self {
-            future: Box::pin(future),
         }
-    }
-}
-
-impl<T> Future for TransactionTask<'_, T> {
-    type Output = TransactionTaskResult<T>;
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let this = self.get_mut();
-        this.future.as_mut().poll(cx)
     }
 }
