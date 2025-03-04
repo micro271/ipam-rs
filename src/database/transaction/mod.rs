@@ -56,10 +56,8 @@ impl<'b> BuilderPgTransaction<'b> {
             let mut transaction = transaction.lock().await;
             let q_insert = T::query_insert();
             let query = SqlOperations::insert(data, &q_insert);
-
-            Ok(QueryResult::Insert(
-                query.execute(&mut **transaction).await?.rows_affected(),
-            ))
+            let resp = query.execute(&mut **transaction).await?;
+            Ok(QueryResult::Insert(resp.rows_affected()))
         }
     }
 
@@ -84,9 +82,8 @@ impl<'b> BuilderPgTransaction<'b> {
             );
 
             let mut transaction = transaction.lock().await;
-            Ok(QueryResult::Update(
-                sql.execute(&mut **transaction).await?.rows_affected(),
-            ))
+            let resp = sql.execute(&mut **transaction).await?;
+            Ok(QueryResult::Update(resp.rows_affected()))
         }
     }
 
