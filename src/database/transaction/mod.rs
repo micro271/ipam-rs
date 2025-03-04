@@ -2,9 +2,9 @@ pub mod error;
 use crate::handler::MapQuery;
 
 use super::{
-    repository::{error::RepositoryError, QueryResult, Repository},
-    sql::SqlOperations,
     Table, Updatable,
+    repository::{QueryResult, Repository, error::RepositoryError},
+    sql::SqlOperations,
 };
 use sqlx::{Postgres, Transaction as SqlxTransaction};
 use std::{future::Future, pin::Pin, sync::Arc};
@@ -47,7 +47,7 @@ impl<'b> BuilderPgTransaction<'b> {
         Ok(())
     }
 
-    pub fn insert<T>(&mut self, data: T) -> impl Future<Output = TransactionResult<T>> + use<'b, T>
+    pub fn insert<T>(&mut self, data: T) -> impl Future<Output = TransactionResult<T>>
     where
         T: Table + Send + std::fmt::Debug + Clone + 'b,
     {
@@ -65,7 +65,7 @@ impl<'b> BuilderPgTransaction<'b> {
         &mut self,
         updater: U,
         condition: M,
-    ) -> impl Future<Output = TransactionResult<T>> + use<'b, T, U, M>
+    ) -> impl Future<Output = TransactionResult<T>>
     where
         T: Table + std::fmt::Debug + 'b,
         U: Updatable + std::fmt::Debug + 'b,
@@ -87,10 +87,7 @@ impl<'b> BuilderPgTransaction<'b> {
         }
     }
 
-    pub fn delete<T, M>(
-        &mut self,
-        condition: M,
-    ) -> impl Future<Output = TransactionResult<T>> + use<'b, T, M>
+    pub fn delete<T, M>(&mut self, condition: M) -> impl Future<Output = TransactionResult<T>>
     where
         T: Table + 'b + std::fmt::Debug,
         M: MapQuery + 'b + std::fmt::Debug,
