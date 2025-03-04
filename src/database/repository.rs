@@ -209,7 +209,7 @@ pub enum TypeTable {
 
 #[macro_export]
 macro_rules! bind_query {
-    ($query:expr, $value:expr) => {
+    ($query:expr_2021, $value:expr_2021) => {
         match $value {
             TypeTable::OptionUuid(e) => $query.bind(e),
             TypeTable::To(e) => $query.bind(e),

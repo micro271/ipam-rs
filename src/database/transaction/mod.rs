@@ -103,9 +103,9 @@ impl<'b> BuilderPgTransaction<'b> {
             let mut query = T::query_delete();
             let sql = SqlOperations::delete(condition.get_pairs(), &mut query);
             let mut transaction = transaction.lock().await;
-            Ok(QueryResult::Delete(
-                sql.execute(&mut **transaction).await?.rows_affected(),
-            ))
+            let resp = sql.execute(&mut **transaction).await?;
+
+            Ok(QueryResult::Delete(resp.rows_affected()))
         }
     }
 }
