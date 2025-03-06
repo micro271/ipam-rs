@@ -5,7 +5,7 @@ use super::super::models::{
 };
 use crate::models::network::To;
 use ipnet::IpNet;
-use libipam::type_net::vlan::VlanId;
+use libipam::types::vlan::VlanId;
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
 use uuid::Uuid;

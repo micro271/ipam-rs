@@ -1,13 +1,13 @@
-use super::{instrument, Level, PaginationParams, RepositoryType, ResponseError, State};
+use super::{Level, PaginationParams, RepositoryType, ResponseError, State, instrument};
 use crate::{
     database::repository::{QueryResult, Repository},
     models::vlan::{UpdateVlan, Vlan},
 };
 use axum::{
-    extract::{Path, Query},
     Json,
+    extract::{Path, Query},
 };
-use libipam::type_net::vlan::VlanId;
+use libipam::types::vlan::VlanId;
 
 #[instrument(level = Level::DEBUG)]
 pub async fn insert(

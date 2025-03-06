@@ -1,11 +1,11 @@
 use super::{
-    device::{DeviceRange, DeviceRangeError},
     Deserialize, FromPgRow, Serialize, Table, Updatable, Uuid,
+    device::{DeviceRange, DeviceRangeError},
 };
 use ipnet::IpNet;
 use libipam::{
-    ipam_services::{SubnetList, SubnettingError},
-    type_net::{host_count::HostCount, vlan::VlanId},
+    services::ipam::{SubnetList, SubnettingError},
+    types::{host_count::HostCount, vlan::VlanId},
 };
 
 #[derive(Debug, Deserialize, Serialize, Updatable)]

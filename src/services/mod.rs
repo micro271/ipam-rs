@@ -1,8 +1,8 @@
 use crate::{
-    database::repository::{error::RepositoryError, Repository},
+    database::repository::{Repository, error::RepositoryError},
     models::user::{Role, User},
 };
-use libipam::authentication::{encrypt, Claim};
+use libipam::services::authentication::{Claim, encrypt};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

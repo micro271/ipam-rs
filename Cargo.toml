@@ -20,7 +20,7 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 uuid = { version = "1.11.0", features = ["serde", "v4"] }
 macros = { path = "./macros"}
-libipam = { path = "./utils", package = "utils_ipam", features = ["full"] }
+libipam = { path = "./utils", package = "utils_ipam" }
 
 [[bin]]
 name = "ipam"

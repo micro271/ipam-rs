@@ -1,14 +1,14 @@
 use super::{
-    entries, entries::models::UserEntry, instrument, models, HashMap, IntoResponse,
-    IsAdministrator, Json, Level, Path, Repository, RepositoryType, ResponseError, Role, State,
-    StatusCode, Uri, Uuid,
+    HashMap, IntoResponse, IsAdministrator, Json, Level, Path, Repository, RepositoryType,
+    ResponseError, Role, State, StatusCode, Uri, Uuid, entries, entries::models::UserEntry,
+    instrument, models,
 };
 use crate::{database::repository::QueryResult, models::user::User, services::Claims};
 use axum::{extract::Request, middleware::Next, response::Response};
 use cookie::Cookie;
 use libipam::{
-    authentication::{self, create_token, encrypt, verify_passwd},
-    GetToken, TokenAuth, TOKEN_PEER_KEY,
+    GetToken, TOKEN_PEER_KEY, TokenAuth,
+    services::authentication::{self, create_token, encrypt, verify_passwd},
 };
 use models::user::UpdateUser;
 

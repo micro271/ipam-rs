@@ -1,5 +1,5 @@
 use super::{FromPgRow, Table, Updatable};
-use libipam::type_net::vlan::VlanId;
+use libipam::types::vlan::VlanId;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone, Table, FromPgRow)]

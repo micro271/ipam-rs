@@ -9,7 +9,7 @@ use axum::{
 };
 use error::RepositoryError;
 use ipnet::IpNet;
-use libipam::type_net::{host_count::HostCount, vlan::VlanId};
+use libipam::types::{host_count::HostCount, vlan::VlanId};
 use serde::Serialize;
 use serde_json::json;
 use std::{collections::HashMap, fmt::Debug, net::IpAddr};
