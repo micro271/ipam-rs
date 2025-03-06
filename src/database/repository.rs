@@ -12,7 +12,7 @@ use ipnet::IpNet;
 use libipam::type_net::{host_count::HostCount, vlan::VlanId};
 use serde::Serialize;
 use serde_json::json;
-use std::{collections::HashMap, fmt::Debug, future::Future, net::IpAddr};
+use std::{collections::HashMap, fmt::Debug, net::IpAddr};
 use uuid::Uuid;
 
 pub type ResultRepository<T> = Result<T, RepositoryError>;

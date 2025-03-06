@@ -7,15 +7,16 @@ use super::{
     sql::SqlOperations,
 };
 use sqlx::{Postgres, Transaction as SqlxTransaction};
-use std::{future::Future, pin::Pin, sync::Arc};
+use std::sync::Arc;
+
 use tokio::sync::Mutex;
 
 type TransactionResult<T> = Result<QueryResult<T>, RepositoryError>;
 
-pub trait Transaction<'a>: Repository {
+pub trait Transaction: Repository {
     fn transaction(
-        &'a self,
-    ) -> Pin<Box<dyn Future<Output = Result<BuilderPgTransaction<'a>, RepositoryError>> + 'a + Send>>;
+        &self,
+    ) -> impl Future<Output = Result<BuilderPgTransaction<'_>, RepositoryError>>;
 }
 
 pub struct BuilderPgTransaction<'a> {
@@ -49,12 +50,15 @@ impl<'b> BuilderPgTransaction<'b> {
 
     pub fn insert<T: Table>(&mut self, data: T) -> impl Future<Output = TransactionResult<T>> {
         let transaction = self.transaction.clone();
+
         async move {
             let mut transaction = transaction.lock().await;
             let q_insert = T::query_insert();
             let query = SqlOperations::insert(data, &q_insert);
-            let resp = query.execute(&mut **transaction).await?;
-            Ok(QueryResult::Insert(resp.rows_affected()))
+
+            Ok(QueryResult::Insert(
+                query.execute(&mut **transaction).await?.rows_affected(),
+            ))
         }
     }
 

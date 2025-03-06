@@ -125,17 +125,9 @@ impl std::ops::DerefMut for RepositoryInjection<Postgres> {
     }
 }
 
-impl<'a> Transaction<'a> for RepositoryInjection<Postgres> {
-    fn transaction(
-        &self,
-    ) -> std::pin::Pin<
-        Box<
-            dyn std::future::Future<Output = Result<BuilderPgTransaction<'a>, RepositoryError>>
-                + '_
-                + Send,
-        >,
-    > {
-        Box::pin(async { Ok(BuilderPgTransaction::new(self.0.begin().await?)) })
+impl Transaction for RepositoryInjection<Postgres> {
+    async fn transaction(&self) -> Result<BuilderPgTransaction<'_>, RepositoryError> {
+        Ok(BuilderPgTransaction::new(self.0.begin().await?))
     }
 }
 
