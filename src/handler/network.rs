@@ -2,8 +2,8 @@ use crate::database::transaction::Transaction as _;
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 use super::{
-    entries, instrument, models, HashMap, IsAdministrator, Json, Level, PaginationParams, Path,
-    Query, QueryResult, Repository, RepositoryType, ResponseError, State, StatusCode, Uuid,
+    HashMap, IsAdministrator, Json, Level, PaginationParams, Path, Query, QueryResult, Repository,
+    RepositoryType, ResponseError, State, StatusCode, Uuid, entries, instrument, models,
 };
 
 use entries::{
@@ -61,7 +61,7 @@ pub async fn get(
 pub async fn update(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
-    Query(id): Query<Uuid>,
+    Path(id): Path<Uuid>,
     Json(updater): Json<UpdateNetwork>,
 ) -> Result<QueryResult<Network>, ResponseError> {
     if updater.network.is_some() {

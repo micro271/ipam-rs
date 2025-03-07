@@ -48,53 +48,39 @@ impl<'b> BuilderPgTransaction<'b> {
         Ok(())
     }
 
-    pub fn insert<T: Table>(&mut self, data: T) -> impl Future<Output = TransactionResult<T>> {
-        let transaction = self.transaction.clone();
+    pub async fn insert<T: Table>(&mut self, data: T) -> TransactionResult<T> {
+        let mut transaction = self.transaction.lock().await;
+        let q_insert = T::query_insert();
+        let query = SqlOperations::insert(data, &q_insert);
 
-        async move {
-            let mut transaction = transaction.lock().await;
-            let q_insert = T::query_insert();
-            let query = SqlOperations::insert(data, &q_insert);
-
-            Ok(QueryResult::Insert(
-                query.execute(&mut **transaction).await?.rows_affected(),
-            ))
-        }
+        Ok(QueryResult::Insert(
+            query.execute(&mut **transaction).await?.rows_affected(),
+        ))
     }
 
-    pub fn update<T: Table, U: Updatable, M: MapQuery>(
+    pub async fn update<T: Table, U: Updatable, M: MapQuery>(
         &mut self,
         updater: U,
         condition: M,
-    ) -> impl Future<Output = TransactionResult<T>> {
-        let transaction = self.transaction.clone();
+    ) -> TransactionResult<T> {
+        let mut query = T::query_update();
+        let sql = SqlOperations::update(
+            updater.get_pair().unwrap(),
+            condition.get_pairs(),
+            &mut query,
+        );
 
-        async move {
-            let mut query = T::query_update();
-            let sql = SqlOperations::update(
-                updater.get_pair().unwrap(),
-                condition.get_pairs(),
-                &mut query,
-            );
-
-            let mut transaction = transaction.lock().await;
-            let resp = sql.execute(&mut **transaction).await?;
-            Ok(QueryResult::Update(resp.rows_affected()))
-        }
+        let mut transaction = self.transaction.lock().await;
+        let resp = sql.execute(&mut **transaction).await?;
+        Ok(QueryResult::Update(resp.rows_affected()))
     }
 
-    pub fn delete<T: Table, M: MapQuery>(
-        &mut self,
-        condition: M,
-    ) -> impl Future<Output = TransactionResult<T>> {
-        let transaction = self.transaction.clone();
-        async move {
-            let mut query = T::query_delete();
-            let sql = SqlOperations::delete(condition.get_pairs(), &mut query);
-            let mut transaction = transaction.lock().await;
-            let resp = sql.execute(&mut **transaction).await?;
+    pub async fn delete<T: Table, M: MapQuery>(&mut self, condition: M) -> TransactionResult<T> {
+        let mut query = T::query_delete();
+        let sql = SqlOperations::delete(condition.get_pairs(), &mut query);
+        let mut transaction = self.transaction.lock().await;
+        let resp = sql.execute(&mut **transaction).await?;
 
-            Ok(QueryResult::Delete(resp.rows_affected()))
-        }
+        Ok(QueryResult::Delete(resp.rows_affected()))
     }
 }
