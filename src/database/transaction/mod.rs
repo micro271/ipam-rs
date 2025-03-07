@@ -71,16 +71,19 @@ impl<'b> BuilderPgTransaction<'b> {
         );
 
         let mut transaction = self.transaction.lock().await;
-        let resp = sql.execute(&mut **transaction).await?;
-        Ok(QueryResult::Update(resp.rows_affected()))
+
+        Ok(QueryResult::Update(
+            sql.execute(&mut **transaction).await?.rows_affected(),
+        ))
     }
 
     pub async fn delete<T: Table, M: MapQuery>(&mut self, condition: M) -> TransactionResult<T> {
         let mut query = T::query_delete();
         let sql = SqlOperations::delete(condition.get_pairs(), &mut query);
         let mut transaction = self.transaction.lock().await;
-        let resp = sql.execute(&mut **transaction).await?;
 
-        Ok(QueryResult::Delete(resp.rows_affected()))
+        Ok(QueryResult::Delete(
+            sql.execute(&mut **transaction).await?.rows_affected(),
+        ))
     }
 }

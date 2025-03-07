@@ -22,14 +22,23 @@ impl HostCount {
             })
     }
 
-    pub fn new_with_sub(bits: u8, prefix: u8, sub: u32) -> Option<Self> {
-        2_i32
-            .checked_pow(bits.checked_sub(prefix)? as u32)
-            .and_then(|x| {
-                let tmp = (x > 2).then_some(x - 2).unwrap_or(x);
-                let tmp = (tmp - i32::try_from(sub).ok()?).min(Self::MAX);
-                (tmp >= 0).then_some(Self(tmp))
+    pub fn new_from_bits_with_sub(bits: u8, prefix: u8, sub: u32) -> Option<Self> {
+        (bits > prefix)
+            .then(|| {
+                2u32.pow((bits - prefix) as u32)
+                    .checked_sub(sub)
+                    .map(|x| Self((x as i32).min(Self::MAX)))
             })
+            .flatten()
+    }
+
+    pub fn new_from_ipnet_with_sub(ipnet: IpNet, sub: u32) -> Option<Self> {
+        let bits = ipnet.max_prefix_len();
+        let prefix = ipnet.prefix_len();
+
+        2u32.pow((bits - prefix) as u32)
+            .checked_sub(sub)
+            .map(|x| Self(x.min(Self::MAX as u32) as i32))
     }
 
     pub fn add(self, value: u32) -> Self {
