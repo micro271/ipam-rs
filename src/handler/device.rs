@@ -210,7 +210,7 @@ pub async fn reserved(
 #[instrument(level = Level::INFO)]
 pub async fn unreserved(
     State(state): State<RepositoryType>,
-    Query(ParamsDeviceStrict { ip, network_id }): Query<ParamsDeviceStrict>,
+    Query(condition): Query<ParamsDeviceStrict>,
     _: IsAdministrator,
 ) -> Result<QueryResult<Device>, ResponseError> {
     Ok(state
@@ -219,7 +219,42 @@ pub async fn unreserved(
                 status: Some(Status::Unknown),
                 ..Default::default()
             },
-            Some([("ip", ip.into()), ("network_id", network_id.into())].into()),
+            condition,
         )
         .await?)
+}
+
+#[instrument(level = Level::INFO)]
+pub async fn ping(
+    State(state): State<RepositoryType>,
+    _: IsAdministrator,
+    Query(condition): Query<ParamsDeviceStrict>,
+) -> Result<Ping, ResponseError> {
+    let dev = state.get::<Device>(condition, None, None).await?.remove(0);
+
+    let ping = libipam::services::ipam::ping(condition.ip, 10).await;
+
+    if ping == Ping::Fail && dev.status == Status::Online {
+        state
+            .update::<Device, _>(
+                UpdateDevice {
+                    status: Some(Status::Offline),
+                    ..Default::default()
+                },
+                condition,
+            )
+            .await?;
+    } else if ping == Ping::Pong {
+        state
+            .update::<Device, _>(
+                UpdateDevice {
+                    status: Some(Status::Online),
+                    ..Default::default()
+                },
+                condition,
+            )
+            .await?;
+    }
+
+    Ok(ping)
 }
