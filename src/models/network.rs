@@ -88,9 +88,7 @@ impl From<IpNet> for Network {
 
 impl Network {
     pub fn devices(&self) -> Result<DeviceRange, DeviceRangeError> {
-        let mut aux: DeviceRange = self.network.try_into()?;
-        aux.set_network_id(self.id);
-        Ok(aux)
+        DeviceRange::new_with_uuid(self.network, self.id)
     }
 
     pub fn subnets(&self, prefix: u8) -> Result<SubnetList, SubnettingError> {

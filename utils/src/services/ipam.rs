@@ -57,19 +57,19 @@ impl Iterator for SubnetList {
     type Item = IpNet;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if (self.start + (self.step * self.hosts)) >= self.end {
-            None
-        } else {
-            let resp = IpNet::new(
-                IpAddr::V4(Ipv4Addr::from(self.start + (self.hosts * self.step))),
-                self.prefix,
-            )
-            .ok();
+        ((self.start + (self.step * self.hosts)) <= self.end)
+            .then(|| {
+                let resp = IpNet::new(
+                    IpAddr::V4(Ipv4Addr::from(self.start + (self.hosts * self.step))),
+                    self.prefix,
+                )
+                .ok();
 
-            self.step += 1;
+                self.step += 1;
 
-            resp
-        }
+                resp
+            })
+            .flatten()
     }
 }
 

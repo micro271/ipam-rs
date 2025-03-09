@@ -87,12 +87,24 @@ pub struct DeviceRange {
     start: u32,
     end: u32,
     step: u32,
-    network_id: Uuid,
+    pub network_id: Uuid,
 }
 
 impl DeviceRange {
-    pub fn set_network_id(&mut self, network_id: Uuid) {
-        self.network_id = network_id;
+    pub fn new_with_uuid(network: IpNet, network_id: Uuid) -> Result<Self, DeviceRangeError> {
+        let start = match network.network() {
+            IpAddr::V4(e) => u32::from(e),
+            IpAddr::V6(_) => return Err(DeviceRangeError::InvalidNetwork),
+        };
+
+        let host = 2u32.pow(u32::from(network.max_prefix_len() - network.prefix_len())) - 2;
+
+        Ok(DeviceRange {
+            start,
+            end: start + host,
+            network_id,
+            step: 0,
+        })
     }
 }
 
@@ -100,11 +112,9 @@ impl Iterator for DeviceRange {
     type Item = Device;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.end == self.start + self.step {
-            None
-        } else {
+        (self.end >= self.start + self.step).then(|| {
             self.step += 1;
-            Some(Device {
+            Device {
                 ip: IpAddr::from(Ipv4Addr::from(self.start + self.step)),
                 description: None,
                 label: None,
@@ -114,33 +124,14 @@ impl Iterator for DeviceRange {
                 network_id: self.network_id,
                 username: None,
                 password: None,
-            })
-        }
+            }
+        })
     }
 }
 
 impl ExactSizeIterator for DeviceRange {
     fn len(&self) -> usize {
         (self.start - self.end) as usize
-    }
-}
-
-impl TryFrom<IpNet> for DeviceRange {
-    type Error = DeviceRangeError;
-    fn try_from(value: IpNet) -> Result<Self, Self::Error> {
-        let start = match value.network() {
-            IpAddr::V4(e) => u32::from(e),
-            IpAddr::V6(_) => return Err(DeviceRangeError::InvalidNetwork),
-        };
-
-        let len = 2u32.pow(u32::from(value.max_prefix_len() - value.prefix_len())) - 2;
-
-        Ok(DeviceRange {
-            start,
-            end: start + len,
-            network_id: Uuid::default(),
-            step: 0,
-        })
     }
 }
 
