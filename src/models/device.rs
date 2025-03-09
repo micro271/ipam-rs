@@ -24,7 +24,7 @@ pub struct Device {
 
     pub description: Option<String>,
     pub label: Option<String>,
-    pub room: Option<Uuid>,
+    pub room_name: Option<Uuid>,
     pub mount_point: Option<String>,
     pub status: Status,
     pub network_id: uuid::Uuid,
@@ -73,7 +73,7 @@ impl From<(IpAddr, uuid::Uuid)> for Device {
             ip: value.0,
             description: None,
             label: None,
-            room: None,
+            room_name: None,
             mount_point: None,
             status: Status::default(),
             network_id: value.1,
@@ -112,13 +112,13 @@ impl Iterator for DeviceRange {
     type Item = Device;
 
     fn next(&mut self) -> Option<Self::Item> {
-        (self.end >= self.start + self.step).then(|| {
+        (self.end > self.start + self.step).then(|| {
             self.step += 1;
             Device {
                 ip: IpAddr::from(Ipv4Addr::from(self.start + self.step)),
                 description: None,
                 label: None,
-                room: None,
+                room_name: None,
                 mount_point: None,
                 status: Status::default(),
                 network_id: self.network_id,

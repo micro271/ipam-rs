@@ -61,7 +61,7 @@ pub struct DeviceCreateEntry {
     pub ip: IpAddr,
     pub description: Option<String>,
     pub label: Option<String>,
-    pub room: Option<Uuid>,
+    pub room_name: Option<Uuid>,
     pub mount_point: Option<String>,
     pub network_id: uuid::Uuid,
     pub username: Option<String>,
@@ -73,7 +73,7 @@ impl From<DeviceCreateEntry> for Device {
         Self {
             ip: value.ip,
             description: value.description,
-            room: value.room,
+            room_name: value.room_name,
             label: value.label,
             mount_point: value.mount_point,
             status: Status::default(),

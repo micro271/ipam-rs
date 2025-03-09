@@ -55,13 +55,9 @@ pub async fn create_all_devices(
     let len = devices.len();
     for device in devices {
         if let Err(e) = transaction.insert(device).await {
-            return Err(transaction.rollback().await.map(|()| {
-                ResponseError::builder()
-                    .detail(e.to_string())
-                    .title("Device create error".to_string())
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .build()
-            })?);
+            transaction.rollback().await?;
+
+            return Err(ResponseError::from(e));
         }
     }
     transaction.commit().await?;
