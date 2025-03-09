@@ -16,7 +16,7 @@ use models::network::{Network, To, UpdateNetwork};
 pub async fn create(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
-    Json(network): Json<NetworkCreateEntry>,
+    Json(mut network): Json<NetworkCreateEntry>,
 ) -> Result<QueryResult<Network>, ResponseError> {
     let net = network.network.network();
 
@@ -44,7 +44,7 @@ pub async fn create(
             }
         }
     }
-
+    network.network = ipnet::IpNet::new(net, network.network.prefix_len()).unwrap();
     Ok(state.insert::<Network>(network.into()).await?)
 }
 
