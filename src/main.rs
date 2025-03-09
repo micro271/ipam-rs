@@ -6,13 +6,14 @@ mod services;
 mod trace_layer;
 
 use axum::{
-    http::{header, Method},
+    Router,
+    http::{Method, header},
     routing::{delete, get, patch, post},
-    serve, Router,
+    serve,
 };
 use config::Config;
 use database::RepositoryInjection;
-use handler::{auth, device, location, mount_point, network, room, vlan, MapQuery};
+use handler::{MapQuery, auth, device, location, mount_point, network, room, vlan};
 use std::sync::Arc;
 use tower_http::{
     cors::{Any, CorsLayer},
@@ -77,6 +78,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .patch(device::update)
                 .delete(device::delete),
         )
+        .route("/reserved", patch(device::reserved))
+        .route("/unreserved", patch(device::unreserved))
         .route("/{network_id}", post(device::create_all_devices));
 
     let user = Router::new()

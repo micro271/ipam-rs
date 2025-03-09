@@ -3,7 +3,7 @@ use ipnet::IpNet;
 use macros::FromPgRow;
 use std::net::{IpAddr, Ipv4Addr};
 
-#[derive(Deserialize, Serialize, Debug, Updatable)]
+#[derive(Deserialize, Serialize, Debug, Updatable, Default)]
 pub struct UpdateDevice {
     pub ip: Option<IpAddr>,
     pub description: Option<String>,

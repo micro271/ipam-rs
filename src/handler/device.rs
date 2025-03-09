@@ -1,9 +1,14 @@
+use std::collections::HashMap;
+
 use super::{
-    entries, instrument, IntoResponse, IsAdministrator, Json, Level, PaginationParams, Path, Query,
-    Repository, RepositoryType, ResponseError, State, StatusCode, Uuid,
+    IntoResponse, IsAdministrator, Json, Level, PaginationParams, Path, Query, Repository,
+    RepositoryType, ResponseError, State, StatusCode, Uuid, entries, instrument,
 };
 use crate::{
-    database::{repository::QueryResult, transaction::Transaction},
+    database::{
+        repository::{QueryResult, TypeTable},
+        transaction::Transaction,
+    },
     models::{
         device::{Device, Status, UpdateDevice},
         network::{Network, To},
@@ -167,4 +172,80 @@ pub async fn delete(
     Query(param): Query<ParamsDeviceStrict>,
 ) -> Result<impl IntoResponse, ResponseError> {
     Ok(state.delete::<Device>(param).await?)
+}
+
+#[instrument(level = Level::INFO)]
+pub async fn reserved(
+    State(state): State<RepositoryType>,
+    _: IsAdministrator,
+    Query(ParamsDeviceStrict { ip, network_id }): Query<ParamsDeviceStrict>,
+) -> Result<impl IntoResponse, ResponseError> {
+    let condition: HashMap<&str, TypeTable> =
+        [("ip", ip.into()), ("network_id", network_id.into())].into();
+
+    let dev = state
+        .get::<Device>(Some(condition.clone()), None, None)
+        .await?
+        .pop()
+        .ok_or(
+            ResponseError::builder()
+                .title("Device not found".to_string())
+                .status(StatusCode::NOT_FOUND)
+                .build(),
+        )?;
+
+    if dev.status != Status::Unknown {
+        return Err(ResponseError::builder()
+            .detail("To change the status to reserved, the device should be unknown".to_string())
+            .title("The devices isn't unknown".to_string())
+            .build());
+    }
+
+    Ok(state
+        .update::<Device, _>(
+            UpdateDevice {
+                status: Some(Status::Reserved),
+                ..Default::default()
+            },
+            Some(condition),
+        )
+        .await?)
+}
+
+#[instrument(level = Level::INFO)]
+pub async fn unreserved(
+    State(state): State<RepositoryType>,
+    Query(ParamsDeviceStrict { ip, network_id }): Query<ParamsDeviceStrict>,
+    _: IsAdministrator,
+) -> Result<QueryResult<Device>, ResponseError> {
+    let condition: HashMap<&str, TypeTable> =
+        [("ip", ip.into()), ("network_id", network_id.into())].into();
+
+    let dev = state
+        .get::<Device>(Some(condition.clone()), None, None)
+        .await?
+        .pop()
+        .ok_or(
+            ResponseError::builder()
+                .title("Device not found".to_string())
+                .build(),
+        )?;
+
+    if dev.status != Status::Reserved {
+        return Err(ResponseError::builder()
+            .detail("The device must be reserved to change to unknown".to_string())
+            .title("Device isn't reserved".to_string())
+            .status(StatusCode::BAD_REQUEST)
+            .build());
+    }
+
+    Ok(state
+        .update(
+            UpdateDevice {
+                status: Some(Status::Unknown),
+                ..Default::default()
+            },
+            Some(condition),
+        )
+        .await?)
 }

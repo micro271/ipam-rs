@@ -182,7 +182,7 @@ pub mod error {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TypeTable {
     String(String),
     OptionUuid(Option<Uuid>),
