@@ -13,5 +13,5 @@ jsonwebtoken = {version = "9.3.0"}
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = {version = "1.0.137"}
 sqlx = { version = "0.8.3"}
-time = { version = "0.3.37", features = ["serde"]}
-tokio = { version = "1.43.0", features = ["full"]}
+time = { version = "0.3.37", features = ["serde"] }
+tokio = { version = "1.43.0", features = ["full"] }

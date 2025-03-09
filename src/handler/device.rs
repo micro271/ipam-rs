@@ -18,6 +18,7 @@ use entries::{
     models::DeviceCreateEntry,
     params::{ParamsDevice, ParamsDeviceStrict},
 };
+use libipam::services::ipam::Ping;
 
 #[instrument(level = Level::DEBUG)]
 pub async fn create(
@@ -186,13 +187,7 @@ pub async fn reserved(
     let dev = state
         .get::<Device>(Some(condition.clone()), None, None)
         .await?
-        .pop()
-        .ok_or(
-            ResponseError::builder()
-                .title("Device not found".to_string())
-                .status(StatusCode::NOT_FOUND)
-                .build(),
-        )?;
+        .remove(0);
 
     if dev.status != Status::Unknown {
         return Err(ResponseError::builder()
@@ -218,34 +213,13 @@ pub async fn unreserved(
     Query(ParamsDeviceStrict { ip, network_id }): Query<ParamsDeviceStrict>,
     _: IsAdministrator,
 ) -> Result<QueryResult<Device>, ResponseError> {
-    let condition: HashMap<&str, TypeTable> =
-        [("ip", ip.into()), ("network_id", network_id.into())].into();
-
-    let dev = state
-        .get::<Device>(Some(condition.clone()), None, None)
-        .await?
-        .pop()
-        .ok_or(
-            ResponseError::builder()
-                .title("Device not found".to_string())
-                .build(),
-        )?;
-
-    if dev.status != Status::Reserved {
-        return Err(ResponseError::builder()
-            .detail("The device must be reserved to change to unknown".to_string())
-            .title("Device isn't reserved".to_string())
-            .status(StatusCode::BAD_REQUEST)
-            .build());
-    }
-
     Ok(state
         .update(
             UpdateDevice {
                 status: Some(Status::Unknown),
                 ..Default::default()
             },
-            Some(condition),
+            Some([("ip", ip.into()), ("network_id", network_id.into())].into()),
         )
         .await?)
 }
