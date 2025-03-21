@@ -1,7 +1,7 @@
 use super::PgRow;
 use crate::{
     MapQuery,
-    models::{device::Status, network::To, user::Role},
+    models::{device::Status, network::Target, user::Role},
 };
 use axum::{
     http::StatusCode,
@@ -197,7 +197,7 @@ pub enum TypeTable {
     OptionTime(Option<time::OffsetDateTime>),
     Time(time::OffsetDateTime),
     Bool(bool),
-    To(To),
+    Target(Target),
     Null,
 }
 
@@ -206,7 +206,7 @@ macro_rules! bind_query {
     ($query:expr_2021, $value:expr_2021) => {
         match $value {
             TypeTable::OptionUuid(e) => $query.bind(e),
-            TypeTable::To(e) => $query.bind(e),
+            TypeTable::Target(e) => $query.bind(e),
             TypeTable::Uuid(e) => $query.bind(e),
             TypeTable::String(s) => $query.bind(s),
             TypeTable::OptionString(opt) => $query.bind(opt),
@@ -224,9 +224,9 @@ macro_rules! bind_query {
     };
 }
 
-impl From<To> for TypeTable {
-    fn from(value: To) -> Self {
-        Self::To(value)
+impl From<Target> for TypeTable {
+    fn from(value: Target) -> Self {
+        Self::Target(value)
     }
 }
 

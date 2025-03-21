@@ -13,7 +13,7 @@ use axum::{
 };
 use config::Config;
 use database::RepositoryInjection;
-use handler::{MapQuery, auth, device, location, mount_point, network, room, vlan};
+use handler::{MapQuery, auth, location, mount_point, network, node, room, vlan};
 use std::sync::Arc;
 use tower_http::{
     cors::{Any, CorsLayer},
@@ -70,17 +70,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/", post(network::create).get(network::get))
         .route("/{id}", delete(network::delete).patch(network::update));
 
-    let device = Router::new()
+    let node = Router::new()
         .route(
             "/",
-            post(device::create)
-                .get(device::get)
-                .patch(device::update)
-                .delete(device::delete),
+            post(node::create)
+                .get(node::get)
+                .patch(node::update)
+                .delete(node::delete),
         )
-        .route("/reserved", patch(device::reserved))
-        .route("/unreserved", patch(device::unreserved))
-        .route("/{network_id}", post(device::create_all_devices));
+        .route("/reserved", patch(node::reserved))
+        .route("/unreserved", patch(node::unreserved))
+        .route("/{network_id}", post(node::create_all_devices));
 
     let user = Router::new()
         .route("/", post(auth::create))
@@ -116,7 +116,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let api_v1 = Router::new()
         .nest("/network", network)
-        .nest("/device", device)
+        .nest("/node", node)
         .nest("/user", user)
         .nest("/mount_point", mount_point)
         .nest("/room", room)

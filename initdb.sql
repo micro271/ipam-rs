@@ -1,6 +1,6 @@
 CREATE TYPE STATUS as ENUM ('Reserved', 'Unknown', 'Online', 'Offline');
 CREATE TYPE ROLE AS ENUM ('Admin', 'Operator', 'Guest');
-CREATE TYPE NETWORKTO AS ENUM ('Device', 'Nat');
+CREATE TYPE TARGET AS ENUM ('Node', 'Nat');
 
 CREATE TABLE IF NOT EXISTS vlans (
     id INTEGER,
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS networks (
     description VARCHAR,
     father UUID,
     children INTEGER,
-    use_to NETWORKTO,
+    target TARGET,
     FOREIGN KEY (father) REFERENCES networks(id) ON DELETE CASCADE,
     FOREIGN KEY (vlan) REFERENCES vlans(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS locations (
     FOREIGN KEY (room_name, id_office) REFERENCES room(name, id_office) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS devices (
+CREATE TABLE IF NOT EXISTS nodes (
     ip VARCHAR NOT NULL,
     description VARCHAR,
     label TEXT,

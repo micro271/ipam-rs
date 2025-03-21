@@ -10,12 +10,12 @@ use crate::{
         transaction::Transaction,
     },
     models::{
-        device::{Device, Status, UpdateDevice},
-        network::{Network, To},
+        device::{Node, Status, UpdateNode},
+        network::{Network, Target},
     },
 };
 use entries::{
-    models::DeviceCreateEntry,
+    models::NodeCreateEntry,
     params::{ParamsDevice, ParamsDeviceStrict},
 };
 use libipam::services::ipam::Ping;
@@ -24,9 +24,9 @@ use libipam::services::ipam::Ping;
 pub async fn create(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
-    Json(device): Json<DeviceCreateEntry>,
+    Json(node): Json<NodeCreateEntry>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    Ok(state.insert::<Device>(device.into()).await?)
+    Ok(state.insert::<Node>(node.into()).await?)
 }
 
 #[instrument(level = Level::DEBUG)]
@@ -34,13 +34,13 @@ pub async fn create_all_devices(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
     Path(network_id): Path<Uuid>,
-) -> Result<QueryResult<Device>, ResponseError> {
+) -> Result<QueryResult<Node>, ResponseError> {
     let network = state
         .get::<Network>(Some([("id", network_id.into())].into()), None, None)
         .await?
         .remove(0);
 
-    if network.use_to != To::Device {
+    if network.target != Target::Device {
         return Err(ResponseError::builder()
             .detail("The network is designed for devices".to_string())
             .status(StatusCode::BAD_REQUEST)
@@ -70,7 +70,7 @@ pub async fn update(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
     Query(param): Query<ParamsDeviceStrict>,
-    Json(new): Json<UpdateDevice>,
+    Json(new): Json<UpdateNode>,
 ) -> Result<StatusCode, ResponseError> {
     if new
         .status
@@ -92,13 +92,13 @@ pub async fn update(
             .status(StatusCode::BAD_REQUEST)
             .build());
     } else if new.ip.is_some() || new.network_id.is_some() {
-        let Device {
+        let Node {
             ip,
             network_id,
             status,
             ..
         } = state
-            .get::<Device>(
+            .get::<Node>(
                 Some(
                     [
                         (
@@ -125,14 +125,14 @@ pub async fn update(
         let mut tr = state.transaction().await?;
 
         if let Err(e) = {
-            tr.delete::<Device, _>(Some(
+            tr.delete::<Node, _>(Some(
                 [("network_id", network_id.into()), ("ip", ip.into())].into(),
             ))
             .await?;
 
-            tr.update::<Device, _, _>(new, param).await?;
+            tr.update::<Node, _, _>(new, param).await?;
 
-            tr.insert::<Device>((param.ip, param.network_id).into())
+            tr.insert::<Node>((param.ip, param.network_id).into())
                 .await?;
 
             Ok::<(), ResponseError>(())
@@ -143,7 +143,7 @@ pub async fn update(
         }
     } else {
         Ok(state
-            .update::<Device, _>(new, param)
+            .update::<Node, _>(new, param)
             .await
             .map(|_| StatusCode::OK)?)
     }
@@ -154,8 +154,8 @@ pub async fn get(
     State(state): State<RepositoryType>,
     Query(params): Query<ParamsDevice>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
-) -> Result<QueryResult<Device>, ResponseError> {
-    let mut device = state.get::<Device>(params, limit, offset).await?;
+) -> Result<QueryResult<Node>, ResponseError> {
+    let mut device = state.get::<Node>(params, limit, offset).await?;
 
     device.sort_by_key(|x| x.ip);
 
@@ -168,7 +168,7 @@ pub async fn delete(
     _: IsAdministrator,
     Query(param): Query<ParamsDeviceStrict>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    Ok(state.delete::<Device>(param).await?)
+    Ok(state.delete::<Node>(param).await?)
 }
 
 #[instrument(level = Level::INFO)]
@@ -181,7 +181,7 @@ pub async fn reserved(
         [("ip", ip.into()), ("network_id", network_id.into())].into();
 
     let dev = state
-        .get::<Device>(Some(condition.clone()), None, None)
+        .get::<Node>(Some(condition.clone()), None, None)
         .await?
         .remove(0);
 
@@ -193,8 +193,8 @@ pub async fn reserved(
     }
 
     Ok(state
-        .update::<Device, _>(
-            UpdateDevice {
+        .update::<Node, _>(
+            UpdateNode {
                 status: Some(Status::Reserved),
                 ..Default::default()
             },
@@ -208,10 +208,10 @@ pub async fn unreserved(
     State(state): State<RepositoryType>,
     Query(condition): Query<ParamsDeviceStrict>,
     _: IsAdministrator,
-) -> Result<QueryResult<Device>, ResponseError> {
+) -> Result<QueryResult<Node>, ResponseError> {
     Ok(state
         .update(
-            UpdateDevice {
+            UpdateNode {
                 status: Some(Status::Unknown),
                 ..Default::default()
             },
@@ -226,14 +226,14 @@ pub async fn ping(
     _: IsAdministrator,
     Query(condition): Query<ParamsDeviceStrict>,
 ) -> Result<Ping, ResponseError> {
-    let dev = state.get::<Device>(condition, None, None).await?.remove(0);
+    let dev = state.get::<Node>(condition, None, None).await?.remove(0);
 
-    let ping = libipam::services::ipam::ping(condition.ip, 10).await;
+    let ping = libipam::services::ipam::ping(condition.ip, 50).await;
 
     if ping == Ping::Fail && dev.status == Status::Online {
         state
-            .update::<Device, _>(
-                UpdateDevice {
+            .update::<Node, _>(
+                UpdateNode {
                     status: Some(Status::Offline),
                     ..Default::default()
                 },
@@ -242,8 +242,8 @@ pub async fn ping(
             .await?;
     } else if ping == Ping::Pong {
         state
-            .update::<Device, _>(
-                UpdateDevice {
+            .update::<Node, _>(
+                UpdateNode {
                     status: Some(Status::Online),
                     ..Default::default()
                 },

@@ -10,7 +10,7 @@ use entries::{
     models::NetworkCreateEntry,
     params::{ParamNetwork, Subnet},
 };
-use models::network::{Network, To, UpdateNetwork};
+use models::network::{Network, Target, UpdateNetwork};
 
 #[instrument(level = Level::INFO)]
 pub async fn create(
@@ -113,7 +113,7 @@ pub async fn subnetting(
         .await?
         .remove(0);
 
-    if father.use_to == To::Device {
+    if father.target == Target::Device {
         return Err(ResponseError::builder()
             .detail("The father is to device".to_string())
             .build());

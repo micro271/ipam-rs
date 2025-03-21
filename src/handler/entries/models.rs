@@ -1,9 +1,9 @@
 use super::super::models::{
-    device::{Device, Status},
+    device::{Node, Status},
     network::Network,
     user::User,
 };
-use crate::models::network::To;
+use crate::models::network::Target;
 use ipnet::IpNet;
 use libipam::types::vlan::VlanId;
 use serde::{Deserialize, Serialize};
@@ -35,7 +35,7 @@ pub struct NetworkCreateEntry {
     pub network: IpNet,
     pub description: Option<String>,
     pub vlan: Option<VlanId>,
-    pub use_to: Option<To>,
+    pub target: Option<Target>,
 }
 
 impl From<NetworkCreateEntry> for Network {
@@ -51,13 +51,13 @@ impl From<NetworkCreateEntry> for Network {
             vlan: value.vlan,
             father: None,
             children: 0,
-            use_to: value.use_to.unwrap_or_default(),
+            target: value.target.unwrap_or_default(),
         }
     }
 }
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct DeviceCreateEntry {
+pub struct NodeCreateEntry {
     pub ip: IpAddr,
     pub description: Option<String>,
     pub label: Option<String>,
@@ -68,8 +68,8 @@ pub struct DeviceCreateEntry {
     pub pasword: Option<String>,
 }
 
-impl From<DeviceCreateEntry> for Device {
-    fn from(value: DeviceCreateEntry) -> Self {
+impl From<NodeCreateEntry> for Node {
+    fn from(value: NodeCreateEntry) -> Self {
         Self {
             ip: value.ip,
             description: value.description,

@@ -4,7 +4,7 @@ use macros::FromPgRow;
 use std::net::{IpAddr, Ipv4Addr};
 
 #[derive(Deserialize, Serialize, Debug, Updatable, Default)]
-pub struct UpdateDevice {
+pub struct UpdateNode {
     pub ip: Option<IpAddr>,
     pub description: Option<String>,
     pub status: Option<Status>,
@@ -17,8 +17,8 @@ pub struct UpdateDevice {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, FromPgRow, Table)]
-#[table_name("devices")]
-pub struct Device {
+#[table_name("nodes")]
+pub struct Node {
     #[FromStr]
     pub ip: IpAddr,
 
@@ -32,25 +32,25 @@ pub struct Device {
     pub password: Option<String>,
 }
 
-impl std::cmp::PartialEq for Device {
+impl std::cmp::PartialEq for Node {
     fn eq(&self, other: &Self) -> bool {
         self.ip == other.ip && self.network_id == other.network_id
     }
 }
 
-impl std::cmp::PartialOrd for Device {
+impl std::cmp::PartialOrd for Node {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.ip.partial_cmp(&other.ip)
     }
 }
 
-impl std::cmp::PartialEq<IpAddr> for Device {
+impl std::cmp::PartialEq<IpAddr> for Node {
     fn eq(&self, other: &IpAddr) -> bool {
         self.ip.eq(other)
     }
 }
 
-impl std::cmp::PartialOrd<IpAddr> for Device {
+impl std::cmp::PartialOrd<IpAddr> for Node {
     fn partial_cmp(&self, other: &IpAddr) -> Option<std::cmp::Ordering> {
         self.ip.partial_cmp(other)
     }
@@ -67,9 +67,9 @@ pub enum Status {
     Offline,
 }
 
-impl From<(IpAddr, uuid::Uuid)> for Device {
+impl From<(IpAddr, uuid::Uuid)> for Node {
     fn from(value: (IpAddr, uuid::Uuid)) -> Self {
-        Device {
+        Node {
             ip: value.0,
             description: None,
             label: None,
@@ -109,12 +109,12 @@ impl DeviceRange {
 }
 
 impl Iterator for DeviceRange {
-    type Item = Device;
+    type Item = Node;
 
     fn next(&mut self) -> Option<Self::Item> {
         (self.end > self.start + self.step).then(|| {
             self.step += 1;
-            Device {
+            Node {
                 ip: IpAddr::from(Ipv4Addr::from(self.start + self.step)),
                 description: None,
                 label: None,
