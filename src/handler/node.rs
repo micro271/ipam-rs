@@ -10,8 +10,8 @@ use crate::{
         transaction::Transaction,
     },
     models::{
-        device::{Node, Status, UpdateNode},
         network::{Network, Target},
+        node::{Node, Status, UpdateNode},
     },
 };
 use entries::{

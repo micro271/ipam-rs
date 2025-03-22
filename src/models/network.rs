@@ -1,6 +1,6 @@
 use super::{
     Deserialize, FromPgRow, Serialize, Table, Updatable, Uuid,
-    device::{DeviceRange, DeviceRangeError},
+    node::{DeviceRange, DeviceRangeError},
 };
 use ipnet::IpNet;
 use libipam::{

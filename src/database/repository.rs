@@ -1,7 +1,7 @@
 use super::PgRow;
 use crate::{
     MapQuery,
-    models::{device::Status, network::Target, user::Role},
+    models::{network::Target, node::Status, user::Role},
 };
 use axum::{
     http::StatusCode,

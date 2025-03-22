@@ -65,6 +65,7 @@ pub enum Status {
 
     Online,
     Offline,
+    Reachable,
 }
 
 impl From<(IpAddr, uuid::Uuid)> for Node {

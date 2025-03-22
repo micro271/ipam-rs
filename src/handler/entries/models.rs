@@ -1,6 +1,6 @@
 use super::super::models::{
-    device::{Node, Status},
     network::Network,
+    node::{Node, Status},
     user::User,
 };
 use crate::models::network::Target;
