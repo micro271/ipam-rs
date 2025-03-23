@@ -1,6 +1,6 @@
 use super::{
     Deserialize, FromPgRow, Serialize, Table, Updatable, Uuid,
-    node::{DeviceRange, DeviceRangeError},
+    node::{NodeRange, NodeRangeError},
 };
 use ipnet::IpNet;
 use libipam::{
@@ -33,6 +33,16 @@ pub struct Network {
     pub father: Option<Uuid>,
     pub children: i32,
     pub target: Target,
+    pub status: StatusNetwork,
+}
+
+#[derive(Debug, Clone, Copy, sqlx::Type, Deserialize, Serialize, PartialEq, Default)]
+pub enum StatusNetwork {
+    #[default]
+    Available,
+
+    Reserved,
+    Used,
 }
 
 #[derive(Debug, Clone, Copy, sqlx::Type, Deserialize, Serialize, PartialEq, Default)]
@@ -40,7 +50,7 @@ pub struct Network {
 pub enum Target {
     Nat,
     #[default]
-    Device,
+    Node,
 }
 
 impl std::cmp::PartialEq for Network {
@@ -82,13 +92,14 @@ impl From<IpNet> for Network {
             father: None,
             children: 0,
             target: Target::default(),
+            status: StatusNetwork::default(),
         }
     }
 }
 
 impl Network {
-    pub fn devices(&self) -> Result<DeviceRange, DeviceRangeError> {
-        DeviceRange::new_with_uuid(self.network, self.id)
+    pub fn nodes(&self) -> Result<NodeRange, NodeRangeError> {
+        NodeRange::new_with_uuid(self.network, self.id)
     }
 
     pub fn subnets(&self, prefix: u8) -> Result<SubnetList, SubnettingError> {

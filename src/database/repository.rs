@@ -1,7 +1,11 @@
 use super::PgRow;
 use crate::{
     MapQuery,
-    models::{network::Target, node::Status, user::Role},
+    models::{
+        network::{self, StatusNetwork, Target},
+        node::StatusNode,
+        user::Role,
+    },
 };
 use axum::{
     http::StatusCode,
@@ -188,7 +192,8 @@ pub enum TypeTable {
     OptionUuid(Option<Uuid>),
     Uuid(Uuid),
     OptionString(Option<String>),
-    Status(Status),
+    StatusNode(StatusNode),
+    StatusNetwork(network::StatusNetwork),
     Role(Role),
     OptionVlanId(Option<VlanId>),
     VlanId(VlanId),
@@ -210,7 +215,7 @@ macro_rules! bind_query {
             TypeTable::Uuid(e) => $query.bind(e),
             TypeTable::String(s) => $query.bind(s),
             TypeTable::OptionString(opt) => $query.bind(opt),
-            TypeTable::Status(status) => $query.bind(status),
+            TypeTable::StatusNode(status) => $query.bind(status),
             TypeTable::Role(role) => $query.bind(role),
             TypeTable::OptionVlanId(e) => $query.bind(e),
             TypeTable::Bool(e) => $query.bind(e),
@@ -219,9 +224,16 @@ macro_rules! bind_query {
             TypeTable::VlanId(e) => $query.bind(e),
             TypeTable::HostCount(e) => $query.bind(e),
             TypeTable::I32(e) => $query.bind(e),
+            TypeTable::StatusNetwork(e) => $query.bind(e),
             TypeTable::Null => $query,
         }
     };
+}
+
+impl From<StatusNetwork> for TypeTable {
+    fn from(value: StatusNetwork) -> Self {
+        Self::StatusNetwork(value)
+    }
 }
 
 impl From<Target> for TypeTable {
@@ -314,8 +326,8 @@ impl From<Option<String>> for TypeTable {
     }
 }
 
-impl From<Status> for TypeTable {
-    fn from(value: Status) -> Self {
-        Self::Status(value)
+impl From<StatusNode> for TypeTable {
+    fn from(value: StatusNode) -> Self {
+        Self::StatusNode(value)
     }
 }

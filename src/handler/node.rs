@@ -6,7 +6,7 @@ use crate::{
     database::{repository::QueryResult, transaction::Transaction},
     models::{
         network::{Network, Target},
-        node::{Node, Status, UpdateNode},
+        node::{Node, StatusNode, UpdateNode},
     },
 };
 use entries::{
@@ -35,21 +35,24 @@ pub async fn create_all_devices(
         .await?
         .remove(0);
 
-    if network.target != Target::Device {
+    if network.target != Target::Node {
         return Err(ResponseError::builder()
-            .detail("The network is designed for devices".to_string())
+            .detail("The network is designed for nodes".to_string())
             .status(StatusCode::BAD_REQUEST)
             .build());
     }
 
-    let devices = network
-        .devices()
-        .map_err(|x| ResponseError::builder().detail(x.to_string()).build())?;
+    let nodes = network.nodes().map_err(|x| {
+        ResponseError::builder()
+            .detail(x.to_string())
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .build()
+    })?;
 
     let mut transaction = state.transaction().await?;
-    let len = devices.len();
-    for device in devices {
-        if let Err(e) = transaction.insert(device).await {
+    let len = nodes.len();
+    for node in nodes {
+        if let Err(e) = transaction.insert(node).await {
             transaction.rollback().await?;
 
             return Err(ResponseError::from(e));
@@ -69,7 +72,7 @@ pub async fn update(
 ) -> Result<StatusCode, ResponseError> {
     if new
         .status
-        .is_some_and(|x| [Status::Online, Status::Offline].contains(&x))
+        .is_some_and(|x| [StatusNode::Online, StatusNode::Offline].contains(&x))
     {
         return Err(ResponseError::builder()
             .title("Status not valid".to_string())
@@ -109,7 +112,7 @@ pub async fn update(
             .await?
             .remove(0);
 
-        if status != Status::Unknown {
+        if status != StatusNode::Unknown {
             return Err(ResponseError::builder()
                 .detail("The node to replace isn't unknown".to_string())
                 .status(StatusCode::FORBIDDEN)
@@ -175,11 +178,11 @@ pub async fn ping(
 
     let ping = libipam::services::ipam::ping(condition.ip, 50).await;
 
-    if ping == Ping::Fail && dev.status == Status::Online {
+    if ping == Ping::Fail && dev.status == StatusNode::Online {
         state
             .update::<Node, _>(
                 UpdateNode {
-                    status: Some(Status::Offline),
+                    status: Some(StatusNode::Offline),
                     ..Default::default()
                 },
                 condition,
@@ -189,7 +192,7 @@ pub async fn ping(
         state
             .update::<Node, _>(
                 UpdateNode {
-                    status: Some(Status::Online),
+                    status: Some(StatusNode::Online),
                     ..Default::default()
                 },
                 condition,

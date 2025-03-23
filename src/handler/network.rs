@@ -113,7 +113,7 @@ pub async fn subnetting(
         .await?
         .remove(0);
 
-    if father.target == Target::Device {
+    if father.target == Target::Node {
         return Err(ResponseError::builder()
             .detail("The father is to device".to_string())
             .build());

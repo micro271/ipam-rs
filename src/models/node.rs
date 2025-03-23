@@ -7,7 +7,7 @@ use std::net::{IpAddr, Ipv4Addr};
 pub struct UpdateNode {
     pub ip: Option<IpAddr>,
     pub description: Option<String>,
-    pub status: Option<Status>,
+    pub status: Option<StatusNode>,
     pub network_id: Option<Uuid>,
     pub label: Option<String>,
     pub room: Option<Uuid>,
@@ -22,12 +22,12 @@ pub struct Node {
     #[FromStr]
     pub ip: IpAddr,
 
+    pub network_id: uuid::Uuid,
     pub description: Option<String>,
     pub label: Option<String>,
     pub room_name: Option<Uuid>,
     pub mount_point: Option<String>,
-    pub status: Status,
-    pub network_id: uuid::Uuid,
+    pub status: StatusNode,
     pub username: Option<String>,
     pub password: Option<String>,
 }
@@ -57,7 +57,7 @@ impl std::cmp::PartialOrd<IpAddr> for Node {
 }
 
 #[derive(Debug, Deserialize, Serialize, sqlx::Type, PartialEq, Clone, Copy, Default)]
-pub enum Status {
+pub enum StatusNode {
     Reserved,
 
     #[default]
@@ -76,7 +76,7 @@ impl From<(IpAddr, uuid::Uuid)> for Node {
             label: None,
             room_name: None,
             mount_point: None,
-            status: Status::default(),
+            status: StatusNode::default(),
             network_id: value.1,
             username: None,
             password: None,
@@ -84,23 +84,23 @@ impl From<(IpAddr, uuid::Uuid)> for Node {
     }
 }
 
-pub struct DeviceRange {
+pub struct NodeRange {
     start: u32,
     end: u32,
     step: u32,
     pub network_id: Uuid,
 }
 
-impl DeviceRange {
-    pub fn new_with_uuid(network: IpNet, network_id: Uuid) -> Result<Self, DeviceRangeError> {
+impl NodeRange {
+    pub fn new_with_uuid(network: IpNet, network_id: Uuid) -> Result<Self, NodeRangeError> {
         let start = match network.network() {
             IpAddr::V4(e) => u32::from(e),
-            IpAddr::V6(_) => return Err(DeviceRangeError::InvalidNetwork),
+            IpAddr::V6(_) => return Err(NodeRangeError::InvalidNetwork),
         };
 
         let host = 2u32.pow(u32::from(network.max_prefix_len() - network.prefix_len())) - 2;
 
-        Ok(DeviceRange {
+        Ok(NodeRange {
             start,
             end: start + host,
             network_id,
@@ -109,7 +109,7 @@ impl DeviceRange {
     }
 }
 
-impl Iterator for DeviceRange {
+impl Iterator for NodeRange {
     type Item = Node;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -121,7 +121,7 @@ impl Iterator for DeviceRange {
                 label: None,
                 room_name: None,
                 mount_point: None,
-                status: Status::default(),
+                status: StatusNode::default(),
                 network_id: self.network_id,
                 username: None,
                 password: None,
@@ -130,23 +130,23 @@ impl Iterator for DeviceRange {
     }
 }
 
-impl ExactSizeIterator for DeviceRange {
+impl ExactSizeIterator for NodeRange {
     fn len(&self) -> usize {
         (self.start - self.end) as usize
     }
 }
 
 #[derive(Debug)]
-pub enum DeviceRangeError {
+pub enum NodeRangeError {
     InvalidNetwork,
 }
 
-impl std::fmt::Display for DeviceRangeError {
+impl std::fmt::Display for NodeRangeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            DeviceRangeError::InvalidNetwork => write!(f, "Only support ipv4 network"),
+            NodeRangeError::InvalidNetwork => write!(f, "Only support ipv4 network"),
         }
     }
 }
 
-impl std::error::Error for DeviceRangeError {}
+impl std::error::Error for NodeRangeError {}
