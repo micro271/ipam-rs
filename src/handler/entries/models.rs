@@ -1,12 +1,8 @@
 use super::super::models::{network::Network, node::Node, user::User};
-use crate::models::{
-    network::{Kind, StatusNetwork},
-    node::StatusNode,
-};
+use crate::models::network::{Kind, StatusNetwork};
 use ipnet::IpNet;
 use libipam::types::vlan::VlanId;
 use serde::{Deserialize, Serialize};
-use std::net::IpAddr;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -56,12 +52,12 @@ impl From<NetworkCreateEntry> for Network {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct NodeCreateEntry {
-    pub ip: IpAddr,
+    pub hostname: String,
     pub description: Option<String>,
     pub label: Option<String>,
     pub room_name: Option<Uuid>,
     pub mount_point: Option<String>,
-    pub network_id: uuid::Uuid,
+    pub network_id: Option<uuid::Uuid>,
     pub username: Option<String>,
     pub pasword: Option<String>,
 }
@@ -69,12 +65,12 @@ pub struct NodeCreateEntry {
 impl From<NodeCreateEntry> for Node {
     fn from(value: NodeCreateEntry) -> Self {
         Self {
-            ip: value.ip,
+            id: uuid::Uuid::new_v4(),
+            hostname: value.hostname,
             description: value.description,
             room_name: value.room_name,
             label: value.label,
             mount_point: value.mount_point,
-            status: StatusNode::default(),
             network_id: value.network_id,
             username: value.username,
             password: value.pasword,

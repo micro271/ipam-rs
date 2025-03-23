@@ -1,9 +1,7 @@
 pub mod addresses;
 
-use super::{
-    Deserialize, FromPgRow, Serialize, Table, Updatable, Uuid,
-    node::{NodeRange, NodeRangeError},
-};
+use super::{Deserialize, FromPgRow, Serialize, Table, Updatable, Uuid};
+use addresses::{AddrRange, AddrRangeError};
 use ipnet::IpNet;
 use libipam::{
     services::ipam::{SubnetList, SubnettingError},
@@ -98,8 +96,8 @@ impl From<IpNet> for Network {
 }
 
 impl Network {
-    pub fn nodes(&self) -> Result<NodeRange, NodeRangeError> {
-        NodeRange::new_with_uuid(self.subnet, self.id)
+    pub fn addresses(&self) -> Result<AddrRange, AddrRangeError> {
+        AddrRange::new_with_uuid(self.subnet, self.id)
     }
 
     pub fn subnets(&self, prefix: u8) -> Result<SubnetList, SubnettingError> {
