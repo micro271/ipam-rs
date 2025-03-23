@@ -25,10 +25,10 @@ CREATE TABLE IF NOT EXISTS networks (
 );
 
 CREATE TABLE IF NOT EXISTS addresses (
-    ip TEXT,
+    ip CIDR,
     network_id UUID,
     status STATUS,
-    id_node UUID,
+    node_id UUID,
     PRIMARY KEY (ip, network_id),
     FOREIGN KEY (network_id) REFERENCES networks (id) ON DELETE CASCADE ON UPDATE CASCADE
 );

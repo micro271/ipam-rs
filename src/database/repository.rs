@@ -2,8 +2,7 @@ use super::PgRow;
 use crate::{
     MapQuery,
     models::{
-        network::{self, Kind, StatusNetwork},
-        node::StatusNode,
+        network::{self, Kind, StatusNetwork, addresses::StatusAddr},
         user::Role,
     },
 };
@@ -192,7 +191,7 @@ pub enum TypeTable {
     OptionUuid(Option<Uuid>),
     Uuid(Uuid),
     OptionString(Option<String>),
-    StatusNode(StatusNode),
+    StatusAddr(StatusAddr),
     StatusNetwork(network::StatusNetwork),
     Role(Role),
     OptionVlanId(Option<VlanId>),
@@ -215,7 +214,7 @@ macro_rules! bind_query {
             TypeTable::Uuid(e) => $query.bind(e),
             TypeTable::String(s) => $query.bind(s),
             TypeTable::OptionString(opt) => $query.bind(opt),
-            TypeTable::StatusNode(status) => $query.bind(status),
+            TypeTable::StatusAddr(status) => $query.bind(status),
             TypeTable::Role(role) => $query.bind(role),
             TypeTable::OptionVlanId(e) => $query.bind(e),
             TypeTable::Bool(e) => $query.bind(e),
@@ -326,8 +325,8 @@ impl From<Option<String>> for TypeTable {
     }
 }
 
-impl From<StatusNode> for TypeTable {
-    fn from(value: StatusNode) -> Self {
-        Self::StatusNode(value)
+impl From<StatusAddr> for TypeTable {
+    fn from(value: StatusAddr) -> Self {
+        Self::StatusAddr(value)
     }
 }
