@@ -10,7 +10,7 @@ use entries::{
     models::NetworkCreateEntry,
     params::{ParamNetwork, Subnet},
 };
-use models::network::{Network, Target, UpdateNetwork};
+use models::network::{Network, UpdateNetwork};
 
 #[instrument(level = Level::INFO)]
 pub async fn create(
@@ -18,7 +18,7 @@ pub async fn create(
     _: IsAdministrator,
     Json(mut network): Json<NetworkCreateEntry>,
 ) -> Result<QueryResult<Network>, ResponseError> {
-    let net = network.network.network();
+    let net = network.subnet.network();
 
     match net {
         std::net::IpAddr::V4(ipv4_addr) => {
@@ -44,7 +44,7 @@ pub async fn create(
             }
         }
     }
-    network.network = ipnet::IpNet::new(net, network.network.prefix_len()).unwrap();
+    network.subnet = ipnet::IpNet::new(net, network.subnet.prefix_len()).unwrap();
     Ok(state.insert::<Network>(network.into()).await?)
 }
 
@@ -71,13 +71,13 @@ pub async fn update(
             .remove(0);
 
         if old.children != 0 {
-            tracing::debug!("The network {:?} have subnets", old.network);
+            tracing::debug!("The network {:?} have subnets", old.subnet);
             return Err(ResponseError::builder()
                 .detail("the network have child".into())
                 .status(StatusCode::BAD_REQUEST)
                 .build());
-        } else if old.available != old.free {
-            tracing::debug!("The network {:?} have devices", old.network);
+        } else if (*old.used + *old.free) != *old.free {
+            tracing::debug!("The network {:?} have devices", old.subnet);
             return Err(ResponseError::builder()
                 .detail("the network have devices".into())
                 .status(StatusCode::BAD_REQUEST)
@@ -112,12 +112,6 @@ pub async fn subnetting(
         .get::<Network>(Some([("id", father.into())].into()), None, None)
         .await?
         .remove(0);
-
-    if father.target == Target::Node {
-        return Err(ResponseError::builder()
-            .detail("The father is to device".to_string())
-            .build());
-    }
 
     let networks = father.subnets(prefix).map_err(|x| {
         ResponseError::builder()

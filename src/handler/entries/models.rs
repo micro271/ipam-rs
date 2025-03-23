@@ -1,6 +1,6 @@
 use super::super::models::{network::Network, node::Node, user::User};
 use crate::models::{
-    network::{StatusNetwork, Target},
+    network::{Kind, StatusNetwork},
     node::StatusNode,
 };
 use ipnet::IpNet;
@@ -31,27 +31,25 @@ impl From<UserEntry> for User {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct NetworkCreateEntry {
-    pub network: IpNet,
+    pub subnet: IpNet,
     pub description: Option<String>,
     pub vlan: Option<VlanId>,
-    pub target: Option<Target>,
+    pub kind: Option<Kind>,
 }
 
 impl From<NetworkCreateEntry> for Network {
     fn from(value: NetworkCreateEntry) -> Self {
-        let avl = value.network.into();
         Self {
             id: Uuid::new_v4(),
-            network: value.network,
+            subnet: value.subnet,
             description: value.description,
-            available: avl,
             used: 0.try_into().unwrap(),
-            free: avl,
+            free: value.subnet.into(),
             vlan: value.vlan,
             father: None,
             children: 0,
-            target: value.target.unwrap_or_default(),
             status: StatusNetwork::default(),
+            kind: Kind::default(),
         }
     }
 }

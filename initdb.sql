@@ -1,7 +1,7 @@
 CREATE TYPE STATUS as ENUM ('Reserved', 'Unknown', 'Online', 'Offline');
 CREATE TYPE ROLE AS ENUM ('Admin', 'Operator', 'Guest');
-CREATE TYPE TARGET AS ENUM ('Node', 'Nat');
 CREATE TYPE STATUS_NETWORK AS ENUM ('Available', 'Used', 'Reserved');
+CREATE TYPE KIND_NETWORK AS ENUM ('Network', 'Pool');
 
 CREATE TABLE IF NOT EXISTS vlans (
     id INTEGER,
@@ -11,8 +11,7 @@ CREATE TABLE IF NOT EXISTS vlans (
 
 CREATE TABLE IF NOT EXISTS networks (
     id UUID PRIMARY KEY,
-    network VARCHAR NOT NULL,
-    available INTEGER NOT NULL,
+    subnet CIDR NOT NULL,
     used INTEGER NOT NULL,
     free INTEGER NOT NULL,
     vlan INTEGER,
@@ -20,9 +19,18 @@ CREATE TABLE IF NOT EXISTS networks (
     father UUID,
     children INTEGER,
     status STATUS_NETWORK,
-    target TARGET,
+    kind KIND_NETWORK,
     FOREIGN KEY (father) REFERENCES networks(id) ON DELETE CASCADE,
     FOREIGN KEY (vlan) REFERENCES vlans(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS addresses (
+    ip TEXT,
+    network_id UUID,
+    status STATUS,
+    id_node UUID,
+    PRIMARY KEY (ip, network_id),
+    FOREIGN KEY (network_id) REFERENCES networks (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS mount_point (
@@ -57,17 +65,17 @@ CREATE TABLE IF NOT EXISTS locations (
 );
 
 CREATE TABLE IF NOT EXISTS nodes (
-    ip VARCHAR NOT NULL,
-    description VARCHAR,
+    id UUID,
+    hostname TEXT,
+    description TEXT,
     label TEXT,
     room_name TEXT,
     mount_point TEXT,
-    status STATUS NOT NULL,
-    network_id UUID NOT NULL,
+    network_id UUID,
     username TEXT,
     password TEXT,
-    PRIMARY KEY (ip, network_id),
-    FOREIGN KEY (network_id) REFERENCES networks(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    PRIMARY KEY (id),
+    FOREIGN KEY (network_id) REFERENCES networks(id) ON DELETE SET NULL ON UPDATE CASCADE,
     FOREIGN KEY (label, room_name, mount_point) REFERENCES locations(label, room_name, mount_point) ON DELETE SET NULL ON UPDATE SET NULL
 );
 

@@ -5,7 +5,7 @@ use super::{
 use crate::{
     database::{repository::QueryResult, transaction::Transaction},
     models::{
-        network::{Network, Target},
+        network::{Kind, Network},
         node::{Node, StatusNode, UpdateNode},
     },
 };
@@ -35,9 +35,11 @@ pub async fn create_all_devices(
         .await?
         .remove(0);
 
-    if network.target != Target::Node {
+    if network.kind == Kind::Pool {
         return Err(ResponseError::builder()
-            .detail("The network is designed for nodes".to_string())
+            .detail(
+                "The kind of subnet is not a Network, so we cannot create all nodes because one pool of IPs is for one node".to_string(),
+            )
             .status(StatusCode::BAD_REQUEST)
             .build());
     }
@@ -53,9 +55,10 @@ pub async fn create_all_devices(
     let len = nodes.len();
     for node in nodes {
         if let Err(e) = transaction.insert(node).await {
-            transaction.rollback().await?;
-
-            return Err(ResponseError::from(e));
+            return Err(transaction
+                .rollback()
+                .await
+                .map(|_| ResponseError::from(e))?);
         }
     }
     transaction.commit().await?;

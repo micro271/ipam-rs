@@ -2,7 +2,7 @@ use super::PgRow;
 use crate::{
     MapQuery,
     models::{
-        network::{self, StatusNetwork, Target},
+        network::{self, Kind, StatusNetwork},
         node::StatusNode,
         user::Role,
     },
@@ -202,7 +202,7 @@ pub enum TypeTable {
     OptionTime(Option<time::OffsetDateTime>),
     Time(time::OffsetDateTime),
     Bool(bool),
-    Target(Target),
+    Kind(Kind),
     Null,
 }
 
@@ -211,7 +211,7 @@ macro_rules! bind_query {
     ($query:expr_2021, $value:expr_2021) => {
         match $value {
             TypeTable::OptionUuid(e) => $query.bind(e),
-            TypeTable::Target(e) => $query.bind(e),
+            TypeTable::Kind(e) => $query.bind(e),
             TypeTable::Uuid(e) => $query.bind(e),
             TypeTable::String(s) => $query.bind(s),
             TypeTable::OptionString(opt) => $query.bind(opt),
@@ -236,9 +236,9 @@ impl From<StatusNetwork> for TypeTable {
     }
 }
 
-impl From<Target> for TypeTable {
-    fn from(value: Target) -> Self {
-        Self::Target(value)
+impl From<Kind> for TypeTable {
+    fn from(value: Kind) -> Self {
+        Self::Kind(value)
     }
 }
 
