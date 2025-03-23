@@ -5,7 +5,7 @@ use super::{
 use crate::{
     database::{repository::QueryResult, transaction::Transaction},
     models::{
-        network::{Kind, Network, addresses::Addresses},
+        network::{Kind, Network},
         node::{Node, UpdateNode},
     },
 };

@@ -13,7 +13,7 @@ use axum::{
 };
 use config::Config;
 use database::RepositoryInjection;
-use handler::{MapQuery, auth, location, mount_point, network, node, room, vlan};
+use handler::{MapQuery, addresses, auth, location, mount_point, network, node, room, vlan};
 use std::sync::Arc;
 use tower_http::{
     cors::{Any, CorsLayer},
@@ -70,6 +70,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/", post(network::create).get(network::get))
         .route("/{id}", delete(network::delete).patch(network::update));
 
+    let addrs = Router::new().route(
+        "/",
+        post(addresses::insert)
+            .get(addresses::get)
+            .delete(addresses::delete)
+            .patch(addresses::update),
+    );
+
     let node = Router::new()
         .route(
             "/",
@@ -119,6 +127,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .nest("/mount_point", mount_point)
         .nest("/room", room)
         .nest("/vlan", vlan)
+        .nest("/addrs", addrs)
         .nest("/location", location);
 
     let app = Router::new()

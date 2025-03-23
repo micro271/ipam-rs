@@ -85,3 +85,16 @@ pub struct ParamNetwork {
     pub id: Option<Uuid>,
     pub father: Option<Uuid>,
 }
+
+#[derive(Debug, Default, MapQueryDerive, Deserialize)]
+pub struct ParamAddresse {
+    pub hostname: Option<String>,
+    pub ip: Option<IpNet>,
+    pub network_id: Option<Uuid>,
+}
+
+#[derive(Debug, Default, MapQueryDerive, Deserialize)]
+pub struct ParamAddresseStrict {
+    pub ip: IpNet,
+    pub network_id: Uuid,
+}

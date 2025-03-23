@@ -1,5 +1,8 @@
 use super::super::models::{network::Network, node::Node, user::User};
-use crate::models::network::{Kind, StatusNetwork};
+use crate::models::network::{
+    Kind, StatusNetwork,
+    addresses::{Addresses, StatusAddr},
+};
 use ipnet::IpNet;
 use libipam::types::vlan::VlanId;
 use serde::{Deserialize, Serialize};
@@ -74,6 +77,25 @@ impl From<NodeCreateEntry> for Node {
             network_id: value.network_id,
             username: value.username,
             password: value.pasword,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AddrCrateEntry {
+    pub ip: IpNet,
+    pub network_id: Uuid,
+    pub status: Option<StatusAddr>,
+    pub node_id: Option<Uuid>,
+}
+
+impl From<AddrCrateEntry> for Addresses {
+    fn from(value: AddrCrateEntry) -> Self {
+        Self {
+            ip: value.ip,
+            network_id: value.network_id,
+            status: value.status.unwrap_or_default(),
+            node_id: value.node_id,
         }
     }
 }

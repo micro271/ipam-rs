@@ -1,3 +1,4 @@
+pub mod addresses;
 pub mod auth;
 mod entries;
 pub mod error;

@@ -13,6 +13,14 @@ pub struct Addresses {
     pub node_id: Option<Uuid>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct AddrUpdate {
+    pub ip: Option<IpNet>,
+    pub network_id: Option<Uuid>,
+    pub statos: Option<StatusAddr>,
+    pub node_id: Option<Uuid>,
+}
+
 #[derive(Debug, Deserialize, Serialize, sqlx::Type, PartialEq, Clone, Copy, Default)]
 pub enum StatusAddr {
     Reserved,
