@@ -78,8 +78,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .patch(node::update)
                 .delete(node::delete),
         )
-        .route("/reserved", patch(node::reserved))
-        .route("/unreserved", patch(node::unreserved))
         .route("/{network_id}", post(node::create_all_devices));
 
     let user = Router::new()

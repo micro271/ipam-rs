@@ -8,8 +8,12 @@ RUN cargo build --release
 
 FROM debian:stable-slim
 
+RUN useradd -m ipam
+
+USER ipam
+
 WORKDIR /app
 
-COPY --from=builder /app/target/release/ipam .
+COPY --from=builder --chown=ipam:ipam /app/target/release/ipam .
 
 CMD ["./ipam"]

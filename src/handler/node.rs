@@ -1,14 +1,9 @@
-use std::collections::HashMap;
-
 use super::{
     IntoResponse, IsAdministrator, Json, Level, PaginationParams, Path, Query, Repository,
     RepositoryType, ResponseError, State, StatusCode, Uuid, entries, instrument,
 };
 use crate::{
-    database::{
-        repository::{QueryResult, TypeTable},
-        transaction::Transaction,
-    },
+    database::{repository::QueryResult, transaction::Transaction},
     models::{
         network::{Network, Target},
         node::{Node, Status, UpdateNode},
@@ -70,28 +65,27 @@ pub async fn update(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
     Query(param): Query<ParamsDeviceStrict>,
-    Json(new): Json<UpdateNode>,
+    Json(mut new): Json<UpdateNode>,
 ) -> Result<StatusCode, ResponseError> {
     if new
         .status
-        .is_some_and(|x| x != Status::Unknown && x != Status::Reserved)
+        .is_some_and(|x| [Status::Online, Status::Offline].contains(&x))
     {
         return Err(ResponseError::builder()
-            .detail(format!(
-                "The status cannot change to {:?}",
-                new.status.unwrap()
-            ))
+            .title("Status not valid".to_string())
+            .detail("You cann change the status of a node if the new state is Reachable, Reserved or Unknown".to_string())
+            .status(StatusCode::BAD_REQUEST)
             .build());
     }
 
     if new.ip.is_some_and(|x| x == param.ip)
         && new.network_id.is_some_and(|x| x == param.network_id)
     {
-        return Err(ResponseError::builder()
-            .detail("The new ip and network are the same".to_string())
-            .status(StatusCode::BAD_REQUEST)
-            .build());
-    } else if new.ip.is_some() || new.network_id.is_some() {
+        new.ip = None;
+        new.network_id = None;
+    }
+
+    if new.ip.is_some() || new.network_id.is_some() {
         let Node {
             ip,
             network_id,
@@ -117,7 +111,7 @@ pub async fn update(
 
         if status != Status::Unknown {
             return Err(ResponseError::builder()
-                .detail("The device to replace isn't unknown".to_string())
+                .detail("The node to replace isn't unknown".to_string())
                 .status(StatusCode::FORBIDDEN)
                 .build());
         }
@@ -135,7 +129,7 @@ pub async fn update(
             tr.insert::<Node>((param.ip, param.network_id).into())
                 .await?;
 
-            Ok::<(), ResponseError>(())
+            Ok(())
         } {
             Err(tr.rollback().await.map(|()| e)?)
         } else {
@@ -169,55 +163,6 @@ pub async fn delete(
     Query(param): Query<ParamsDeviceStrict>,
 ) -> Result<impl IntoResponse, ResponseError> {
     Ok(state.delete::<Node>(param).await?)
-}
-
-#[instrument(level = Level::INFO)]
-pub async fn reserved(
-    State(state): State<RepositoryType>,
-    _: IsAdministrator,
-    Query(ParamsDeviceStrict { ip, network_id }): Query<ParamsDeviceStrict>,
-) -> Result<impl IntoResponse, ResponseError> {
-    let condition: HashMap<&str, TypeTable> =
-        [("ip", ip.into()), ("network_id", network_id.into())].into();
-
-    let dev = state
-        .get::<Node>(Some(condition.clone()), None, None)
-        .await?
-        .remove(0);
-
-    if dev.status != Status::Unknown {
-        return Err(ResponseError::builder()
-            .detail("To change the status to reserved, the device should be unknown".to_string())
-            .title("The devices isn't unknown".to_string())
-            .build());
-    }
-
-    Ok(state
-        .update::<Node, _>(
-            UpdateNode {
-                status: Some(Status::Reserved),
-                ..Default::default()
-            },
-            Some(condition),
-        )
-        .await?)
-}
-
-#[instrument(level = Level::INFO)]
-pub async fn unreserved(
-    State(state): State<RepositoryType>,
-    Query(condition): Query<ParamsDeviceStrict>,
-    _: IsAdministrator,
-) -> Result<QueryResult<Node>, ResponseError> {
-    Ok(state
-        .update(
-            UpdateNode {
-                status: Some(Status::Unknown),
-                ..Default::default()
-            },
-            condition,
-        )
-        .await?)
 }
 
 #[instrument(level = Level::INFO)]
