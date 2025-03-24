@@ -70,12 +70,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/", post(network::create).get(network::get))
         .route("/{id}", delete(network::delete).patch(network::update));
 
-    let addrs = Router::new()
-        .route("/", post(addresses::insert).patch(addresses::update))
-        .route(
-            "/{network_id}",
-            get(addresses::get).delete(addresses::delete),
-        );
+    let addrs = Router::new().route("/", post(addresses::insert)).route(
+        "/{network_id}",
+        get(addresses::get)
+            .delete(addresses::delete)
+            .patch(addresses::update),
+    );
 
     let node = Router::new()
         .route(

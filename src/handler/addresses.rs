@@ -1,5 +1,5 @@
 use super::{
-    Json, Query, RepositoryType, State,
+    Json, Path, Query, RepositoryType, State,
     entries::{
         models::AddrCrateEntry,
         params::{PaginationParams, ParamAddrFilter},
@@ -10,7 +10,6 @@ use crate::{
     database::repository::{QueryResult, Repository},
     models::network::addresses::{AddrCondition, AddrUpdate, Addresses},
 };
-use axum::{extract::Path, http::StatusCode};
 use ipnet::IpNet;
 use libipam::response_error::ResponseError;
 use uuid::Uuid;
@@ -28,11 +27,22 @@ pub async fn insert(
 pub async fn update(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
+    Path(network_id): Path<Uuid>,
+    Query(ip): Query<IpNet>,
     Json(updater): Json<AddrUpdate>,
 ) -> Resp {
-    Err(ResponseError::builder()
-        .status(StatusCode::NOT_IMPLEMENTED)
-        .build())
+    let resp = state
+        .update::<Addresses, _>(
+            updater,
+            AddrCondition {
+                ip: Some(ip),
+                network_id: Some(network_id),
+                ..Default::default()
+            },
+        )
+        .await?;
+
+    Ok(resp)
 }
 
 pub async fn get(
@@ -48,7 +58,7 @@ pub async fn get(
     let mut addrs = state
         .get::<Addresses>(
             AddrCondition {
-                network_id,
+                network_id: Some(network_id),
                 ip,
                 node_id,
                 status,
@@ -71,7 +81,7 @@ pub async fn delete(
 ) -> Resp {
     Ok(state
         .delete(AddrCondition {
-            network_id,
+            network_id: Some(network_id),
             ip: Some(ip),
             ..Default::default()
         })
