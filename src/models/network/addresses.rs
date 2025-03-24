@@ -18,11 +18,18 @@ pub struct Addresses {
 pub struct AddrUpdate {
     pub ip: Option<IpNet>,
     pub network_id: Option<Uuid>,
-    pub statos: Option<StatusAddr>,
+    pub status: Option<StatusAddr>,
     pub node_id: Option<Uuid>,
 }
 
-#[derive(Debug, MapQuery, Default)]
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, sqlx::Type)]
+pub enum Action {
+    Add,
+    Replace,
+    Remove,
+}
+
+#[derive(Debug, MapQuery, Default, Clone)]
 pub struct AddrCondition {
     pub ip: Option<IpNet>,
     pub network_id: Option<Uuid>,

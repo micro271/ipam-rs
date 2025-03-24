@@ -13,7 +13,7 @@ use crate::{
     },
     models::network::{
         Kind, Network, NetworkFilter,
-        addresses::{AddrCondition, AddrUpdate, Addresses},
+        addresses::{AddrCondition, AddrUpdate, Addresses, StatusAddr},
     },
 };
 use axum::http::StatusCode;
@@ -78,19 +78,117 @@ pub async fn update(
     Path(network_id): Path<Uuid>,
     Query(ip): Query<IpNet>,
     Json(updater): Json<AddrUpdate>,
-) -> Resp {
-    let resp = state
-        .update::<Addresses, _>(
-            updater,
-            AddrCondition {
-                ip: Some(ip),
-                network_id: Some(network_id),
-                ..Default::default()
-            },
-        )
-        .await?;
+) -> Result<StatusCode, ResponseError> {
+    let mut transaction = state.transaction().await?;
 
-    Ok(resp)
+    if updater.network_id.is_some_and(|x| x != network_id) || updater.ip.is_some_and(|x| x != ip) {
+        if let Some(id) = updater.network_id {
+            let netw = transaction
+                .get::<Network>(
+                    AddrCondition {
+                        network_id: Some(id),
+                        ..Default::default()
+                    },
+                    None,
+                    None,
+                )
+                .await?
+                .take_data()
+                .unwrap()
+                .remove(0);
+
+            if netw.kind != Kind::Network {
+                return Err(ResponseError::builder()
+                    .detail("This network doesn't split into simple IPs.".to_string())
+                    .status(StatusCode::BAD_REQUEST)
+                    .build());
+            }
+
+            if !netw.subnet.contains(&updater.ip.unwrap_or(ip)) {
+                return Err(ResponseError::builder()
+                    .detail(format!(
+                        "The ip {:?} does't belong to network {:?}",
+                        updater.ip.unwrap_or(ip),
+                        netw.subnet,
+                    ))
+                    .build());
+            }
+        }
+
+        let network_id_to_replace = updater.network_id.or(Some(network_id));
+        let ip_to_replace = updater.ip.or(Some(ip));
+
+        let to_replace = AddrCondition {
+            network_id: network_id_to_replace,
+            ip: ip_to_replace,
+            ..Default::default()
+        };
+
+        if let Ok(addr) = transaction
+            .get::<Addresses>(to_replace.clone(), None, None)
+            .await
+        {
+            let addr = addr.take_data().unwrap().remove(0);
+
+            if addr.status != StatusAddr::Unknown {
+                return Err(ResponseError::builder()
+                    .detail("Tht ip address target is not unknown status".to_string())
+                    .status(StatusCode::FORBIDDEN)
+                    .build());
+            }
+
+            if let Err(e) = transaction.delete::<Addresses, _>(to_replace).await {
+                return Err(transaction
+                    .rollback()
+                    .await
+                    .map(|()| ResponseError::from(e))?);
+            }
+        }
+
+        transaction
+            .update::<Addresses, _, _>(
+                updater,
+                AddrCondition {
+                    ip: Some(ip),
+                    network_id: Some(network_id),
+                    ..Default::default()
+                },
+            )
+            .await?;
+
+        let new_address = Addresses {
+            ip,
+            network_id,
+            status: StatusAddr::Unknown,
+            node_id: None,
+        };
+
+        transaction.insert(new_address).await?;
+
+        transaction.commit().await?;
+
+        Ok(StatusCode::OK)
+    } else {
+        let condition = AddrCondition {
+            ip: Some(ip),
+            network_id: Some(network_id),
+            ..Default::default()
+        };
+
+        if let Err(e) = transaction
+            .update::<Addresses, _, _>(updater, condition)
+            .await
+        {
+            return Err(transaction
+                .rollback()
+                .await
+                .map(|()| ResponseError::from(e))?);
+        }
+
+        transaction.commit().await?;
+
+        Ok(StatusCode::OK)
+    }
 }
 
 pub async fn get(

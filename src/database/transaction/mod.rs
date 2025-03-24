@@ -5,7 +5,8 @@ use super::{
     repository::{MapQuery, QueryResult, Repository, error::RepositoryError},
     sql::SqlOperations,
 };
-use sqlx::{Postgres, Transaction as SqlxTransaction};
+use futures::StreamExt;
+use sqlx::{Postgres, Transaction as SqlxTransaction, postgres::PgRow};
 use std::sync::Arc;
 
 use tokio::sync::Mutex;
@@ -45,6 +46,28 @@ impl<'b> BuilderPgTransaction<'b> {
         let transaction = Arc::try_unwrap(tmp.transaction).unwrap().into_inner();
         transaction.rollback().await?;
         Ok(())
+    }
+
+    pub async fn get<T: Table + From<PgRow>>(
+        &mut self,
+        condition: impl MapQuery,
+        limit: Option<i32>,
+        offset: Option<i32>,
+    ) -> TransactionResult<T> {
+        let mut transaction = self.transaction.lock().await;
+        let mut query = format!("SELECT * FROM {}", T::name());
+        let query = SqlOperations::get(&mut query, condition, limit, offset);
+        let mut cursor = query.fetch(&mut **transaction);
+        let mut resp = Vec::new();
+        while let Some(Ok(e)) = cursor.next().await {
+            resp.push(e.into());
+        }
+
+        Ok(QueryResult::Select {
+            data: resp,
+            offset,
+            limit,
+        })
     }
 
     pub async fn insert<T: Table>(&mut self, data: T) -> TransactionResult<T> {

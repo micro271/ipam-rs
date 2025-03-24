@@ -1,6 +1,9 @@
 use super::PgRow;
 use crate::models::{
-    network::{self, Kind, StatusNetwork, addresses::StatusAddr},
+    network::{
+        self, Kind, StatusNetwork,
+        addresses::{Action, StatusAddr},
+    },
     user::Role,
 };
 use axum::{
@@ -110,6 +113,7 @@ pub enum QueryResult<T> {
 }
 
 impl<T> QueryResult<T> {
+    #[allow(dead_code)]
     pub fn get_data(&self) -> Option<&Vec<T>> {
         match self {
             Self::Select { data, .. } => Some(data),
@@ -244,6 +248,7 @@ pub enum TypeTable {
     Time(time::OffsetDateTime),
     Bool(bool),
     Kind(Kind),
+    Action(Action),
     Null,
 }
 
@@ -266,9 +271,16 @@ macro_rules! bind_query {
             TypeTable::HostCount(e) => $query.bind(e),
             TypeTable::I32(e) => $query.bind(e),
             TypeTable::StatusNetwork(e) => $query.bind(e),
+            TypeTable::Action(e) => $query.bind(e),
             TypeTable::Null => $query,
         }
     };
+}
+
+impl From<Action> for TypeTable {
+    fn from(value: Action) -> Self {
+        Self::Action(value)
+    }
 }
 
 impl From<StatusNetwork> for TypeTable {
