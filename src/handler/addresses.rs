@@ -7,9 +7,16 @@ use super::{
     extractors::IsAdministrator,
 };
 use crate::{
-    database::repository::{QueryResult, Repository},
-    models::network::addresses::{AddrCondition, AddrUpdate, Addresses},
+    database::{
+        repository::{QueryResult, Repository},
+        transaction::Transaction,
+    },
+    models::network::{
+        Kind, Network, NetworkFilter,
+        addresses::{AddrCondition, AddrUpdate, Addresses},
+    },
 };
+use axum::http::StatusCode;
 use ipnet::IpNet;
 use libipam::response_error::ResponseError;
 use uuid::Uuid;
@@ -22,6 +29,47 @@ pub async fn insert(
     Json(new_addr): Json<AddrCrateEntry>,
 ) -> Resp {
     Ok(state.insert::<Addresses>(new_addr.into()).await?)
+}
+
+pub async fn create_all_ip_addresses(
+    State(state): State<RepositoryType>,
+    Path(network_id): Path<Uuid>,
+) -> Resp {
+    let network = state
+        .get::<Network>(
+            NetworkFilter {
+                id: Some(network_id),
+                ..Default::default()
+            },
+            None,
+            None,
+        )
+        .await?
+        .take_data()
+        .unwrap()
+        .remove(0);
+
+    if network.kind != Kind::Network {
+        return Err(ResponseError::builder()
+            .title("Cannot create those ips".to_string())
+            .detail("This network is not set up to independent IPs".to_string())
+            .status(StatusCode::FORBIDDEN)
+            .build());
+    }
+
+    let addrs = network.addresses().unwrap();
+    let len = addrs.len();
+    let mut transaction = state.transaction().await?;
+    for addr in addrs {
+        if let Err(e) = transaction.insert(addr).await {
+            transaction.rollback().await?;
+            return Err(ResponseError::from(e));
+        }
+    }
+
+    transaction.commit().await?;
+
+    Ok(QueryResult::Insert(len as u64))
 }
 
 pub async fn update(
@@ -73,7 +121,7 @@ pub async fn get(
         addrs.get_mut_data().unwrap().sort_by_key(|x| x.ip);
     }
 
-    Ok(addrs.into())
+    Ok(addrs)
 }
 
 pub async fn delete(

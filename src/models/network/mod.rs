@@ -7,6 +7,16 @@ use libipam::{
     services::ipam::{SubnetList, SubnettingError},
     types::{host_count::HostCount, vlan::VlanId},
 };
+use macros::MapQuery;
+
+#[derive(Debug, MapQuery, Default)]
+pub struct NetworkFilter {
+    pub id: Option<Uuid>,
+    pub description: Option<String>,
+    pub status: Option<StatusNetwork>,
+    pub father: Option<Uuid>,
+    pub kind: Option<Kind>,
+}
 
 #[derive(Debug, Deserialize, Serialize, Updatable)]
 pub struct UpdateNetwork {

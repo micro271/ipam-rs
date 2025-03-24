@@ -74,18 +74,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "/{network_id}",
         get(addresses::get)
             .delete(addresses::delete)
-            .patch(addresses::update),
+            .patch(addresses::update)
+            .post(addresses::create_all_ip_addresses),
     );
 
-    let node = Router::new()
-        .route(
-            "/",
-            post(node::create)
-                .get(node::get)
-                .patch(node::update)
-                .delete(node::delete),
-        )
-        .route("/{network_id}", post(node::create_all_devices));
+    let node = Router::new().route(
+        "/",
+        post(node::create)
+            .get(node::get)
+            .patch(node::update)
+            .delete(node::delete),
+    );
 
     let user = Router::new()
         .route("/", post(auth::create))

@@ -1,6 +1,6 @@
 use super::{
-    entries, instrument, models, Json, Level, PaginationParams, Query, QueryResult, Repository,
-    RepositoryType, ResponseError, State,
+    Json, Level, PaginationParams, Query, QueryResult, Repository, RepositoryType, ResponseError,
+    State, entries, instrument, models,
 };
 use entries::params::{LocationParam, LocationParamStict};
 use models::location::{Location, LocationUpdate};
@@ -11,7 +11,7 @@ pub async fn get(
     Query(param): Query<LocationParam>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> Result<QueryResult<Location>, ResponseError> {
-    Ok(state.get::<Location>(param, limit, offset).await?.into())
+    Ok(state.get::<Location>(param, limit, offset).await?)
 }
 
 #[instrument(level = Level::DEBUG)]

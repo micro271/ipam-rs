@@ -54,7 +54,7 @@ pub async fn get(
     Query(param): Query<ParamNetwork>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> Result<QueryResult<Network>, ResponseError> {
-    Ok(state.get::<Network>(param, limit, offset).await?.into())
+    Ok(state.get::<Network>(param, limit, offset).await?)
 }
 
 #[instrument(level = Level::DEBUG)]

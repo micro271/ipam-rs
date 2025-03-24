@@ -1,8 +1,9 @@
 use axum::extract::Query;
 
 use super::{
+    Json, Level, RepositoryType, ResponseError, State,
     entries::params::{PaginationParams, ParamRoom, ParamRoomStrict},
-    instrument, Json, Level, RepositoryType, ResponseError, State,
+    instrument,
 };
 use crate::{
     database::repository::{QueryResult, Repository},
@@ -32,7 +33,7 @@ pub async fn get(
     Query(param): Query<ParamRoom>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> Result<QueryResult<Room>, ResponseError> {
-    Ok(state.get(param, limit, offset).await?.into())
+    Ok(state.get(param, limit, offset).await?)
 }
 
 #[instrument(level = Level::INFO)]

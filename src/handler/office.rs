@@ -1,6 +1,6 @@
 use super::{
-    entries, instrument, models, Json, Level, PaginationParams, Path, Query, Repository,
-    RepositoryType, ResponseError, State, Uuid,
+    Json, Level, PaginationParams, Path, Query, Repository, RepositoryType, ResponseError, State,
+    Uuid, entries, instrument, models,
 };
 use crate::database::repository::QueryResult;
 use entries::params::OfficeParam;
@@ -23,7 +23,7 @@ pub async fn get(
     Query(of): Query<OfficeParam>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> Result<QueryResult<Office>, ResponseError> {
-    Ok(state.get::<Office>(of, limit, offset).await?.into())
+    Ok(state.get::<Office>(of, limit, offset).await?)
 }
 
 #[instrument(level = Level::DEBUG)]

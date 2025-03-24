@@ -1,6 +1,6 @@
 use super::{
-    instrument, models, Json, Level, PaginationParams, Path, Query, QueryResult, Repository,
-    RepositoryType, ResponseError, State,
+    Json, Level, PaginationParams, Path, Query, QueryResult, Repository, RepositoryType,
+    ResponseError, State, instrument, models,
 };
 use models::mound_point::{MountPoint, UpdateMountPoint};
 
@@ -12,8 +12,7 @@ pub async fn get(
 ) -> Result<QueryResult<MountPoint>, ResponseError> {
     Ok(state
         .get::<MountPoint>(name.map(|x| [("name", x.into())].into()), limit, offset)
-        .await?
-        .into())
+        .await?)
 }
 
 #[instrument(level = Level::DEBUG)]

@@ -25,50 +25,6 @@ pub async fn create(
 }
 
 #[instrument(level = Level::DEBUG)]
-pub async fn create_all_devices(
-    State(state): State<RepositoryType>,
-    _: IsAdministrator,
-    Path(network_id): Path<Uuid>,
-) -> Result<QueryResult<Node>, ResponseError> {
-    let network = state
-        .get::<Network>(Some([("id", network_id.into())].into()), None, None)
-        .await?
-        .take_data()
-        .unwrap()
-        .remove(0);
-
-    if network.kind == Kind::Pool {
-        return Err(ResponseError::builder()
-            .detail(
-                "The kind of subnet is not a Network, so we cannot create all nodes because one pool of IPs is for one node".to_string(),
-            )
-            .status(StatusCode::BAD_REQUEST)
-            .build());
-    }
-
-    let addrs = network.addresses().map_err(|x| {
-        ResponseError::builder()
-            .detail(x.to_string())
-            .status(StatusCode::INTERNAL_SERVER_ERROR)
-            .build()
-    })?;
-
-    let mut transaction = state.transaction().await?;
-    let len = addrs.len();
-    for addr in addrs {
-        if let Err(e) = transaction.insert(addr).await {
-            return Err(transaction
-                .rollback()
-                .await
-                .map(|_| ResponseError::from(e))?);
-        }
-    }
-    transaction.commit().await?;
-
-    Ok(QueryResult::Insert(len as u64))
-}
-
-#[instrument(level = Level::DEBUG)]
 pub async fn update(
     State(state): State<RepositoryType>,
     _: IsAdministrator,

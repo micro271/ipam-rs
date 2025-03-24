@@ -25,8 +25,7 @@ pub async fn get(
 ) -> Result<QueryResult<Vlan>, ResponseError> {
     Ok(state
         .get::<Vlan>(Some([("id", id.into())].into()), limit, offset)
-        .await?
-        .into())
+        .await?)
 }
 
 #[instrument(level = Level::DEBUG)]
