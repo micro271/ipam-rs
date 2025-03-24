@@ -68,7 +68,7 @@ pub async fn get(
         )
         .await?;
 
-    addrs.sort_by_key(|addr| addr.ip);
+    addrs.get_mut_data().unwrap().sort_by_key(|x| x.ip);
 
     Ok(addrs.into())
 }

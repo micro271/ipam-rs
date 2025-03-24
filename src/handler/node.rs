@@ -33,6 +33,8 @@ pub async fn create_all_devices(
     let network = state
         .get::<Network>(Some([("id", network_id.into())].into()), None, None)
         .await?
+        .take_data()
+        .unwrap()
         .remove(0);
 
     if network.kind == Kind::Pool {

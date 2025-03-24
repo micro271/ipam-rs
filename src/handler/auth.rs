@@ -56,14 +56,16 @@ pub async fn delete(
     let user = state
         .get::<User>(Some([("id", id.into())].into()), None, None)
         .await?
+        .take_data()
+        .unwrap()
         .remove(0);
 
     if user.is_admin() {
         let user = state
             .get::<User>(Some([("role", Role::Admin.into())].into()), None, None)
-            .await
-            .unwrap_or_default();
-        if user.len() <= 1 {
+            .await?;
+
+        if user.length_data().unwrap() <= 1 {
             return Err(ResponseError::builder()
                 .detail("The system requires at least one administrator".to_string())
                 .build());
@@ -86,6 +88,8 @@ pub async fn login(
             None,
         )
         .await?
+        .take_data()
+        .unwrap()
         .remove(0);
 
     if let Some(Ok(e)) =

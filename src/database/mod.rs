@@ -49,7 +49,7 @@ impl Repository for RepositoryInjection<Postgres> {
         column_data: impl MapQuery,
         limit: Option<i32>,
         offset: Option<i32>,
-    ) -> ResultRepository<Vec<T>> {
+    ) -> ResultRepository<QueryResult<T>> {
         tracing::trace!("REPOSITORY");
         tracing::trace!("1 input (column_data) - {:?}", column_data);
         tracing::trace!("2 input (limit) - {:?}", limit);
@@ -68,7 +68,11 @@ impl Repository for RepositoryInjection<Postgres> {
         if vec_resp.is_empty() {
             Err(RepositoryError::RowNotFound)
         } else {
-            Ok(vec_resp)
+            Ok(QueryResult::Select {
+                data: vec_resp,
+                offset,
+                limit,
+            })
         }
     }
 

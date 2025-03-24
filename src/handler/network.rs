@@ -68,6 +68,8 @@ pub async fn update(
         let old = state
             .get::<Network>(Some([("id", id.into())].into()), None, None)
             .await?
+            .take_data()
+            .unwrap()
             .remove(0);
 
         if old.children != 0 {
@@ -111,6 +113,8 @@ pub async fn subnetting(
     let father = state
         .get::<Network>(Some([("id", father.into())].into()), None, None)
         .await?
+        .take_data()
+        .unwrap()
         .remove(0);
 
     let networks = father.subnets(prefix).map_err(|x| {

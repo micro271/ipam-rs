@@ -10,7 +10,6 @@ use axum::{
 use error::RepositoryError;
 use ipnet::IpNet;
 use libipam::types::{host_count::HostCount, vlan::VlanId};
-use serde::Serialize;
 use serde_json::json;
 use std::{collections::HashMap, fmt::Debug, net::IpAddr};
 use uuid::Uuid;
@@ -23,7 +22,7 @@ pub trait Repository {
         primary_key: impl MapQuery,
         limit: Option<i32>,
         offset: Option<i32>,
-    ) -> impl Future<Output = ResultRepository<Vec<T>>>;
+    ) -> impl Future<Output = ResultRepository<QueryResult<T>>>;
 
     fn insert<T: Table>(&self, data: T) -> impl Future<Output = ResultRepository<QueryResult<T>>>;
 
@@ -103,7 +102,41 @@ pub enum QueryResult<T> {
     Insert(u64),
     Update(u64),
     Delete(u64),
-    Select(Vec<T>),
+    Select {
+        data: Vec<T>,
+        offset: Option<i32>,
+        limit: Option<i32>,
+    },
+}
+
+impl<T> QueryResult<T> {
+    pub fn get_data(&self) -> Option<&Vec<T>> {
+        match self {
+            Self::Select { data, .. } => Some(data),
+            _ => None,
+        }
+    }
+
+    pub fn get_mut_data(&mut self) -> Option<&mut Vec<T>> {
+        match self {
+            Self::Select { data, .. } => Some(data),
+            _ => None,
+        }
+    }
+
+    pub fn take_data(self) -> Option<Vec<T>> {
+        match self {
+            Self::Select { data, .. } => Some(data),
+            _ => None,
+        }
+    }
+
+    pub fn length_data(&self) -> Option<usize> {
+        match self {
+            Self::Select { data, .. } => Some(data.len()),
+            _ => None,
+        }
+    }
 }
 
 impl<S> IntoResponse for QueryResult<S>
@@ -136,12 +169,18 @@ where
                 }),
                 StatusCode::OK,
             ),
-            Self::Select(elements) => (
+            Self::Select {
+                data,
+                offset,
+                limit,
+            } => (
                 json!({
                     "status": 200,
-                    "length": elements.len(),
-                    "data": elements,
+                    "length": data.len(),
+                    "data": data,
                     "success": true,
+                    "offset": offset,
+                    "limit": limit,
                 }),
                 StatusCode::OK,
             ),
@@ -153,15 +192,6 @@ where
             .body::<String>(body.to_string())
             .unwrap_or_default()
             .into_response()
-    }
-}
-
-impl<T> From<Vec<T>> for QueryResult<T>
-where
-    T: Table + Serialize,
-{
-    fn from(value: Vec<T>) -> Self {
-        Self::Select(value)
     }
 }
 
