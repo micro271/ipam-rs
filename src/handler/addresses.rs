@@ -2,7 +2,7 @@ use super::{
     Json, Path, Query, RepositoryType, State,
     entries::{
         models::AddrCrateEntry,
-        params::{PaginationParams, ParamAddrFilter},
+        params::{IpNetParamNonOption, PaginationParams, ParamAddrFilter},
     },
     extractors::IsAdministrator,
 };
@@ -13,7 +13,7 @@ use crate::{
     },
     models::network::{
         Kind, Network, NetworkFilter,
-        addresses::{AddrCondition, AddrUpdate, Addresses, StatusAddr},
+        addresses::{Addr, Addresses, StatusAddr},
     },
 };
 use axum::http::StatusCode;
@@ -76,8 +76,8 @@ pub async fn update(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
     Path(network_id): Path<Uuid>,
-    Query(ip): Query<IpNet>,
-    Json(updater): Json<AddrUpdate>,
+    Query(IpNetParamNonOption { ip }): Query<IpNetParamNonOption>,
+    Json(updater): Json<Addr>,
 ) -> Result<StatusCode, ResponseError> {
     let mut transaction = state.transaction().await?;
 
@@ -85,7 +85,7 @@ pub async fn update(
         if let Some(id) = updater.network_id {
             let netw = transaction
                 .get::<Network>(
-                    AddrCondition {
+                    Addr {
                         network_id: Some(id),
                         ..Default::default()
                     },
@@ -118,7 +118,7 @@ pub async fn update(
         let network_id_to_replace = updater.network_id.or(Some(network_id));
         let ip_to_replace = updater.ip.or(Some(ip));
 
-        let to_replace = AddrCondition {
+        let to_replace = Addr {
             network_id: network_id_to_replace,
             ip: ip_to_replace,
             ..Default::default()
@@ -148,7 +148,7 @@ pub async fn update(
         transaction
             .update::<Addresses, _, _>(
                 updater,
-                AddrCondition {
+                Addr {
                     ip: Some(ip),
                     network_id: Some(network_id),
                     ..Default::default()
@@ -169,7 +169,7 @@ pub async fn update(
 
         Ok(StatusCode::OK)
     } else {
-        let condition = AddrCondition {
+        let condition = Addr {
             ip: Some(ip),
             network_id: Some(network_id),
             ..Default::default()
@@ -204,7 +204,7 @@ pub async fn get(
 ) -> Resp {
     let mut addrs = state
         .get::<Addresses>(
-            AddrCondition {
+            Addr {
                 network_id: Some(network_id),
                 ip,
                 node_id,
@@ -229,7 +229,7 @@ pub async fn delete(
     Query(ip): Query<IpNet>,
 ) -> Resp {
     Ok(state
-        .delete(AddrCondition {
+        .delete(Addr {
             network_id: Some(network_id),
             ip: Some(ip),
             ..Default::default()

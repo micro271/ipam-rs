@@ -1,9 +1,6 @@
 use super::PgRow;
 use crate::models::{
-    network::{
-        self, Kind, StatusNetwork,
-        addresses::{Action, StatusAddr},
-    },
+    network::{self, Kind, StatusNetwork, addresses::StatusAddr},
     user::Role,
 };
 use axum::{
@@ -248,7 +245,6 @@ pub enum TypeTable {
     Time(time::OffsetDateTime),
     Bool(bool),
     Kind(Kind),
-    Action(Action),
     Null,
 }
 
@@ -271,16 +267,9 @@ macro_rules! bind_query {
             TypeTable::HostCount(e) => $query.bind(e),
             TypeTable::I32(e) => $query.bind(e),
             TypeTable::StatusNetwork(e) => $query.bind(e),
-            TypeTable::Action(e) => $query.bind(e),
             TypeTable::Null => $query,
         }
     };
-}
-
-impl From<Action> for TypeTable {
-    fn from(value: Action) -> Self {
-        Self::Action(value)
-    }
 }
 
 impl From<StatusNetwork> for TypeTable {

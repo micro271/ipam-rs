@@ -1,4 +1,4 @@
-CREATE TYPE STATUSADDR as ENUM ('Reserved', 'Unknown', 'Online', 'Offline');
+CREATE TYPE STATUSADDR as ENUM ('Reserved', 'Unknown', 'Online', 'Offline', 'Reachable');
 CREATE TYPE ROLE AS ENUM ('Admin', 'Operator', 'Guest');
 CREATE TYPE STATUS_NETWORK AS ENUM ('Available', 'Used', 'Reserved');
 CREATE TYPE KIND_NETWORK AS ENUM ('Network', 'Pool');
@@ -75,7 +75,6 @@ CREATE TABLE IF NOT EXISTS nodes (
     username TEXT,
     password TEXT,
     PRIMARY KEY (id),
-    FOREIGN KEY (network_id) REFERENCES networks(id) ON DELETE SET NULL ON UPDATE CASCADE,
     FOREIGN KEY (label, room_name, mount_point) REFERENCES locations(label, room_name, mount_point) ON DELETE SET NULL ON UPDATE SET NULL
 );
 

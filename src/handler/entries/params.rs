@@ -66,3 +66,8 @@ pub struct ParamAddrFilter {
     pub status: Option<StatusAddr>,
     pub sort: Option<bool>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct IpNetParamNonOption {
+    pub ip: IpNet,
+}

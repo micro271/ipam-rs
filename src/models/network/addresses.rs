@@ -14,23 +14,8 @@ pub struct Addresses {
     pub node_id: Option<Uuid>,
 }
 
-#[derive(Debug, Deserialize, Updatable)]
-pub struct AddrUpdate {
-    pub ip: Option<IpNet>,
-    pub network_id: Option<Uuid>,
-    pub status: Option<StatusAddr>,
-    pub node_id: Option<Uuid>,
-}
-
-#[derive(Debug, Clone, Copy, Deserialize, PartialEq, sqlx::Type)]
-pub enum Action {
-    Add,
-    Replace,
-    Remove,
-}
-
-#[derive(Debug, MapQuery, Default, Clone)]
-pub struct AddrCondition {
+#[derive(Debug, MapQuery, Default, Clone, Updatable, Deserialize)]
+pub struct Addr {
     pub ip: Option<IpNet>,
     pub network_id: Option<Uuid>,
     pub node_id: Option<Uuid>,
