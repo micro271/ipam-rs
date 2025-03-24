@@ -1,4 +1,4 @@
-CREATE TYPE STATUS as ENUM ('Reserved', 'Unknown', 'Online', 'Offline');
+CREATE TYPE STATUSADDR as ENUM ('Reserved', 'Unknown', 'Online', 'Offline');
 CREATE TYPE ROLE AS ENUM ('Admin', 'Operator', 'Guest');
 CREATE TYPE STATUS_NETWORK AS ENUM ('Available', 'Used', 'Reserved');
 CREATE TYPE KIND_NETWORK AS ENUM ('Network', 'Pool');
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS vlans (
 
 CREATE TABLE IF NOT EXISTS networks (
     id UUID PRIMARY KEY,
-    subnet CIDR NOT NULL,
+    subnet TEXT NOT NULL,
     used INTEGER NOT NULL,
     free INTEGER NOT NULL,
     vlan INTEGER,
@@ -25,9 +25,9 @@ CREATE TABLE IF NOT EXISTS networks (
 );
 
 CREATE TABLE IF NOT EXISTS addresses (
-    ip CIDR,
+    ip TEXT,
     network_id UUID,
-    status STATUS,
+    status STATUSADDR,
     node_id UUID,
     PRIMARY KEY (ip, network_id),
     FOREIGN KEY (network_id) REFERENCES networks (id) ON DELETE CASCADE ON UPDATE CASCADE

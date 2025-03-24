@@ -119,14 +119,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let api_v1 = Router::new()
-        .nest("/network", network)
-        .nest("/node", node)
-        .nest("/user", user)
+        .nest("/networks", network)
+        .nest("/nodes", node)
+        .nest("/users", user)
         .nest("/mount_point", mount_point)
-        .nest("/room", room)
-        .nest("/vlan", vlan)
+        .nest("/rooms", room)
+        .nest("/vlans", vlan)
         .nest("/addrs", addrs)
-        .nest("/location", location);
+        .nest("/locations", location);
 
     let app = Router::new()
         .nest("/api/v1", api_v1)

@@ -91,7 +91,7 @@ impl Iterator for AddrRange {
 
 impl ExactSizeIterator for AddrRange {
     fn len(&self) -> usize {
-        (self.start - self.end) as usize
+        (self.end - self.start) as usize
     }
 }
 

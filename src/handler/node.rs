@@ -40,7 +40,7 @@ pub async fn get(
     Query(params): Query<ParamsDevice>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> Result<QueryResult<Node>, ResponseError> {
-    Ok(state.get::<Node>(params, limit, offset).await?.into())
+    Ok(state.get::<Node>(params, limit, offset).await?)
 }
 
 #[instrument(level = Level::INFO)]

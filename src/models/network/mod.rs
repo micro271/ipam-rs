@@ -25,7 +25,6 @@ pub struct UpdateNetwork {
     pub vlan: Option<VlanId>,
 }
 
-#[allow(clippy::struct_field_names)]
 #[derive(Debug, Deserialize, Serialize, Clone, Table, FromPgRow)]
 #[table_name("networks")]
 pub struct Network {
@@ -45,6 +44,7 @@ pub struct Network {
 }
 
 #[derive(Debug, Clone, Copy, sqlx::Type, Deserialize, Serialize, PartialEq, Default)]
+#[sqlx(type_name = "KIND_NETWORK")]
 pub enum Kind {
     Pool,
 
@@ -53,6 +53,7 @@ pub enum Kind {
 }
 
 #[derive(Debug, Clone, Copy, sqlx::Type, Deserialize, Serialize, PartialEq, Default)]
+#[sqlx(type_name = "STATUS_NETWORK")]
 pub enum StatusNetwork {
     #[default]
     Available,
