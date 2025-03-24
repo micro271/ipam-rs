@@ -1,19 +1,12 @@
 use super::{
     IntoResponse, IsAdministrator, Json, Level, PaginationParams, Path, Query, Repository,
-    RepositoryType, ResponseError, State, StatusCode, Uuid, entries, instrument,
+    RepositoryType, ResponseError, State, Uuid, entries, instrument,
 };
 use crate::{
-    database::{repository::QueryResult, transaction::Transaction},
-    models::{
-        network::{Kind, Network},
-        node::{Node, UpdateNode},
-    },
+    database::repository::QueryResult,
+    models::node::{Node, NodeFilter, UpdateNode},
 };
-use entries::{
-    models::NodeCreateEntry,
-    params::{ParamsDevice, ParamsDeviceStrict},
-};
-use libipam::services::ipam::Ping;
+use entries::models::NodeCreateEntry;
 
 #[instrument(level = Level::DEBUG)]
 pub async fn create(
@@ -28,16 +21,24 @@ pub async fn create(
 pub async fn update(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
-    Query(param): Query<ParamsDeviceStrict>,
+    Path(id): Path<Uuid>,
     Json(new): Json<UpdateNode>,
-) -> Result<StatusCode, ResponseError> {
-    todo!()
+) -> Result<QueryResult<Node>, ResponseError> {
+    Ok(state
+        .update::<Node, _>(
+            new,
+            NodeFilter {
+                id: Some(id),
+                ..Default::default()
+            },
+        )
+        .await?)
 }
 
 #[instrument(level = Level::DEBUG)]
 pub async fn get(
     State(state): State<RepositoryType>,
-    Query(params): Query<ParamsDevice>,
+    Query(params): Query<NodeFilter>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> Result<QueryResult<Node>, ResponseError> {
     Ok(state.get::<Node>(params, limit, offset).await?)
@@ -47,16 +48,12 @@ pub async fn get(
 pub async fn delete(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
-    Query(param): Query<ParamsDeviceStrict>,
+    Path(id): Path<Uuid>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    Ok(state.delete::<Node>(param).await?)
-}
-
-#[instrument(level = Level::INFO)]
-pub async fn ping(
-    State(state): State<RepositoryType>,
-    _: IsAdministrator,
-    Query(condition): Query<ParamsDeviceStrict>,
-) -> Result<Ping, ResponseError> {
-    todo!()
+    Ok(state
+        .delete::<Node>(NodeFilter {
+            id: Some(id),
+            ..Default::default()
+        })
+        .await?)
 }

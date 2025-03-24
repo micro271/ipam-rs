@@ -74,7 +74,6 @@ impl From<NodeCreateEntry> for Node {
             room_name: value.room_name,
             label: value.label,
             mount_point: value.mount_point,
-            network_id: value.network_id,
             username: value.username,
             password: value.pasword,
         }

@@ -1,7 +1,7 @@
 use ipnet::IpNet;
 use macros::MapQuery as MapQueryDerive;
 use serde::Deserialize;
-use std::{fmt::Debug, net::IpAddr};
+use std::fmt::Debug;
 use uuid::Uuid;
 
 use crate::models::network::addresses::StatusAddr;
@@ -16,18 +16,6 @@ pub struct ParamRoomStrict {
 pub struct ParamRoom {
     name: Option<String>,
     address: Option<String>,
-}
-
-#[derive(Debug, Deserialize, MapQueryDerive)]
-pub struct ParamsDevice {
-    pub ip: Option<IpAddr>,
-    pub network_id: Option<uuid::Uuid>,
-}
-
-#[derive(Debug, Deserialize, MapQueryDerive, Copy, Clone)]
-pub struct ParamsDeviceStrict {
-    pub ip: IpAddr,
-    pub network_id: uuid::Uuid,
 }
 
 #[derive(Deserialize, Debug)]

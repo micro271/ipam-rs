@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS networks (
     children INTEGER,
     status STATUS_NETWORK,
     kind KIND_NETWORK,
+    node UUID,
     FOREIGN KEY (father) REFERENCES networks(id) ON DELETE CASCADE,
     FOREIGN KEY (vlan) REFERENCES vlans(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -71,7 +72,6 @@ CREATE TABLE IF NOT EXISTS nodes (
     label TEXT,
     room_name TEXT,
     mount_point TEXT,
-    network_id UUID,
     username TEXT,
     password TEXT,
     PRIMARY KEY (id),
