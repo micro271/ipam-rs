@@ -76,4 +76,5 @@ pub struct ParamAddrFilter {
     pub ip: Option<IpNet>,
     pub node_id: Option<Uuid>,
     pub status: Option<StatusAddr>,
+    pub sort: Option<bool>,
 }

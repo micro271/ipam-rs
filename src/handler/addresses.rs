@@ -53,6 +53,7 @@ pub async fn get(
         ip,
         node_id,
         status,
+        sort,
     }): Query<ParamAddrFilter>,
 ) -> Resp {
     let mut addrs = state
@@ -68,7 +69,9 @@ pub async fn get(
         )
         .await?;
 
-    addrs.get_mut_data().unwrap().sort_by_key(|x| x.ip);
+    if let Some(true) = sort {
+        addrs.get_mut_data().unwrap().sort_by_key(|x| x.ip);
+    }
 
     Ok(addrs.into())
 }
