@@ -1,5 +1,6 @@
 use super::{Deserialize, FromPgRow, Serialize, Table};
 use ipnet::IpNet;
+use macros::MapQuery;
 use std::net::{IpAddr, Ipv4Addr};
 use uuid::Uuid;
 
@@ -19,6 +20,14 @@ pub struct AddrUpdate {
     pub network_id: Option<Uuid>,
     pub statos: Option<StatusAddr>,
     pub node_id: Option<Uuid>,
+}
+
+#[derive(Debug, MapQuery, Default)]
+pub struct AddrCondition {
+    pub ip: Option<IpNet>,
+    pub network_id: Uuid,
+    pub node_id: Option<Uuid>,
+    pub status: Option<StatusAddr>,
 }
 
 #[derive(Debug, Deserialize, Serialize, sqlx::Type, PartialEq, Clone, Copy, Default)]

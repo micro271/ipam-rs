@@ -2,10 +2,10 @@ pub mod repository;
 pub mod sql;
 pub mod transaction;
 
-use crate::MapQuery;
 use futures::stream::StreamExt;
 use repository::{
-    QueryResult, Repository, ResultRepository, Table, TypeTable, Updatable, error::RepositoryError,
+    MapQuery, QueryResult, Repository, ResultRepository, Table, TypeTable, Updatable,
+    error::RepositoryError,
 };
 use sql::SqlOperations;
 use sqlx::{

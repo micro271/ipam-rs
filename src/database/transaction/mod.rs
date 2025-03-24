@@ -1,9 +1,8 @@
 pub mod error;
-use crate::handler::MapQuery;
 
 use super::{
     Table, Updatable,
-    repository::{QueryResult, Repository, error::RepositoryError},
+    repository::{MapQuery, QueryResult, Repository, error::RepositoryError},
     sql::SqlOperations,
 };
 use sqlx::{Postgres, Transaction as SqlxTransaction};

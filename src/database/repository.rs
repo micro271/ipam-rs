@@ -1,10 +1,7 @@
 use super::PgRow;
-use crate::{
-    MapQuery,
-    models::{
-        network::{self, Kind, StatusNetwork, addresses::StatusAddr},
-        user::Role,
-    },
+use crate::models::{
+    network::{self, Kind, StatusNetwork, addresses::StatusAddr},
+    user::Role,
 };
 use axum::{
     http::StatusCode,
@@ -40,6 +37,21 @@ pub trait Repository {
         &self,
         condition: impl MapQuery,
     ) -> impl Future<Output = ResultRepository<QueryResult<T>>>;
+}
+
+pub trait MapQuery: Debug + Send + Sync {
+    fn get_pairs(
+        self,
+    ) -> Option<std::collections::HashMap<&'static str, crate::database::repository::TypeTable>>;
+}
+
+impl MapQuery for Option<HashMap<&'static str, TypeTable>> {
+    fn get_pairs(
+        self,
+    ) -> Option<std::collections::HashMap<&'static str, crate::database::repository::TypeTable>>
+    {
+        self
+    }
 }
 
 pub trait Table: Send + Sync + Debug {

@@ -1,25 +1,10 @@
 use ipnet::IpNet;
 use macros::MapQuery as MapQueryDerive;
 use serde::Deserialize;
-use std::{collections::HashMap, fmt::Debug, net::IpAddr};
+use std::{fmt::Debug, net::IpAddr};
 use uuid::Uuid;
 
-use crate::database::repository::TypeTable;
-
-pub trait MapQuery: Debug + Send + Sync {
-    fn get_pairs(
-        self,
-    ) -> Option<std::collections::HashMap<&'static str, crate::database::repository::TypeTable>>;
-}
-
-impl MapQuery for Option<HashMap<&'static str, TypeTable>> {
-    fn get_pairs(
-        self,
-    ) -> Option<std::collections::HashMap<&'static str, crate::database::repository::TypeTable>>
-    {
-        self
-    }
-}
+use crate::models::network::addresses::StatusAddr;
 
 #[derive(Debug, Deserialize, MapQueryDerive)]
 pub struct ParamRoomStrict {
@@ -87,14 +72,8 @@ pub struct ParamNetwork {
 }
 
 #[derive(Debug, Default, MapQueryDerive, Deserialize)]
-pub struct ParamAddresse {
-    pub hostname: Option<String>,
+pub struct ParamAddrFilter {
     pub ip: Option<IpNet>,
-    pub network_id: Option<Uuid>,
-}
-
-#[derive(Debug, Default, MapQueryDerive, Deserialize)]
-pub struct ParamAddresseStrict {
-    pub ip: IpNet,
-    pub network_id: Uuid,
+    pub node_id: Option<Uuid>,
+    pub status: Option<StatusAddr>,
 }

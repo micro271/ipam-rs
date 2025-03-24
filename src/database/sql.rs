@@ -1,6 +1,6 @@
-use super::repository::{Table, TypeTable};
-use crate::{bind_query, MapQuery};
-use sqlx::{postgres::PgArguments, query::Query, Postgres};
+use super::repository::{MapQuery, Table, TypeTable};
+use crate::bind_query;
+use sqlx::{Postgres, postgres::PgArguments, query::Query};
 use std::collections::HashMap;
 
 pub struct SqlOperations;
