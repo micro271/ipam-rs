@@ -2,6 +2,7 @@ mod config;
 mod database;
 mod handler;
 mod models;
+mod response;
 mod services;
 mod trace_layer;
 

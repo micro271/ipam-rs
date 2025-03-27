@@ -4,14 +4,15 @@ use crate::models::{
     user::Role,
 };
 use axum::{
-    http::StatusCode,
+    http::{HeaderMap, HeaderName, StatusCode, response},
     response::{IntoResponse, Response},
 };
 use error::RepositoryError;
 use ipnet::IpNet;
 use libipam::types::{host_count::HostCount, vlan::VlanId};
-use serde_json::json;
-use std::{collections::HashMap, fmt::Debug, net::IpAddr};
+use serde::{Serialize, de::DeserializeOwned};
+use serde_json::{Value, json};
+use std::{collections::HashMap, fmt::Debug, net::IpAddr, str::FromStr};
 use uuid::Uuid;
 
 pub type ResultRepository<T> = Result<T, RepositoryError>;
