@@ -55,7 +55,7 @@ impl Repository for RepositoryInjection<Postgres> {
         tracing::trace!("2 input (limit) - {:?}", limit);
         tracing::trace!("3 input (offset) - {:?}", offset);
 
-        let mut query = format!("SELECT * FROM {}", T::name());
+        let mut query = T::query_select();
         let mut vec_resp = Vec::new();
         let mut query = SqlOperations::get(&mut query, column_data, limit, offset).fetch(&self.0);
 

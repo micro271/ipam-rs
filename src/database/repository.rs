@@ -4,15 +4,14 @@ use crate::models::{
     user::Role,
 };
 use axum::{
-    http::{HeaderMap, HeaderName, StatusCode, response},
+    http::StatusCode,
     response::{IntoResponse, Response},
 };
 use error::RepositoryError;
 use ipnet::IpNet;
 use libipam::types::{host_count::HostCount, vlan::VlanId};
-use serde::{Serialize, de::DeserializeOwned};
-use serde_json::{Value, json};
-use std::{collections::HashMap, fmt::Debug, net::IpAddr, str::FromStr};
+use serde_json::json;
+use std::{collections::HashMap, fmt::Debug, net::IpAddr};
 use uuid::Uuid;
 
 pub type ResultRepository<T> = Result<T, RepositoryError>;
@@ -91,6 +90,10 @@ pub trait Table: Send + Sync + Debug {
         Self: Table,
     {
         format!("DELETE FROM {}", Self::name())
+    }
+
+    fn query_select() -> String {
+        format!("SELECT * FROM {}", Self::name())
     }
 }
 

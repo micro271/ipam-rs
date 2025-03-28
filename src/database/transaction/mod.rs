@@ -55,7 +55,7 @@ impl<'b> BuilderPgTransaction<'b> {
         offset: Option<i32>,
     ) -> TransactionResult<T> {
         let mut transaction = self.transaction.lock().await;
-        let mut query = format!("SELECT * FROM {}", T::name());
+        let mut query = T::query_select();
         let query = SqlOperations::get(&mut query, condition, limit, offset);
         let mut cursor = query.fetch(&mut **transaction);
         let mut resp = Vec::new();
