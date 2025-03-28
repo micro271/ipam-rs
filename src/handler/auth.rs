@@ -1,9 +1,12 @@
 use super::{
-    HashMap, IntoResponse, IsAdministrator, Json, Level, Path, Repository, RepositoryType,
-    ResponseError, Role, State, StatusCode, Uri, Uuid, entries, entries::models::UserEntry,
-    instrument, models,
+    HashMap, IsAdministrator, Json, Level, Path, Repository, RepositoryType, ResponseError, Role,
+    State, StatusCode, Uri, Uuid, entries, entries::models::UserEntry, instrument, models,
 };
-use crate::{database::repository::QueryResult, models::user::User, services::Claims};
+use crate::{
+    models::{network::addresses::Addresses, user::User},
+    response::ResponseQuery,
+    services::Claims,
+};
 use axum::{extract::Request, middleware::Next, response::Response};
 use cookie::Cookie;
 use libipam::{
@@ -11,6 +14,7 @@ use libipam::{
     services::authentication::{self, create_token, encrypt, verify_passwd},
 };
 use models::user::UpdateUser;
+use serde_json::{Value, json};
 
 #[instrument(level = Level::DEBUG)]
 pub async fn create(
@@ -18,7 +22,7 @@ pub async fn create(
     uri: Uri,
     _: IsAdministrator,
     Json(mut user): Json<UserEntry>,
-) -> Result<impl IntoResponse, ResponseError> {
+) -> Result<ResponseQuery<(), Value>, ResponseError> {
     user.password = tokio::task::spawn_blocking(move || {
         encrypt(user.password).map_err(|_| {
             ResponseError::builder()
@@ -35,29 +39,34 @@ pub async fn create(
             .build()
     })??;
 
-    Ok(state.insert(User::from(user)).await?)
+    Ok(state.insert(User::from(user)).await?.into())
 }
 #[instrument(level = Level::INFO)]
 pub async fn update(
     State(state): State<RepositoryType>,
     Path(id): Path<Uuid>,
     Json(updater): Json<UpdateUser>,
-) -> Result<QueryResult<User>, ResponseError> {
-    Ok(state
+) -> Result<ResponseQuery<Addresses, Value>, ResponseError> {
+    let update = state
         .update::<User, _>(updater, Some(HashMap::from([("id", id.into())])))
-        .await?)
+        .await?;
+
+    Ok(ResponseQuery::new(
+        None,
+        Some(json!(update)),
+        None,
+        StatusCode::OK,
+    ))
 }
 
 #[instrument(level = Level::DEBUG)]
 pub async fn delete(
     State(state): State<RepositoryType>,
     Path(id): Path<Uuid>,
-) -> Result<QueryResult<User>, ResponseError> {
+) -> Result<ResponseQuery<Addresses, Value>, ResponseError> {
     let user = state
         .get::<User>(Some([("id", id.into())].into()), None, None)
         .await?
-        .take_data()
-        .unwrap()
         .remove(0);
 
     if user.is_admin() {
@@ -65,14 +74,22 @@ pub async fn delete(
             .get::<User>(Some([("role", Role::Admin.into())].into()), None, None)
             .await?;
 
-        if user.length_data().unwrap() <= 1 {
+        if user.len() <= 1 {
             return Err(ResponseError::builder()
                 .detail("The system requires at least one administrator".to_string())
                 .build());
         }
     }
+    let resp = state
+        .delete::<Addresses>(Some([("id", id.into())].into()))
+        .await?;
 
-    Ok(state.delete(Some([("id", id.into())].into())).await?)
+    Ok(ResponseQuery::new(
+        None,
+        Some(json!(resp)),
+        None,
+        StatusCode::OK,
+    ))
 }
 
 #[instrument(level = Level::INFO)]
@@ -88,8 +105,6 @@ pub async fn login(
             None,
         )
         .await?
-        .take_data()
-        .unwrap()
         .remove(0);
 
     if let Some(Ok(e)) =

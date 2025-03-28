@@ -32,7 +32,7 @@ impl RepositoryInjection<Postgres> {
 }
 
 impl Repository for RepositoryInjection<Postgres> {
-    async fn insert<T: Table>(&self, data: T) -> ResultRepository<QueryResult<T>> {
+    async fn insert<T: Table>(&self, data: T) -> ResultRepository<QueryResult> {
         tracing::trace!("REPOSITORY");
         tracing::trace!("1 input (data) - {:?}", data);
 
@@ -41,7 +41,7 @@ impl Repository for RepositoryInjection<Postgres> {
 
         tracing::debug!("sql query result - {:?}", res);
 
-        Ok(QueryResult::Insert(res.rows_affected()))
+        Ok(res.into())
     }
 
     async fn get<T: Table + From<PgRow>>(
@@ -49,7 +49,7 @@ impl Repository for RepositoryInjection<Postgres> {
         column_data: impl MapQuery,
         limit: Option<i32>,
         offset: Option<i32>,
-    ) -> ResultRepository<QueryResult<T>> {
+    ) -> ResultRepository<Vec<T>> {
         tracing::trace!("REPOSITORY");
         tracing::trace!("1 input (column_data) - {:?}", column_data);
         tracing::trace!("2 input (limit) - {:?}", limit);
@@ -68,11 +68,7 @@ impl Repository for RepositoryInjection<Postgres> {
         if vec_resp.is_empty() {
             Err(RepositoryError::RowNotFound)
         } else {
-            Ok(QueryResult::Select {
-                data: vec_resp,
-                offset,
-                limit,
-            })
+            Ok(vec_resp)
         }
     }
 
@@ -80,7 +76,7 @@ impl Repository for RepositoryInjection<Postgres> {
         &self,
         updater: U,
         condition: impl MapQuery,
-    ) -> ResultRepository<QueryResult<T>> {
+    ) -> ResultRepository<QueryResult> {
         tracing::trace!("REPOSITORY");
         tracing::trace!("1 input (updater) - {:?}", updater);
         tracing::trace!("2 input (condition) - {:?}", condition);
@@ -97,10 +93,10 @@ impl Repository for RepositoryInjection<Postgres> {
 
         tracing::debug!("sql query result - {:?}", result);
 
-        Ok(QueryResult::Update(result.rows_affected()))
+        Ok(result.into())
     }
 
-    async fn delete<T: Table>(&self, condition: impl MapQuery) -> ResultRepository<QueryResult<T>> {
+    async fn delete<T: Table>(&self, condition: impl MapQuery) -> ResultRepository<QueryResult> {
         tracing::trace!("REPOSITORY");
         tracing::trace!("1 input (condition) - {:?}", condition);
 
@@ -112,7 +108,7 @@ impl Repository for RepositoryInjection<Postgres> {
 
         tracing::debug!("sql operation result - {:?}", res);
 
-        Ok(QueryResult::Delete(res.rows_affected()))
+        Ok(res.into())
     }
 }
 

@@ -1,5 +1,5 @@
 use super::{
-    Json, Path, Query, RepositoryType, State,
+    Json, Path, Query, RepositoryType, ResponseDefault, State,
     entries::{
         models::AddrCrateEntry,
         params::{IpNetParamNonOption, PaginationParams, ParamAddrFilter},
@@ -7,34 +7,31 @@ use super::{
     extractors::IsAdministrator,
 };
 use crate::{
-    database::{
-        repository::{QueryResult, Repository},
-        transaction::Transaction,
-    },
+    database::{repository::Repository, transaction::Transaction},
     models::network::{
         Kind, Network, NetworkFilter,
         addresses::{Addr, Addresses, StatusAddr},
     },
+    response::ResponseQuery,
 };
 use axum::http::StatusCode;
 use ipnet::IpNet;
 use libipam::response_error::ResponseError;
+use serde_json::json;
 use uuid::Uuid;
-
-type Resp = Result<QueryResult<Addresses>, ResponseError>;
 
 pub async fn insert(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
     Json(new_addr): Json<AddrCrateEntry>,
-) -> Resp {
-    Ok(state.insert::<Addresses>(new_addr.into()).await?)
+) -> ResponseDefault<()> {
+    Ok(state.insert::<Addresses>(new_addr.into()).await?.into())
 }
 
 pub async fn create_all_ip_addresses(
     State(state): State<RepositoryType>,
     Path(network_id): Path<Uuid>,
-) -> Resp {
+) -> ResponseDefault<()> {
     let network = state
         .get::<Network>(
             NetworkFilter {
@@ -45,8 +42,6 @@ pub async fn create_all_ip_addresses(
             None,
         )
         .await?
-        .take_data()
-        .unwrap()
         .remove(0);
 
     if network.kind != Kind::Network {
@@ -69,7 +64,13 @@ pub async fn create_all_ip_addresses(
 
     transaction.commit().await?;
 
-    Ok(QueryResult::Insert(len as u64))
+    let metadata = Some(json!({
+        "row_affect": len,
+        "status": StatusCode::OK.as_u16(),
+        "success": true
+    }));
+
+    Ok(ResponseQuery::new(None, metadata, None, StatusCode::OK))
 }
 
 pub async fn update(
@@ -93,8 +94,6 @@ pub async fn update(
                     None,
                 )
                 .await?
-                .take_data()
-                .unwrap()
                 .remove(0);
 
             if netw.kind != Kind::Network {
@@ -124,11 +123,11 @@ pub async fn update(
             ..Default::default()
         };
 
-        if let Ok(addr) = transaction
+        if let Ok(mut addr) = transaction
             .get::<Addresses>(to_replace.clone(), None, None)
             .await
         {
-            let addr = addr.take_data().unwrap().remove(0);
+            let addr = addr.remove(0);
 
             if addr.status != StatusAddr::Unknown {
                 return Err(ResponseError::builder()
@@ -201,7 +200,7 @@ pub async fn get(
         status,
         sort,
     }): Query<ParamAddrFilter>,
-) -> Resp {
+) -> ResponseDefault<Vec<Addresses>> {
     let mut addrs = state
         .get::<Addresses>(
             Addr {
@@ -216,10 +215,10 @@ pub async fn get(
         .await?;
 
     if let Some(true) = sort {
-        addrs.get_mut_data().unwrap().sort_by_key(|x| x.ip);
+        addrs.sort_by_key(|x| x.ip);
     }
 
-    Ok(addrs)
+    Ok(ResponseQuery::new(Some(addrs), None, None, StatusCode::OK))
 }
 
 pub async fn delete(
@@ -227,12 +226,14 @@ pub async fn delete(
     _: IsAdministrator,
     Path(network_id): Path<Uuid>,
     Query(ip): Query<IpNet>,
-) -> Resp {
-    Ok(state
-        .delete(Addr {
+) -> ResponseDefault<()> {
+    let del = state
+        .delete::<Addresses>(Addr {
             network_id: Some(network_id),
             ip: Some(ip),
             ..Default::default()
         })
-        .await?)
+        .await?;
+
+    Ok(del.into())
 }

@@ -26,7 +26,7 @@ pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryE
             None,
         )
         .await
-        .map(|x| x.take_data().unwrap().remove(0))
+        .map(|mut x| x.remove(0))
     {
         tracing::info!(
             "The admin user already exists [ username: {}, password: {}, create_at: {:?} ]",

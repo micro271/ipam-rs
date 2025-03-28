@@ -3,14 +3,10 @@ use crate::models::{
     network::{self, Kind, StatusNetwork, addresses::StatusAddr},
     user::Role,
 };
-use axum::{
-    http::StatusCode,
-    response::{IntoResponse, Response},
-};
 use error::RepositoryError;
 use ipnet::IpNet;
 use libipam::types::{host_count::HostCount, vlan::VlanId};
-use serde_json::json;
+use serde::Serialize;
 use std::{collections::HashMap, fmt::Debug, net::IpAddr};
 use uuid::Uuid;
 
@@ -22,20 +18,39 @@ pub trait Repository {
         primary_key: impl MapQuery,
         limit: Option<i32>,
         offset: Option<i32>,
-    ) -> impl Future<Output = ResultRepository<QueryResult<T>>>;
+    ) -> impl Future<Output = ResultRepository<Vec<T>>>;
 
-    fn insert<T: Table>(&self, data: T) -> impl Future<Output = ResultRepository<QueryResult<T>>>;
+    fn insert<T: Table>(&self, data: T) -> impl Future<Output = ResultRepository<QueryResult>>;
 
     fn update<T: Table, U: Updatable>(
         &self,
         updater: U,
         condition: impl MapQuery,
-    ) -> impl Future<Output = ResultRepository<QueryResult<T>>>;
+    ) -> impl Future<Output = ResultRepository<QueryResult>>;
 
     fn delete<T: Table>(
         &self,
         condition: impl MapQuery,
-    ) -> impl Future<Output = ResultRepository<QueryResult<T>>>;
+    ) -> impl Future<Output = ResultRepository<QueryResult>>;
+}
+
+#[derive(Debug, Serialize)]
+pub struct QueryResult {
+    pub row_affect: u64,
+}
+
+impl QueryResult {
+    fn row_affect(&self) -> u64 {
+        self.row_affect
+    }
+}
+
+impl From<sqlx::postgres::PgQueryResult> for QueryResult {
+    fn from(value: sqlx::postgres::PgQueryResult) -> Self {
+        Self {
+            row_affect: value.rows_affected(),
+        }
+    }
 }
 
 pub trait MapQuery: Debug + Send + Sync {
@@ -99,105 +114,6 @@ pub trait Table: Send + Sync + Debug {
 
 pub trait Updatable: Sync + Send + Debug {
     fn get_pair(self) -> Option<HashMap<&'static str, TypeTable>>;
-}
-
-#[derive(Debug)]
-pub enum QueryResult<T> {
-    Insert(u64),
-    Update(u64),
-    Delete(u64),
-    Select {
-        data: Vec<T>,
-        offset: Option<i32>,
-        limit: Option<i32>,
-    },
-}
-
-impl<T> QueryResult<T> {
-    #[allow(dead_code)]
-    pub fn get_data(&self) -> Option<&Vec<T>> {
-        match self {
-            Self::Select { data, .. } => Some(data),
-            _ => None,
-        }
-    }
-
-    pub fn get_mut_data(&mut self) -> Option<&mut Vec<T>> {
-        match self {
-            Self::Select { data, .. } => Some(data),
-            _ => None,
-        }
-    }
-
-    pub fn take_data(self) -> Option<Vec<T>> {
-        match self {
-            Self::Select { data, .. } => Some(data),
-            _ => None,
-        }
-    }
-
-    pub fn length_data(&self) -> Option<usize> {
-        match self {
-            Self::Select { data, .. } => Some(data.len()),
-            _ => None,
-        }
-    }
-}
-
-impl<S> IntoResponse for QueryResult<S>
-where
-    S: serde::Serialize,
-{
-    fn into_response(self) -> axum::response::Response {
-        let (body, status) = match self {
-            Self::Insert(e) => (
-                json!({
-                    "status": 201,
-                    "row_inserted": e,
-                    "success": true,
-                }),
-                StatusCode::CREATED,
-            ),
-            Self::Update(e) => (
-                json!({
-                    "status": 200,
-                    "row_updated": e,
-                    "success": true,
-                }),
-                StatusCode::OK,
-            ),
-            Self::Delete(e) => (
-                json!({
-                    "status": 200,
-                    "row_deleted": e,
-                    "success": true,
-                }),
-                StatusCode::OK,
-            ),
-            Self::Select {
-                data,
-                offset,
-                limit,
-            } => (
-                json!({
-                    "status": 200,
-                    "length": data.len(),
-                    "data": data,
-                    "success": true,
-                    "offset": offset,
-                    "limit": limit,
-                }),
-                StatusCode::OK,
-            ),
-        };
-
-        Response::builder()
-            .status(status)
-            .header(axum::http::header::CONTENT_TYPE, "application/json")
-            .body::<String>(body.to_string())
-            .unwrap_or_default()
-            .into_response()
-    }
 }
 
 pub mod error {

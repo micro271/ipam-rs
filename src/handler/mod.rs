@@ -3,12 +3,8 @@ pub mod auth;
 mod entries;
 pub mod error;
 pub mod extractors;
-pub mod location;
-pub mod mount_point;
 pub mod network;
 pub mod node;
-pub mod office;
-pub mod room;
 pub mod vlan;
 
 use crate::{
@@ -17,11 +13,11 @@ use crate::{
         repository::{QueryResult, Repository},
     },
     models::{self, user::Role},
+    response::ResponseQuery,
 };
 use axum::{
     extract::{Json, Path, Query, State},
     http::{StatusCode, Uri},
-    response::IntoResponse,
 };
 use entries::params::PaginationParams;
 use extractors::IsAdministrator;
@@ -31,3 +27,5 @@ use tracing::{Level, instrument};
 use uuid::Uuid;
 
 type RepositoryType = Arc<RepositoryInjection<sqlx::postgres::Postgres>>;
+
+type ResponseDefault<T> = Result<ResponseQuery<T, serde_json::Value>, ResponseError>;

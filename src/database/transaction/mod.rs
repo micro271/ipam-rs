@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 use tokio::sync::Mutex;
 
-type TransactionResult<T> = Result<QueryResult<T>, RepositoryError>;
+type TransactionResult<T> = Result<T, RepositoryError>;
 
 pub trait Transaction: Repository {
     fn transaction(
@@ -53,7 +53,7 @@ impl<'b> BuilderPgTransaction<'b> {
         condition: impl MapQuery,
         limit: Option<i32>,
         offset: Option<i32>,
-    ) -> TransactionResult<T> {
+    ) -> TransactionResult<Vec<T>> {
         let mut transaction = self.transaction.lock().await;
         let mut query = T::query_select();
         let query = SqlOperations::get(&mut query, condition, limit, offset);
@@ -63,28 +63,22 @@ impl<'b> BuilderPgTransaction<'b> {
             resp.push(e.into());
         }
 
-        Ok(QueryResult::Select {
-            data: resp,
-            offset,
-            limit,
-        })
+        Ok(resp)
     }
 
-    pub async fn insert<T: Table>(&mut self, data: T) -> TransactionResult<T> {
+    pub async fn insert<T: Table>(&mut self, data: T) -> TransactionResult<QueryResult> {
         let mut transaction = self.transaction.lock().await;
         let q_insert = T::query_insert();
         let query = SqlOperations::insert(data, &q_insert);
 
-        Ok(QueryResult::Insert(
-            query.execute(&mut **transaction).await?.rows_affected(),
-        ))
+        Ok(query.execute(&mut **transaction).await?.into())
     }
 
     pub async fn update<T: Table, U: Updatable, M: MapQuery>(
         &mut self,
         updater: U,
         condition: M,
-    ) -> TransactionResult<T> {
+    ) -> TransactionResult<QueryResult> {
         let mut query = T::query_update();
         let sql = SqlOperations::update(
             updater.get_pair().unwrap(),
@@ -94,18 +88,17 @@ impl<'b> BuilderPgTransaction<'b> {
 
         let mut transaction = self.transaction.lock().await;
 
-        Ok(QueryResult::Update(
-            sql.execute(&mut **transaction).await?.rows_affected(),
-        ))
+        Ok(sql.execute(&mut **transaction).await?.into())
     }
 
-    pub async fn delete<T: Table, M: MapQuery>(&mut self, condition: M) -> TransactionResult<T> {
+    pub async fn delete<T: Table, M: MapQuery>(
+        &mut self,
+        condition: M,
+    ) -> TransactionResult<QueryResult> {
         let mut query = T::query_delete();
         let sql = SqlOperations::delete(condition.get_pairs(), &mut query);
         let mut transaction = self.transaction.lock().await;
 
-        Ok(QueryResult::Delete(
-            sql.execute(&mut **transaction).await?.rows_affected(),
-        ))
+        Ok(sql.execute(&mut **transaction).await?.into())
     }
 }

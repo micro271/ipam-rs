@@ -1,20 +1,22 @@
 use super::{
-    IntoResponse, IsAdministrator, Json, Level, PaginationParams, Path, Query, Repository,
-    RepositoryType, ResponseError, State, Uuid, entries, instrument,
+    IsAdministrator, Json, Level, PaginationParams, Path, Query, Repository, RepositoryType,
+    ResponseDefault, State, Uuid, entries, instrument,
 };
 use crate::{
-    database::repository::QueryResult,
     models::node::{Node, NodeFilter, UpdateNode},
+    response::ResponseQuery,
 };
+use axum::http::StatusCode;
 use entries::models::NodeCreateEntry;
+use serde_json::json;
 
 #[instrument(level = Level::DEBUG)]
 pub async fn create(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
     Json(node): Json<NodeCreateEntry>,
-) -> Result<impl IntoResponse, ResponseError> {
-    Ok(state.insert::<Node>(node.into()).await?)
+) -> ResponseDefault<()> {
+    Ok(state.insert::<Node>(node.into()).await?.into())
 }
 
 #[instrument(level = Level::DEBUG)]
@@ -23,7 +25,7 @@ pub async fn update(
     _: IsAdministrator,
     Path(id): Path<Uuid>,
     Json(new): Json<UpdateNode>,
-) -> Result<QueryResult<Node>, ResponseError> {
+) -> ResponseDefault<()> {
     Ok(state
         .update::<Node, _>(
             new,
@@ -32,7 +34,8 @@ pub async fn update(
                 ..Default::default()
             },
         )
-        .await?)
+        .await?
+        .into())
 }
 
 #[instrument(level = Level::DEBUG)]
@@ -40,8 +43,21 @@ pub async fn get(
     State(state): State<RepositoryType>,
     Query(params): Query<NodeFilter>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
-) -> Result<QueryResult<Node>, ResponseError> {
-    Ok(state.get::<Node>(params, limit, offset).await?)
+) -> ResponseDefault<Vec<Node>> {
+    let data = state.get::<Node>(params, limit, offset).await?;
+
+    let metadata = Some(json!({
+        "length": data.len(),
+        "success": true,
+        "status": StatusCode::OK.as_u16(),
+    }));
+
+    Ok(ResponseQuery::new(
+        Some(data),
+        metadata,
+        None,
+        StatusCode::OK,
+    ))
 }
 
 #[instrument(level = Level::INFO)]
@@ -49,11 +65,12 @@ pub async fn delete(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
     Path(id): Path<Uuid>,
-) -> Result<impl IntoResponse, ResponseError> {
+) -> ResponseDefault<()> {
     Ok(state
         .delete::<Node>(NodeFilter {
             id: Some(id),
             ..Default::default()
         })
-        .await?)
+        .await?
+        .into())
 }

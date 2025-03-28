@@ -5,7 +5,9 @@ use axum::{
 use serde::Serialize;
 use serde_json::{Value, json};
 
-struct QueryResultBuild<T, M>
+use crate::database::repository::QueryResult;
+
+pub struct ResponseQuery<T, M>
 where
     T: Serialize,
     M: Metadata,
@@ -16,16 +18,44 @@ where
     statuscode: StatusCode,
 }
 
+impl<T: Serialize, M: Metadata> ResponseQuery<T, M> {
+    pub fn new(
+        data: Option<T>,
+        metadata: Option<M>,
+        headers: Option<HeaderMap>,
+        statuscode: StatusCode,
+    ) -> Self {
+        Self {
+            data,
+            metadata,
+            headers,
+            statuscode,
+        }
+    }
+}
+
 pub trait Metadata
 where
     Self: Serialize,
 {
-    fn get_value(&self) -> Value {
+    fn get_value(self) -> Value
+    where
+        Self: Sized,
+    {
         json!(self)
     }
 }
 
-impl<T: Serialize, M: Metadata> IntoResponse for QueryResultBuild<T, M> {
+impl Metadata for Value {
+    fn get_value(self) -> Value
+    where
+        Self: Sized,
+    {
+        self
+    }
+}
+
+impl<T: Serialize, M: Metadata> IntoResponse for ResponseQuery<T, M> {
     fn into_response(self) -> Response {
         let mut response = Response::builder();
 
@@ -41,7 +71,7 @@ impl<T: Serialize, M: Metadata> IntoResponse for QueryResultBuild<T, M> {
             body.insert("data".to_string(), json!(data));
         }
 
-        if let Some(metadata) = self.metadata.and_then(|x| serde_json::to_value(x).ok()) {
+        if let Some(metadata) = self.metadata.map(Metadata::get_value) {
             for (k, v) in metadata.as_object().unwrap() {
                 body.insert(k.clone(), v.clone());
             }
@@ -52,5 +82,11 @@ impl<T: Serialize, M: Metadata> IntoResponse for QueryResultBuild<T, M> {
             .body::<String>(json!(body).to_string())
             .unwrap_or_default()
             .into_response()
+    }
+}
+
+impl From<QueryResult> for ResponseQuery<(), Value> {
+    fn from(value: QueryResult) -> Self {
+        ResponseQuery::new(None, Some(json!(value)), None, StatusCode::OK)
     }
 }

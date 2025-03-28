@@ -1,9 +1,5 @@
-pub mod location;
-pub mod mound_point;
 pub mod network;
 pub mod node;
-pub mod office;
-pub mod room;
 pub mod user;
 pub mod vlan;
 

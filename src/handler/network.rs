@@ -1,9 +1,10 @@
-use crate::database::transaction::Transaction as _;
+use crate::{database::transaction::Transaction as _, response::ResponseQuery};
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 use super::{
     HashMap, IsAdministrator, Json, Level, PaginationParams, Path, Query, QueryResult, Repository,
-    RepositoryType, ResponseError, State, StatusCode, Uuid, entries, instrument, models,
+    RepositoryType, ResponseDefault, ResponseError, State, StatusCode, Uuid, entries, instrument,
+    models,
 };
 
 use entries::{
@@ -11,13 +12,14 @@ use entries::{
     params::{ParamNetwork, Subnet},
 };
 use models::network::{Network, UpdateNetwork};
+use serde_json::json;
 
 #[instrument(level = Level::INFO)]
 pub async fn create(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
     Json(mut network): Json<NetworkCreateEntry>,
-) -> Result<QueryResult<Network>, ResponseError> {
+) -> ResponseDefault<()> {
     let net = network.subnet.network();
 
     match net {
@@ -45,7 +47,7 @@ pub async fn create(
         }
     }
     network.subnet = ipnet::IpNet::new(net, network.subnet.prefix_len()).unwrap();
-    Ok(state.insert::<Network>(network.into()).await?)
+    Ok(state.insert::<Network>(network.into()).await?.into())
 }
 
 #[instrument(level = Level::DEBUG)]
@@ -53,8 +55,21 @@ pub async fn get(
     State(state): State<RepositoryType>,
     Query(param): Query<ParamNetwork>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
-) -> Result<QueryResult<Network>, ResponseError> {
-    Ok(state.get::<Network>(param, limit, offset).await?)
+) -> ResponseDefault<Vec<Network>> {
+    let data = state.get::<Network>(param, limit, offset).await?;
+
+    let metadata = Some(json!({
+        "length": data.len(),
+        "success": true,
+        "status": StatusCode::OK.as_u16(),
+    }));
+
+    Ok(ResponseQuery::new(
+        Some(data),
+        metadata,
+        None,
+        StatusCode::OK,
+    ))
 }
 
 #[instrument(level = Level::DEBUG)]
@@ -63,13 +78,11 @@ pub async fn update(
     _: IsAdministrator,
     Path(id): Path<Uuid>,
     Json(updater): Json<UpdateNetwork>,
-) -> Result<QueryResult<Network>, ResponseError> {
+) -> ResponseDefault<()> {
     if updater.network.is_some() {
         let old = state
             .get::<Network>(Some([("id", id.into())].into()), None, None)
             .await?
-            .take_data()
-            .unwrap()
             .remove(0);
 
         if old.children != 0 {
@@ -86,9 +99,12 @@ pub async fn update(
                 .build());
         }
     }
-    Ok(state
+
+    let resp = state
         .update::<Network, _>(updater, Some([("id", id.into())].into()))
-        .await?)
+        .await?;
+
+    Ok(resp.into())
 }
 
 #[instrument(level = Level::INFO)]
@@ -96,12 +112,14 @@ pub async fn delete(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
     Path(id): Path<Uuid>,
-) -> Result<QueryResult<Network>, ResponseError> {
+) -> ResponseDefault<()> {
     tracing::debug!("delete one network: {}", id);
 
-    Ok(state
+    let resp = state
         .delete::<Network>(Some([("id", id.into())].into()))
-        .await?)
+        .await?;
+
+    Ok(resp.into())
 }
 
 #[instrument(level = Level::DEBUG)]
@@ -109,12 +127,10 @@ pub async fn subnetting(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
     Query(Subnet { father, prefix }): Query<Subnet>,
-) -> Result<QueryResult<Network>, ResponseError> {
+) -> ResponseDefault<()> {
     let father = state
         .get::<Network>(Some([("id", father.into())].into()), None, None)
         .await?
-        .take_data()
-        .unwrap()
         .remove(0);
 
     let networks = father.subnets(prefix).map_err(|x| {
@@ -146,5 +162,8 @@ pub async fn subnetting(
 
     state.commit().await?;
 
-    Ok(QueryResult::Insert(len as u64))
+    Ok(QueryResult {
+        row_affect: len as u64,
+    }
+    .into())
 }

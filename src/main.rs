@@ -14,7 +14,7 @@ use axum::{
 };
 use config::Config;
 use database::RepositoryInjection;
-use handler::{addresses, auth, location, mount_point, network, node, room, vlan};
+use handler::{addresses, auth, network, node, vlan};
 use std::sync::Arc;
 use tower_http::{
     cors::{Any, CorsLayer},
@@ -91,29 +91,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/", post(auth::create))
         .route("/{id}", patch(auth::update).delete(auth::delete));
 
-    let location = Router::new().route(
-        "/",
-        get(location::get)
-            .delete(location::delete)
-            .patch(location::update)
-            .post(location::insert),
-    );
-
-    let mount_point = Router::new().route("/", post(mount_point::insert)).route(
-        "/{name}",
-        get(mount_point::get)
-            .patch(mount_point::update)
-            .delete(mount_point::delete),
-    );
-
-    let room = Router::new().route(
-        "/",
-        post(room::insert)
-            .get(room::get)
-            .patch(room::update)
-            .delete(room::delete),
-    );
-
     let vlan = Router::new().route("/", post(vlan::insert)).route(
         "/{id}",
         get(vlan::get).delete(vlan::delete).patch(vlan::update),
@@ -123,11 +100,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .nest("/networks", network)
         .nest("/nodes", node)
         .nest("/users", user)
-        .nest("/mount_point", mount_point)
-        .nest("/rooms", room)
         .nest("/vlans", vlan)
-        .nest("/addrs", addrs)
-        .nest("/locations", location);
+        .nest("/addrs", addrs);
 
     let app = Router::new()
         .nest("/api/v1", api_v1)
