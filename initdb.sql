@@ -34,48 +34,13 @@ CREATE TABLE IF NOT EXISTS addresses (
     FOREIGN KEY (network_id) REFERENCES networks (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS mount_point (
-    name TEXT,
-    PRIMARY KEY (name)
-);
-
-CREATE TABLE IF NOT EXISTS offices (
-    id UUID,
-    description TEXT,
-    street TEXT,
-    neighborhood TEXT,
-    UNIQUE (neighborhood, street),
-    PRIMARY KEY (id)
-);
-
-CREATE TABLE IF NOT EXISTS room (
-    name TEXT,
-    id_office UUID,
-    PRIMARY KEY (name, id_office),
-    FOREIGN KEY (id_office) REFERENCES offices(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS locations (
-    label TEXT,
-    mount_point TEXT,
-    room_name TEXT,
-    id_office UUID NOT NULL,
-    PRIMARY KEY (label, mount_point, room_name),
-    FOREIGN KEY (mount_point) REFERENCES mount_point(name) ON DELETE SET NULL ON UPDATE CASCADE,
-    FOREIGN KEY (room_name, id_office) REFERENCES room(name, id_office) ON DELETE CASCADE ON UPDATE CASCADE
-);
-
 CREATE TABLE IF NOT EXISTS nodes (
     id UUID,
     hostname TEXT,
     description TEXT,
-    label TEXT,
-    room_name TEXT,
-    mount_point TEXT,
     username TEXT,
     password TEXT,
     PRIMARY KEY (id),
-    FOREIGN KEY (label, room_name, mount_point) REFERENCES locations(label, room_name, mount_point) ON DELETE SET NULL ON UPDATE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS users (
