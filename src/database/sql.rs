@@ -81,6 +81,26 @@ impl SqlOperations {
         sql
     }
 
+    pub fn insert_many<T>(data: Vec<T>, query: &str) -> Query<'_, Postgres, PgArguments>
+    where
+        T: Table + std::fmt::Debug,
+    {
+        tracing::trace!("*** INSERT IN BATCH {} ***", data.len());
+        tracing::trace!("1 input (data) - {:?}", data);
+        tracing::trace!("2 input (query) - {}", query);
+
+        let mut sql = sqlx::query(query);
+
+        for d in data {
+            let fields = d.get_fields();
+            for element in fields {
+                sql = bind_query!(sql, element);
+            }
+        }
+
+        sql
+    }
+
     pub fn update<'a>(
         pair_updater: HashMap<&'_ str, TypeTable>,
         condition: Option<HashMap<&'_ str, TypeTable>>,

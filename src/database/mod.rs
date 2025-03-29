@@ -36,7 +36,7 @@ impl Repository for RepositoryInjection<Postgres> {
         tracing::trace!("REPOSITORY");
         tracing::trace!("1 input (data) - {:?}", data);
 
-        let query = T::query_insert();
+        let query = T::query_insert(1);
         let res = SqlOperations::insert(data, &query).execute(&self.0).await?;
 
         tracing::debug!("sql query result - {:?}", res);

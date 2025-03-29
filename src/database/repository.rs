@@ -7,7 +7,11 @@ use error::RepositoryError;
 use ipnet::IpNet;
 use libipam::types::{host_count::HostCount, vlan::VlanId};
 use serde::Serialize;
-use std::{collections::HashMap, fmt::Debug, net::IpAddr};
+use std::{
+    collections::HashMap,
+    fmt::{Debug, format},
+    net::IpAddr,
+};
 use uuid::Uuid;
 
 pub type ResultRepository<T> = Result<T, RepositoryError>;
@@ -71,21 +75,30 @@ impl MapQuery for Option<HashMap<&'static str, TypeTable>> {
 pub trait Table: Send + Sync + Debug {
     fn name() -> String;
 
-    fn query_insert() -> String
+    fn query_insert(n: usize) -> String
     where
         Self: Table,
     {
         let columns = Self::columns();
+        let len = columns.len();
         format!(
-            "INSERT INTO {} ({}) VALUES ({})",
+            "INSERT INTO {} ({}) VALUES {}",
             Self::name(),
-            { columns.join(", ") },
+            columns.join(", "),
             {
-                (1..=columns.len())
-                    .map(|x| format!("${x}"))
-                    .collect::<Vec<String>>()
-                    .join(", ")
-            },
+                (0..n)
+                    .map(|i| {
+                        format!(
+                            "({})",
+                            ((i * len + 1)..=(i * len + len))
+                                .map(|x| format!("${x}"))
+                                .collect::<Vec<_>>()
+                                .join(",")
+                        )
+                    })
+                    .collect::<Vec<_>>()
+                    .join(",")
+            }
         )
     }
 

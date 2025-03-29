@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS nodes (
     description TEXT,
     username TEXT,
     password TEXT,
-    PRIMARY KEY (id),
+    PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS users (

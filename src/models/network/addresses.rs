@@ -59,6 +59,12 @@ impl AddrRange {
             step: 0,
         })
     }
+
+    pub fn batch(&mut self, n: usize) -> Vec<Addresses> {
+        (0..n.min(self.len() - (self.step as usize)))
+            .map(|_| self.next().unwrap())
+            .collect()
+    }
 }
 
 impl Iterator for AddrRange {

@@ -68,8 +68,16 @@ impl<'b> BuilderPgTransaction<'b> {
 
     pub async fn insert<T: Table>(&mut self, data: T) -> TransactionResult<QueryResult> {
         let mut transaction = self.transaction.lock().await;
-        let q_insert = T::query_insert();
+        let q_insert = T::query_insert(1);
         let query = SqlOperations::insert(data, &q_insert);
+
+        Ok(query.execute(&mut **transaction).await?.into())
+    }
+
+    pub async fn insert_many<T: Table>(&mut self, data: Vec<T>) -> TransactionResult<QueryResult> {
+        let mut transaction = self.transaction.lock().await;
+        let q_insert = T::query_insert(data.len());
+        let query = SqlOperations::insert_many(data, &q_insert);
 
         Ok(query.execute(&mut **transaction).await?.into())
     }
