@@ -51,18 +51,34 @@ pub async fn create_all_ip_addresses(
             .status(StatusCode::FORBIDDEN)
             .build());
     }
+    let len;
+    match network.addresses() {
+        Ok(e) if e.len() > 3072 => {
+            let addrs = e.batch(3072);
+            len = addrs.inner_len();
 
-    let addrs = network.addresses().unwrap();
-    let len = addrs.len();
-    let mut transaction = state.transaction().await?;
-    for addr in addrs {
-        if let Err(e) = transaction.insert(addr).await {
-            transaction.rollback().await?;
-            return Err(ResponseError::from(e));
+            let mut transaction = state.transaction().await?;
+            for addr in addrs {
+                if let Err(e) = transaction.insert_many(addr).await {
+                    transaction.rollback().await?;
+                    return Err(ResponseError::from(e));
+                }
+            }
+
+            transaction.commit().await?;
+        }
+        Ok(e) => {
+            len = e.len();
+            // We've added the insert_many in Repository
+            todo!()
+        }
+        Err(e) => {
+            return Err(ResponseError::builder()
+                .detail(e.to_string())
+                .status(StatusCode::BAD_REQUEST)
+                .build());
         }
     }
-
-    transaction.commit().await?;
 
     let metadata = Some(json!({
         "row_affect": len,

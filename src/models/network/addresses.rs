@@ -34,12 +34,48 @@ pub enum StatusAddr {
     Reachable,
 }
 
+#[derive(Debug)]
 pub struct AddrRange {
     start: u32,
     end: u32,
     step: u32,
     pub network_id: Uuid,
     prefix: u8,
+}
+
+#[derive(Debug)]
+pub struct BatchAddr {
+    iter: AddrRange,
+    window: usize,
+}
+
+impl BatchAddr {
+    fn new(iter: AddrRange, n: usize) -> Self {
+        let n = n.min(iter.len());
+        Self { iter, window: n }
+    }
+
+    pub fn inner_len(&self) -> usize {
+        self.iter.len()
+    }
+}
+
+impl Iterator for BatchAddr {
+    type Item = Vec<Addresses>;
+    fn next(&mut self) -> Option<Self::Item> {
+        tracing::debug!("{:?}", self.iter);
+
+        let tmp = self.iter.by_ref().take(self.window).collect::<Vec<_>>();
+        tracing::info!("{:?}", tmp);
+
+        (!tmp.is_empty()).then_some(tmp)
+    }
+}
+
+impl ExactSizeIterator for BatchAddr {
+    fn len(&self) -> usize {
+        self.iter.len().div_ceil(self.window)
+    }
 }
 
 impl AddrRange {
@@ -60,10 +96,8 @@ impl AddrRange {
         })
     }
 
-    pub fn batch(&mut self, n: usize) -> Vec<Addresses> {
-        (0..n.min(self.len() - (self.step as usize)))
-            .map(|_| self.next().unwrap())
-            .collect()
+    pub fn batch(self, n: usize) -> BatchAddr {
+        BatchAddr::new(self, n)
     }
 }
 

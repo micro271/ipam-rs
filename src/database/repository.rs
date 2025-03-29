@@ -7,11 +7,7 @@ use error::RepositoryError;
 use ipnet::IpNet;
 use libipam::types::{host_count::HostCount, vlan::VlanId};
 use serde::Serialize;
-use std::{
-    collections::HashMap,
-    fmt::{Debug, format},
-    net::IpAddr,
-};
+use std::{collections::HashMap, fmt::Debug, net::IpAddr};
 use uuid::Uuid;
 
 pub type ResultRepository<T> = Result<T, RepositoryError>;
