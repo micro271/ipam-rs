@@ -44,6 +44,20 @@ impl Repository for RepositoryInjection<Postgres> {
         Ok(res.into())
     }
 
+    async fn insert_many<T: Table>(&self, data: Vec<T>) -> ResultRepository<QueryResult> {
+        tracing::trace!("REPOSITORY");
+        tracing::trace!("1 input (data) - {:?}", data);
+
+        let len = data.len();
+
+        tracing::trace!("1 input (data length) - {:?}", len);
+
+        Ok(SqlOperations::insert_many(data, &T::query_insert(len))
+            .execute(&self.0)
+            .await?
+            .into())
+    }
+
     async fn get<T: Table + From<PgRow>>(
         &self,
         column_data: impl MapQuery,

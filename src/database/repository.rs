@@ -22,6 +22,11 @@ pub trait Repository {
 
     fn insert<T: Table>(&self, data: T) -> impl Future<Output = ResultRepository<QueryResult>>;
 
+    fn insert_many<T: Table>(
+        &self,
+        data: Vec<T>,
+    ) -> impl Future<Output = ResultRepository<QueryResult>>;
+
     fn update<T: Table, U: Updatable>(
         &self,
         updater: U,
