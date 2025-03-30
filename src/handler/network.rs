@@ -1,4 +1,7 @@
-use crate::{database::transaction::Transaction as _, response::ResponseQuery};
+use crate::{
+    database::transaction::Transaction as _, models::network::NetworkFilter,
+    response::ResponseQuery,
+};
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 use super::{
@@ -7,10 +10,7 @@ use super::{
     models,
 };
 
-use entries::{
-    models::NetworkCreateEntry,
-    params::{ParamNetwork, Subnet},
-};
+use entries::{models::NetworkCreateEntry, params::ParamNetwork};
 use models::network::{Network, UpdateNetwork};
 use serde_json::json;
 
@@ -126,10 +126,18 @@ pub async fn delete(
 pub async fn subnetting(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
-    Query(Subnet { father, prefix }): Query<Subnet>,
+    Path(id): Path<Uuid>,
+    Query(prefix): Query<u8>,
 ) -> ResponseDefault<()> {
     let father = state
-        .get::<Network>(Some([("id", father.into())].into()), None, None)
+        .get::<Network>(
+            NetworkFilter {
+                id: Some(id),
+                ..Default::default()
+            },
+            None,
+            None,
+        )
         .await?
         .remove(0);
 

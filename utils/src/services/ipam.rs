@@ -9,6 +9,21 @@ use ipnet::IpNet;
 #[derive(Debug)]
 pub struct SubnettingError(String);
 
+pub struct BatchSubnet {
+    iter: SubnetList,
+    window: usize,
+}
+
+impl std::iter::Iterator for BatchSubnet {
+    type Item = Vec<IpNet>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let aux = self.iter.by_ref().take(self.window).collect::<Vec<_>>();
+
+        (!aux.is_empty()).then_some(aux)
+    }
+}
+
 #[derive(Debug)]
 pub struct SubnetList {
     start: u32,

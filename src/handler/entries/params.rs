@@ -18,12 +18,6 @@ pub struct ParamRoom {
     address: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct Subnet {
-    pub father: uuid::Uuid,
-    pub prefix: u8,
-}
-
 #[derive(Debug, Deserialize, MapQueryDerive)]
 pub struct LocationParam {
     pub label: Option<String>,
