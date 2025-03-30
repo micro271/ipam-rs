@@ -20,6 +20,8 @@ use libipam::response_error::ResponseError;
 use serde_json::json;
 use uuid::Uuid;
 
+const BATCH: usize = 8192;
+
 pub async fn insert(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
@@ -30,6 +32,7 @@ pub async fn insert(
 
 pub async fn create_all_ip_addresses(
     State(state): State<RepositoryType>,
+    _: IsAdministrator,
     Path(network_id): Path<Uuid>,
 ) -> ResponseDefault<()> {
     let network = state
@@ -51,10 +54,12 @@ pub async fn create_all_ip_addresses(
             .status(StatusCode::FORBIDDEN)
             .build());
     }
+
     let len;
+
     match network.addresses() {
-        Ok(e) if e.len() > 3072 => {
-            let addrs = e.batch(3072);
+        Ok(e) if e.len() > BATCH => {
+            let addrs = e.batch(BATCH);
             len = addrs.inner_len();
 
             let mut transaction = state.transaction().await?;
@@ -69,8 +74,7 @@ pub async fn create_all_ip_addresses(
         }
         Ok(e) => {
             len = e.len();
-            // We've added the insert_many in Repository
-            todo!()
+            _ = state.insert_many(e.collect::<Vec<_>>()).await?;
         }
         Err(e) => {
             return Err(ResponseError::builder()

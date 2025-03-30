@@ -66,7 +66,6 @@ impl Iterator for BatchAddr {
         tracing::debug!("{:?}", self.iter);
 
         let tmp = self.iter.by_ref().take(self.window).collect::<Vec<_>>();
-        tracing::info!("{:?}", tmp);
 
         (!tmp.is_empty()).then_some(tmp)
     }
