@@ -43,6 +43,15 @@ pub struct Network {
     pub kind: Kind,
 }
 
+#[derive(Debug, Clone, Copy, MapQuery)]
+pub struct UpdateHostCount {
+    #[IgnoreField]
+    pub subnet: IpNet,
+
+    pub used: HostCount,
+    pub free: HostCount,
+}
+
 pub struct NetworkSubnetList {
     iter: SubnetList,
     default: DefaultValuesNetwork,
@@ -201,5 +210,12 @@ impl Network {
             SubnetList::new(self.subnet, prefix)?,
             None,
         ))
+    }
+    pub fn update_host_count(&self) -> UpdateHostCount {
+        UpdateHostCount {
+            subnet: self.subnet,
+            used: self.used,
+            free: self.free,
+        }
     }
 }

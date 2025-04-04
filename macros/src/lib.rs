@@ -162,6 +162,7 @@ fn impl_map_params(input: &syn::DeriveInput) -> TokenStream {
         _ => panic!("Only struct"),
     }
     .iter()
+    .filter(|x| x.attrs.iter().any(|x| !x.path().is_ident("IgnoreField")))
     .map(|field| {
         let ty = &field.ty;
         let name = field.ident.as_ref().unwrap();

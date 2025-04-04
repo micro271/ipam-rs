@@ -163,6 +163,8 @@ pub async fn subnetting(
             .status(StatusCode::BAD_REQUEST)
     })?;
 
+    let update_hostc = father.update_host_count();
+
     todo!()
 
     // todo!("We've needed update the free and used IPs in each network/subnetwork");
