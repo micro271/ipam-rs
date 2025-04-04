@@ -1,5 +1,5 @@
 use super::{
-    Json, Path, Query, RepositoryType, ResponseDefault, State,
+    BATCH_SIZE, Json, Path, Query, RepositoryType, ResponseDefault, State,
     entries::{
         models::AddrCrateEntry,
         params::{IpNetParamNonOption, PaginationParams, ParamAddrFilter},
@@ -19,8 +19,6 @@ use ipnet::IpNet;
 use libipam::response_error::ResponseError;
 use serde_json::json;
 use uuid::Uuid;
-
-const BATCH: usize = 8192;
 
 pub async fn insert(
     State(state): State<RepositoryType>,
@@ -58,8 +56,8 @@ pub async fn create_all_ip_addresses(
     let len;
 
     match network.addresses() {
-        Ok(e) if e.len() > BATCH => {
-            let addrs = e.batch(BATCH);
+        Ok(e) if e.len() > BATCH_SIZE => {
+            let addrs = e.batch(BATCH_SIZE);
             len = addrs.inner_len();
 
             let mut transaction = state.transaction().await?;

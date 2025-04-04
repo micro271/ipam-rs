@@ -41,10 +41,14 @@ pub trait Repository {
 
 #[derive(Debug, Serialize)]
 pub struct QueryResult {
-    pub row_affect: u64,
+    row_affect: u64,
 }
 
 impl QueryResult {
+    pub fn new(n: u64) -> Self {
+        Self { row_affect: n }
+    }
+
     fn row_affect(&self) -> u64 {
         self.row_affect
     }
@@ -52,9 +56,7 @@ impl QueryResult {
 
 impl From<sqlx::postgres::PgQueryResult> for QueryResult {
     fn from(value: sqlx::postgres::PgQueryResult) -> Self {
-        Self {
-            row_affect: value.rows_affected(),
-        }
+        QueryResult::new(value.rows_affected())
     }
 }
 

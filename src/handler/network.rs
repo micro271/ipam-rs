@@ -1,16 +1,19 @@
 use crate::{
-    database::transaction::Transaction as _, models::network::NetworkFilter,
+    database::transaction::Transaction as _,
+    models::network::{DefaultValuesNetwork, Kind, NetworkFilter},
     response::ResponseQuery,
 };
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 use super::{
-    HashMap, IsAdministrator, Json, Level, PaginationParams, Path, Query, QueryResult, Repository,
-    RepositoryType, ResponseDefault, ResponseError, State, StatusCode, Uuid, entries, instrument,
-    models,
+    BATCH_SIZE, IsAdministrator, Json, Level, PaginationParams, Path, Query, QueryResult,
+    Repository, RepositoryType, ResponseDefault, ResponseError, State, StatusCode, Uuid,
+    entries::{self, models::CreateSubnet},
+    instrument, models,
 };
 
 use entries::{models::NetworkCreateEntry, params::ParamNetwork};
+use libipam::types::host_count::HostCount;
 use models::network::{Network, UpdateNetwork};
 use serde_json::json;
 
@@ -46,6 +49,7 @@ pub async fn create(
             }
         }
     }
+
     network.subnet = ipnet::IpNet::new(net, network.subnet.prefix_len()).unwrap();
     Ok(state.insert::<Network>(network.into()).await?.into())
 }
@@ -126,13 +130,18 @@ pub async fn delete(
 pub async fn subnetting(
     State(state): State<RepositoryType>,
     _: IsAdministrator,
-    Path(id): Path<Uuid>,
-    Query(prefix): Query<u8>,
+    Path(father): Path<Uuid>,
+    Json(CreateSubnet {
+        prefix,
+        status,
+        kind,
+        description,
+    }): Json<CreateSubnet>,
 ) -> ResponseDefault<()> {
     let father = state
         .get::<Network>(
             NetworkFilter {
-                id: Some(id),
+                id: Some(father),
                 ..Default::default()
             },
             None,
@@ -141,37 +150,20 @@ pub async fn subnetting(
         .await?
         .remove(0);
 
-    let networks = father.subnets(prefix).map_err(|x| {
+    if father.kind != Kind::Pool {
+        return Err(ResponseError::builder()
+            .detail("The network {} isn't to ready to be VLSM".to_string())
+            .status(StatusCode::BAD_REQUEST)
+            .build());
+    }
+
+    let subnet = father.subnets(prefix).map_err(|x| {
         ResponseError::builder()
             .detail(x.to_string())
             .status(StatusCode::BAD_REQUEST)
-            .build()
     })?;
 
-    let mut state = state.transaction().await?;
-    let len = networks.len();
+    todo!()
 
-    for network in networks {
-        let mut new_network = Network::from(network);
-        new_network.father = Some(father.id);
-
-        if let Err(e) = state.insert(new_network).await {
-            state.rollback().await?;
-            return Err(ResponseError::from(e));
-        }
-    }
-
-    state
-        .update::<Network, _, _>(
-            HashMap::from([("children", i32::try_from(len).unwrap_or_default().into())]), /* TODO: we've updated the free and available ips */
-            Some([("id", father.id.into())].into()),
-        )
-        .await?;
-
-    state.commit().await?;
-
-    Ok(QueryResult {
-        row_affect: len as u64,
-    }
-    .into())
+    // todo!("We've needed update the free and used IPs in each network/subnetwork");
 }

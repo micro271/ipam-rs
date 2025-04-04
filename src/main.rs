@@ -67,13 +67,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db = Arc::new(db);
 
     let network = Router::new()
+        .route("/subnet/{father}", post(network::subnetting))
         .route("/", post(network::create).get(network::get))
-        .route(
-            "/{id}",
-            delete(network::delete)
-                .patch(network::update)
-                .post(network::subnetting),
-        );
+        .route("/{id}", delete(network::delete).patch(network::update));
 
     let addrs = Router::new().route("/", post(addresses::insert)).route(
         "/{network_id}",

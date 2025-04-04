@@ -6,40 +6,6 @@ use uuid::Uuid;
 
 use crate::models::network::addresses::StatusAddr;
 
-#[derive(Debug, Deserialize, MapQueryDerive)]
-pub struct ParamRoomStrict {
-    name: String,
-    address: String,
-}
-
-#[derive(Debug, Deserialize, MapQueryDerive)]
-pub struct ParamRoom {
-    name: Option<String>,
-    address: Option<String>,
-}
-
-#[derive(Debug, Deserialize, MapQueryDerive)]
-pub struct LocationParam {
-    pub label: Option<String>,
-    pub room_name: Option<String>,
-    pub mount_point: Option<String>,
-}
-
-#[derive(Debug, Deserialize, MapQueryDerive)]
-pub struct LocationParamStict {
-    pub label: String,
-    pub room_name: String,
-    pub mount_point: String,
-}
-
-#[derive(Debug, Deserialize, MapQueryDerive)]
-pub struct OfficeParam {
-    pub id: Option<Uuid>,
-    pub street: Option<String>,
-    pub neighborhood: Option<String>,
-    pub description: Option<String>,
-}
-
 #[derive(Deserialize, Debug)]
 pub struct PaginationParams {
     pub offset: Option<i32>,

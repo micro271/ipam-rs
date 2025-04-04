@@ -29,3 +29,5 @@ use uuid::Uuid;
 type RepositoryType = Arc<RepositoryInjection<sqlx::postgres::Postgres>>;
 
 type ResponseDefault<T> = Result<ResponseQuery<T, serde_json::Value>, ResponseError>;
+
+const BATCH_SIZE: usize = 8192;

@@ -98,3 +98,11 @@ impl From<AddrCrateEntry> for Addresses {
         }
     }
 }
+
+#[derive(Debug, Deserialize)]
+pub struct CreateSubnet {
+    pub prefix: u8,
+    pub status: Option<StatusNetwork>,
+    pub kind: Option<Kind>,
+    pub description: Option<String>,
+}
