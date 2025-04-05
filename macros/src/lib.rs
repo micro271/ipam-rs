@@ -148,7 +148,7 @@ fn impl_updatable(input: &syn::DeriveInput) -> TokenStream {
     }.into()
 }
 
-#[proc_macro_derive(MapQuery)]
+#[proc_macro_derive(MapQuery, attributes(IgnoreField))]
 pub fn map_params(token: TokenStream) -> TokenStream {
     let tmp = syn::parse(token).unwrap();
 
@@ -162,7 +162,7 @@ fn impl_map_params(input: &syn::DeriveInput) -> TokenStream {
         _ => panic!("Only struct"),
     }
     .iter()
-    .filter(|x| x.attrs.iter().any(|x| !x.path().is_ident("IgnoreField")))
+    .filter(|x| !x.attrs.iter().any(|x| !x.path().is_ident("IgnoreField")))
     .map(|field| {
         let ty = &field.ty;
         let name = field.ident.as_ref().unwrap();
