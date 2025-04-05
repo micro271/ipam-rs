@@ -52,6 +52,38 @@ pub struct UpdateHostCount {
     pub free: HostCount,
 }
 
+impl UpdateHostCount {
+    fn less_free_more_used(&mut self, n: u32) {
+        self.used = if self.used.is_max() {
+            HostCount::new_from_ipnet_with_add(self.subnet, n).unwrap_or(HostCount::new_max())
+        } else {
+            self.used.add(n)
+        };
+
+        self.free = if self.free.is_max() {
+            HostCount::new_from_ipnet_with_sub(self.subnet, n)
+                .unwrap_or(HostCount::try_from(0).unwrap())
+        } else {
+            self.free.sub(n)
+        };
+    }
+
+    fn less_used_more_free(&mut self, n: u32) {
+        self.used = if self.used.is_max() {
+            HostCount::new_from_ipnet_with_sub(self.subnet, n).unwrap_or(HostCount::new_max())
+        } else {
+            self.used.sub(n)
+        };
+
+        self.free = if self.used.is_max() {
+            HostCount::new_from_ipnet_with_add(self.subnet, n)
+                .unwrap_or(HostCount::try_from(0).unwrap())
+        } else {
+            self.used.add(n)
+        }
+    }
+}
+
 pub struct NetworkSubnetList {
     iter: SubnetList,
     default: DefaultValuesNetwork,

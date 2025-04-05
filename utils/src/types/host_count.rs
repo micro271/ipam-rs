@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 pub struct HostCount(i32);
 
 impl HostCount {
-    pub const MAX: i32 = 0x00FFFFFF;
+    const MAX: i32 = 0x00FFFFFF;
 
     pub fn new(bits: u8, prefix: u8) -> Option<Self> {
         2_i32
@@ -23,14 +23,10 @@ impl HostCount {
     }
 
     pub fn new_from_bits_with_sub(bits: u8, prefix: u8, sub: u32) -> Option<Self> {
-        (bits > prefix)
-            .then(|| {
-                2u32.pow((bits - prefix) as u32)
-                    .checked_sub(sub)
-                    .or(Some(0))
-                    .map(|x| Self((x as i32).min(Self::MAX)))
-            })
-            .flatten()
+        2u32.checked_pow(bits.checked_sub(prefix)? as u32)
+            .map(|x| if x > 2 { x - 2 } else { x })?
+            .checked_sub(sub)
+            .map(|x| Self((x as i32).min(Self::MAX)))
     }
 
     pub fn new_from_ipnet_with_sub(ipnet: IpNet, sub: u32) -> Option<Self> {
@@ -41,15 +37,13 @@ impl HostCount {
     }
 
     pub fn new_from_bits_with_add(bits: u8, prefix: u8, sub: u32) -> Option<Self> {
-        (bits > prefix)
-            .then(|| {
-                let avl = 2u32.pow((bits - prefix) as u32);
+        let avl = match 2u32.pow(bits.checked_sub(prefix)? as u32) {
+            n @ 0..=2 => n,
+            n => n - 2,
+        };
 
-                avl.checked_add(sub)
-                    .filter(|x| x < &avl)
-                    .map(|x| Self((x as i32).min(Self::MAX)))
-            })
-            .flatten()
+        avl.checked_add(sub)
+            .map(|x| Self((x as i32).min(Self::MAX)))
     }
 
     pub fn new_from_ipnet_with_add(ipnet: IpNet, sub: u32) -> Option<Self> {
@@ -57,6 +51,14 @@ impl HostCount {
         let prefix = ipnet.prefix_len();
 
         Self::new_from_bits_with_add(bits, prefix, sub)
+    }
+
+    pub fn new_max() -> Self {
+        HostCount(Self::MAX)
+    }
+
+    pub fn max() -> u32 {
+        Self::MAX as u32
     }
 
     pub fn add(self, value: u32) -> Self {
@@ -67,6 +69,10 @@ impl HostCount {
                 .and_then(|x| self.0.checked_add(x).map(|x| x.min(Self::MAX)))
                 .unwrap_or(Self::MAX),
         )
+    }
+
+    pub fn is_max(&self) -> bool {
+        self.0 == Self::MAX
     }
 
     pub fn sub(self, value: u32) -> Self {
