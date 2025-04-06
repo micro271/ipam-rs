@@ -138,7 +138,7 @@ pub async fn subnetting(
         description,
     }): Json<CreateSubnet>,
 ) -> ResponseDefault<()> {
-    let father = state
+    let mut father = state
         .get::<Network>(
             NetworkFilter {
                 id: Some(father),
@@ -156,26 +156,46 @@ pub async fn subnetting(
             .status(StatusCode::BAD_REQUEST)
     })?;
 
-    
     let mut transaction = state.transaction().await?;
     let len = subnet.len();
     let mut update_hostc = father.update_host_count();
-    update_hostc.less_free_more_used(len as u32 );
-    
-    
-    
+    update_hostc.less_free_more_used(len as u32);
+
     if let Err(e) = {
-        transaction.update::<Network,_,_>(update_hostc, NetworkFilter{id: Some(father.id), ..Default::default()}).await?;
+        transaction
+            .update::<Network, _, _>(
+                update_hostc,
+                NetworkFilter {
+                    id: Some(father.id),
+                    ..Default::default()
+                },
+            )
+            .await?;
+
         while let Some(id) = father.father {
-        
-            transaction.update(, NetworkFilter{id: Some(father), ..Default::default()}).await
+            let cond = NetworkFilter {
+                id: Some(id),
+                ..Default::default()
+            };
+
+            father = transaction
+                .get::<Network>(cond.clone(), None, None)
+                .await?
+                .remove(0);
+
+            update_hostc = father.update_host_count();
+            update_hostc.less_free_more_used(len.try_into().unwrap());
+
+            transaction
+                .update::<Network, _, _>(update_hostc, cond)
+                .await?;
         }
 
-        Ok(())
+        Result::Ok::<(), ResponseError>(())
     } {
         transaction.rollback().await?;
-        return Err(ResponseError::builder().detail(e.to_string()).status(StatusCode::INTERNAL_SERVER_ERROR).build());
+        return Err(e);
     }
 
-    Ok(QueryResult::new(10))
+    Ok(QueryResult::new(10).into())
 }

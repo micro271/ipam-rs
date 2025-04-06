@@ -9,7 +9,7 @@ use libipam::{
 };
 use macros::MapQuery;
 
-#[derive(Debug, MapQuery, Default)]
+#[derive(Debug, MapQuery, Default, Clone)]
 pub struct NetworkFilter {
     pub id: Option<Uuid>,
     pub description: Option<String>,
