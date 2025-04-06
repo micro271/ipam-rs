@@ -150,22 +150,32 @@ pub async fn subnetting(
         .await?
         .remove(0);
 
-    if father.kind != Kind::Pool {
-        return Err(ResponseError::builder()
-            .detail("The network {} isn't to ready to be VLSM".to_string())
-            .status(StatusCode::BAD_REQUEST)
-            .build());
-    }
-
     let subnet = father.subnets(prefix).map_err(|x| {
         ResponseError::builder()
             .detail(x.to_string())
             .status(StatusCode::BAD_REQUEST)
     })?;
 
-    let update_hostc = father.update_host_count();
+    
+    let mut transaction = state.transaction().await?;
+    let len = subnet.len();
+    let mut update_hostc = father.update_host_count();
+    update_hostc.less_free_more_used(len as u32 );
+    
+    
+    
+    if let Err(e) = {
+        transaction.update::<Network,_,_>(update_hostc, NetworkFilter{id: Some(father.id), ..Default::default()}).await?;
+        while let Some(id) = father.father {
+        
+            transaction.update(, NetworkFilter{id: Some(father), ..Default::default()}).await
+        }
 
-    todo!()
+        Ok(())
+    } {
+        transaction.rollback().await?;
+        return Err(ResponseError::builder().detail(e.to_string()).status(StatusCode::INTERNAL_SERVER_ERROR).build());
+    }
 
-    // todo!("We've needed update the free and used IPs in each network/subnetwork");
+    Ok(QueryResult::new(10))
 }

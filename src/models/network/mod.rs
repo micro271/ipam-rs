@@ -43,17 +43,21 @@ pub struct Network {
     pub kind: Kind,
 }
 
-#[derive(Debug, Clone, Copy, MapQuery)]
+#[derive(Debug, Clone, Copy, Updatable)]
 pub struct UpdateHostCount {
-    #[IgnoreField]
-    pub subnet: IpNet,
+    #[IgnoreFieldToUpdate]
+    subnet: IpNet,
 
-    pub used: HostCount,
-    pub free: HostCount,
+    used: HostCount,
+    free: HostCount,
 }
 
 impl UpdateHostCount {
-    fn less_free_more_used(&mut self, n: u32) {
+    fn new(subnet: IpNet, used: HostCount, free: HostCount) -> Self {
+        Self { subnet, used, free }
+    }
+
+    pub fn less_free_more_used(&mut self, n: u32) {
         self.used = if self.used.is_max() {
             HostCount::new_from_ipnet_with_add(self.subnet, n).unwrap_or(HostCount::new_max())
         } else {
@@ -68,7 +72,7 @@ impl UpdateHostCount {
         };
     }
 
-    fn less_used_more_free(&mut self, n: u32) {
+    pub fn less_used_more_free(&mut self, n: u32) {
         self.used = if self.used.is_max() {
             HostCount::new_from_ipnet_with_sub(self.subnet, n).unwrap_or(HostCount::new_max())
         } else {
@@ -244,10 +248,6 @@ impl Network {
         ))
     }
     pub fn update_host_count(&self) -> UpdateHostCount {
-        UpdateHostCount {
-            subnet: self.subnet,
-            used: self.used,
-            free: self.free,
-        }
+        UpdateHostCount::new(self.subnet, self.used, self.free)
     }
 }

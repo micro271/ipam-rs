@@ -115,7 +115,7 @@ fn impl_from_pg_row(input: &syn::DeriveInput) -> TokenStream {
     .into()
 }
 
-#[proc_macro_derive(Updatable)]
+#[proc_macro_derive(Updatable, attributes(IgnoreFieldToUpdate))]
 pub fn create_updatable(token: TokenStream) -> TokenStream {
     let ast = syn::parse(token).unwrap();
 
@@ -129,18 +129,37 @@ fn impl_updatable(input: &syn::DeriveInput) -> TokenStream {
         _ => panic!("This isn't a struct"),
     }
     .iter()
-    .filter_map(|x| x.ident.as_ref())
+    .filter(|x| {
+        x.attrs
+            .iter()
+            .any(|x| x.path().is_ident("IgnoreFieldToUpdate"))
+    })
+    .map(|x| {
+        let ty = &x.ty;
+        let name = x.ident.as_ref();
+
+        if let syn::Type::Path(e) = ty {
+            if e.path.segments.iter().any(|x| x.ident == "Option") {
+                return quote! {
+                    if let ::std::option::Option::Some(e) = self.#name {
+                        resp.insert(stringify!(#name), e.into());
+                    }
+                };
+            }
+        }
+
+        quote! {
+            resp.insert(stringify!(#name), self.#name.into());
+        }
+    })
     .collect::<Vec<_>>();
 
     quote! {
         impl crate::database::repository::Updatable for #name {
             fn get_pair(self) -> Option<::std::collections::HashMap<&'static str, crate::database::repository::TypeTable>> {
                 let mut resp = ::std::collections::HashMap::new();
-                #(
-                    if let Some(value) = self.#fields {
-                        resp.insert(stringify!(#fields), value.into());
-                    }
-                )*
+                
+                #(#fields)*
 
                 (!resp.is_empty()).then_some(resp)
             }
