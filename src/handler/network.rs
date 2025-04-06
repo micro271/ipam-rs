@@ -1,6 +1,5 @@
 use crate::{
-    database::transaction::Transaction as _,
-    models::network::{DefaultValuesNetwork, Kind, NetworkFilter},
+    database::transaction::Transaction as _, models::network::NetworkFilter,
     response::ResponseQuery,
 };
 use std::net::{Ipv4Addr, Ipv6Addr};
@@ -13,7 +12,6 @@ use super::{
 };
 
 use entries::{models::NetworkCreateEntry, params::ParamNetwork};
-use libipam::types::host_count::HostCount;
 use models::network::{Network, UpdateNetwork};
 use serde_json::json;
 
@@ -158,10 +156,11 @@ pub async fn subnetting(
 
     let mut transaction = state.transaction().await?;
     let len = subnet.len();
-    let mut update_hostc = father.update_host_count();
-    update_hostc.less_free_more_used(len as u32);
 
     if let Err(e) = {
+        let mut update_hostc = father.update_host_count();
+        update_hostc.less_free_more_used(len as u32);
+
         transaction
             .update::<Network, _, _>(
                 update_hostc,
@@ -195,6 +194,24 @@ pub async fn subnetting(
     } {
         transaction.rollback().await?;
         return Err(e);
+    }
+
+    if len >= BATCH_SIZE {
+        let subnet = subnet.batch(BATCH_SIZE);
+
+        for net in subnet {
+            if let Err(e) = transaction.insert_many(net).await {
+                transaction.rollback().await?;
+                return Err(ResponseError::from(e));
+            }
+        }
+    } else {
+        let subnet = subnet.collect::<Vec<_>>();
+
+        if let Err(e) = transaction.insert_many(subnet).await {
+            transaction.rollback().await?;
+            return Err(ResponseError::from(e));
+        }
     }
 
     Ok(QueryResult::new(10).into())
