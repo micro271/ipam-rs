@@ -1,5 +1,6 @@
 use crate::{
-    database::transaction::Transaction as _, models::network::NetworkFilter,
+    database::transaction::Transaction as _,
+    models::network::{NetworkFilter, UpdateHostCount},
     response::ResponseQuery,
 };
 use std::net::{Ipv4Addr, Ipv6Addr};
@@ -117,11 +118,80 @@ pub async fn delete(
 ) -> ResponseDefault<()> {
     tracing::debug!("delete one network: {}", id);
 
-    let resp = state
-        .delete::<Network>(Some([("id", id.into())].into()))
-        .await?;
+    let for_delete = state
+        .get::<Network>(
+            NetworkFilter {
+                id: Some(id),
+                ..Default::default()
+            },
+            None,
+            None,
+        )
+        .await?
+        .remove(0);
 
-    Ok(resp.into())
+    if let Some(father) = for_delete.father {
+        let mut transaction = state.transaction().await?;
+
+        let children = state
+            .get::<Network>(
+                NetworkFilter {
+                    father: Some(father),
+                    ..Default::default()
+                },
+                None,
+                None,
+            )
+            .await?;
+
+        let len = children.len();
+
+        let father = state
+            .get::<Network>(
+                NetworkFilter {
+                    id: Some(father),
+                    ..Default::default()
+                },
+                None,
+                None,
+            )
+            .await?
+            .remove(0);
+
+        if let Err(e) = {
+            transaction
+                .update::<Network, _, _>(
+                    UpdateHostCount::new_calculate(father.subnet),
+                    NetworkFilter {
+                        id: Some(father.id),
+                        ..Default::default()
+                    },
+                )
+                .await?;
+            for child in children {
+                let cond = NetworkFilter {
+                    id: Some(child.id),
+                    ..Default::default()
+                };
+
+                transaction.delete::<Network, _>(cond).await?;
+            }
+            Result::Ok::<(), ResponseError>(())
+        } {
+            transaction.rollback().await?;
+            return Err(e);
+        }
+
+        transaction.commit().await?;
+
+        Ok(QueryResult::new(len.try_into().unwrap_or_default()).into())
+    } else {
+        let resp = state
+            .delete::<Network>(Some([("id", id.into())].into()))
+            .await?;
+
+        Ok(resp.into())
+    }
 }
 
 #[instrument(level = Level::DEBUG)]

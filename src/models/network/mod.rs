@@ -53,8 +53,21 @@ pub struct UpdateHostCount {
 }
 
 impl UpdateHostCount {
-    fn new(subnet: IpNet, used: HostCount, free: HostCount) -> Self {
+    pub fn new(subnet: IpNet, used: HostCount, free: HostCount) -> Self {
         Self { subnet, used, free }
+    }
+
+    pub fn new_calculate(subnet: IpNet) -> Self {
+        let bits = subnet.max_prefix_len();
+        let prefix = subnet.prefix_len();
+
+        let free = HostCount::new(bits, prefix).unwrap();
+
+        Self {
+            subnet,
+            used: 0.try_into().unwrap(),
+            free,
+        }
     }
 
     pub fn less_free_more_used(&mut self, n: u32) {
