@@ -10,12 +10,21 @@ use libipam::{
 use macros::MapQuery;
 
 #[derive(Debug, MapQuery, Default, Clone)]
-pub struct NetworkFilter {
+pub struct NetwCondition {
     pub id: Option<Uuid>,
     pub description: Option<String>,
     pub status: Option<StatusNetwork>,
     pub father: Option<Uuid>,
     pub kind: Option<Kind>,
+}
+
+impl NetwCondition {
+    pub fn p_key(id: Uuid) -> Self {
+        Self {
+            id: Some(id),
+            ..Default::default()
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Updatable)]

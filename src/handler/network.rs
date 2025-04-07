@@ -1,6 +1,6 @@
 use crate::{
     database::transaction::Transaction as _,
-    models::network::{NetworkFilter, UpdateHostCount},
+    models::network::{NetwCondition, UpdateHostCount},
     response::ResponseQuery,
 };
 use std::net::{Ipv4Addr, Ipv6Addr};
@@ -8,6 +8,7 @@ use std::net::{Ipv4Addr, Ipv6Addr};
 use super::{
     BATCH_SIZE, IsAdministrator, Json, Level, PaginationParams, Path, Query, QueryResult,
     Repository, RepositoryType, ResponseDefault, ResponseError, State, StatusCode, Uuid,
+    addresses::update_host_count,
     entries::{self, models::CreateSubnet},
     instrument, models,
 };
@@ -118,77 +119,19 @@ pub async fn delete(
 ) -> ResponseDefault<()> {
     tracing::debug!("delete one network: {}", id);
 
-    let for_delete = state
-        .get::<Network>(
-            NetworkFilter {
-                id: Some(id),
-                ..Default::default()
-            },
-            None,
-            None,
-        )
-        .await?
-        .remove(0);
+    let for_delete = state.get_one::<Network>(NetwCondition::p_key(id)).await?;
 
     if let Some(father) = for_delete.father {
-        let mut transaction = state.transaction().await?;
-
-        let children = state
-            .get::<Network>(
-                NetworkFilter {
-                    father: Some(father),
-                    ..Default::default()
-                },
-                None,
-                None,
-            )
-            .await?;
-
-        let len = children.len();
-
-        let father = state
-            .get::<Network>(
-                NetworkFilter {
-                    id: Some(father),
-                    ..Default::default()
-                },
-                None,
-                None,
-            )
-            .await?
-            .remove(0);
-
-        if let Err(e) = {
-            transaction
-                .update::<Network, _, _>(
-                    UpdateHostCount::new_calculate(father.subnet),
-                    NetworkFilter {
-                        id: Some(father.id),
-                        ..Default::default()
-                    },
-                )
-                .await?;
-            for child in children {
-                let cond = NetworkFilter {
-                    id: Some(child.id),
-                    ..Default::default()
-                };
-
-                transaction.delete::<Network, _>(cond).await?;
-            }
-            Result::Ok::<(), ResponseError>(())
-        } {
-            transaction.rollback().await?;
-            return Err(e);
-        }
-
-        transaction.commit().await?;
-
-        Ok(QueryResult::new(len.try_into().unwrap_or_default()).into())
-    } else {
         let resp = state
-            .delete::<Network>(Some([("id", id.into())].into()))
+            .delete::<Network>(NetwCondition {
+                father: Some(father),
+                ..Default::default()
+            })
             .await?;
+
+        Ok(resp.into())
+    } else {
+        let resp = state.delete::<Network>(NetwCondition::p_key(id)).await?;
 
         Ok(resp.into())
     }
@@ -206,15 +149,8 @@ pub async fn subnetting(
         description,
     }): Json<CreateSubnet>,
 ) -> ResponseDefault<()> {
-    let mut father = state
-        .get::<Network>(
-            NetworkFilter {
-                id: Some(father),
-                ..Default::default()
-            },
-            None,
-            None,
-        )
+    let father = state
+        .get::<Network>(NetwCondition::p_key(father), None, None)
         .await?
         .remove(0);
 
@@ -227,41 +163,14 @@ pub async fn subnetting(
     let mut transaction = state.transaction().await?;
     let len = subnet.len();
 
-    if let Err(e) = {
-        let mut update_hostc = father.update_host_count();
-        update_hostc.less_free_more_used(len.try_into().unwrap());
-
-        transaction
-            .update::<Network, _, _>(
-                update_hostc,
-                NetworkFilter {
-                    id: Some(father.id),
-                    ..Default::default()
-                },
-            )
-            .await?;
-
-        while let Some(id) = father.father {
-            let cond = NetworkFilter {
-                id: Some(id),
-                ..Default::default()
-            };
-
-            father = transaction
-                .get::<Network>(cond.clone(), None, None)
-                .await?
-                .remove(0);
-
-            update_hostc = father.update_host_count();
-            update_hostc.less_free_more_used(len.try_into().unwrap());
-
-            transaction
-                .update::<Network, _, _>(update_hostc, cond)
-                .await?;
-        }
-
-        Result::Ok::<(), ResponseError>(())
-    } {
+    if let Err(e) = update_host_count(
+        &mut transaction,
+        father,
+        len.try_into().unwrap(),
+        UpdateHostCount::less_free_more_used,
+    )
+    .await
+    {
         transaction.rollback().await?;
         return Err(e);
     }

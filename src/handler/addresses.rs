@@ -11,8 +11,8 @@ use crate::{
         repository::Repository, transaction::BuilderPgTransaction, transaction::Transaction as _,
     },
     models::network::{
-        Kind, Network, NetworkFilter, UpdateHostCount,
-        addresses::{Addr, Addresses, StatusAddr},
+        Kind, NetwCondition, Network, UpdateHostCount,
+        addresses::{AddrCondition, Addresses, StatusAddr},
     },
     response::ResponseQuery,
 };
@@ -36,14 +36,7 @@ pub async fn create_all_ip_addresses(
     Path(network_id): Path<Uuid>,
 ) -> ResponseDefault<()> {
     let network = state
-        .get::<Network>(
-            NetworkFilter {
-                id: Some(network_id),
-                ..Default::default()
-            },
-            None,
-            None,
-        )
+        .get::<Network>(NetwCondition::p_key(network_id), None, None)
         .await?
         .remove(0);
 
@@ -98,20 +91,14 @@ pub async fn update(
     _: IsAdministrator,
     Path(network_id): Path<Uuid>,
     Query(IpNetParamNonOption { ip }): Query<IpNetParamNonOption>,
-    Json(updater): Json<Addr>,
+    Json(updater): Json<AddrCondition>,
 ) -> Result<StatusCode, ResponseError> {
     if updater.ip.is_some_and(|x| x != ip) || updater.network_id.is_some_and(|x| x != network_id) {
-        let network_target: Network = state
-            .get(
-                NetworkFilter {
-                    id: updater.network_id.or(Some(network_id)),
-                    ..Default::default()
-                },
-                None,
-                None,
-            )
-            .await?
-            .remove(0);
+        let network_target = state
+            .get_one::<Network>(NetwCondition::p_key(
+                updater.network_id.unwrap_or(network_id),
+            ))
+            .await?;
 
         if network_target.kind != Kind::Network
             || network_target.subnet.contains(&updater.ip.unwrap_or(ip))
@@ -123,18 +110,12 @@ pub async fn update(
         }
 
         let mut to_delete = state
-            .get::<Addresses>(
-                Addr {
-                    network_id: Some(network_target.id),
-                    ip: updater.ip.or(Some(ip)),
-                    ..Default::default()
-                },
-                None,
-                None,
-            )
+            .get_one::<Addresses>(AddrCondition::p_key(
+                updater.ip.unwrap_or(ip),
+                network_target.id,
+            ))
             .await
-            .ok()
-            .map(|mut x| x.remove(0));
+            .ok();
 
         if to_delete
             .as_ref()
@@ -146,29 +127,14 @@ pub async fn update(
         let mut transaction = state.transaction().await?;
 
         if let Err(e) = {
-            let to_update: Addresses = transaction
-                .get(
-                    Addr {
-                        ip: Some(ip),
-                        network_id: Some(network_id),
-                        ..Default::default()
-                    },
-                    None,
-                    None,
-                )
-                .await?
-                .remove(0);
+            let to_update = state
+                .get_one::<Addresses>(AddrCondition::p_key(ip, network_id))
+                .await?;
 
             if to_update.status != StatusAddr::Unknown && network_target.id != network_id {
-                let condition_network_increase_free_hc = NetworkFilter {
-                    id: Some(network_id),
-                    ..Default::default()
-                };
-
-                let network_to_increase_free_hc = transaction
-                    .get::<Network>(condition_network_increase_free_hc, None, None)
-                    .await?
-                    .remove(0);
+                let network_to_increase_free_hc = state
+                    .get_one::<Network>(NetwCondition::p_key(network_id))
+                    .await?;
 
                 update_host_count(
                     &mut transaction,
@@ -189,21 +155,16 @@ pub async fn update(
 
             if let Some(addr) = to_delete.as_mut() {
                 transaction
-                    .delete::<Addresses, _>(Addr {
-                        ip: Some(addr.ip),
-                        network_id: Some(addr.network_id),
-                        ..Default::default()
-                    })
+                    .delete::<Addresses, _>(AddrCondition::p_key(addr.ip, addr.network_id))
                     .await?;
                 addr.ip = ip;
                 addr.network_id = network_id;
             }
 
-            let condition_addr_to_update = Addr {
-                ip: updater.ip.or(Some(ip)),
-                network_id: updater.network_id.or(Some(network_id)),
-                ..Default::default()
-            };
+            let condition_addr_to_update = AddrCondition::p_key(
+                updater.ip.unwrap_or(ip),
+                updater.network_id.unwrap_or(network_id),
+            );
 
             transaction
                 .update::<Addresses, _, _>(updater, condition_addr_to_update)
@@ -223,14 +184,7 @@ pub async fn update(
         Ok(StatusCode::OK)
     } else {
         state
-            .update::<Addresses, _>(
-                updater,
-                Addr {
-                    ip: Some(ip),
-                    network_id: Some(network_id),
-                    ..Default::default()
-                },
-            )
+            .update::<Addresses, _>(updater, AddrCondition::p_key(ip, network_id))
             .await?;
         Ok(StatusCode::OK)
     }
@@ -249,7 +203,7 @@ pub async fn get(
 ) -> ResponseDefault<Vec<Addresses>> {
     let mut addrs = state
         .get::<Addresses>(
-            Addr {
+            AddrCondition {
                 network_id: Some(network_id),
                 ip,
                 node_id,
@@ -274,17 +228,13 @@ pub async fn delete(
     Query(ip): Query<IpNet>,
 ) -> ResponseDefault<()> {
     let del = state
-        .delete::<Addresses>(Addr {
-            network_id: Some(network_id),
-            ip: Some(ip),
-            ..Default::default()
-        })
+        .delete::<Addresses>(AddrCondition::p_key(ip, network_id))
         .await?;
 
     Ok(del.into())
 }
 
-async fn update_host_count<F>(
+pub async fn update_host_count<F>(
     transaction: &mut BuilderPgTransaction<'_>,
     mut network: Network,
     n: u32,
@@ -297,34 +247,20 @@ where
     action(&mut hc, n);
 
     transaction
-        .update::<Network, _, _>(
-            hc,
-            NetworkFilter {
-                id: Some(network.id),
-                ..Default::default()
-            },
-        )
+        .update::<Network, _, _>(hc, NetwCondition::p_key(network.id))
         .await?;
 
     while let Some(father) = network.father {
-        let condition = NetworkFilter {
-            id: Some(father),
-            ..Default::default()
-        };
-
-        network = transaction.get(condition, None, None).await?.remove(0);
+        network = transaction
+            .get(NetwCondition::p_key(father), None, None)
+            .await?
+            .remove(0);
 
         let mut hc = network.update_host_count();
         action(&mut hc, n);
 
         transaction
-            .update::<Network, _, _>(
-                hc,
-                NetworkFilter {
-                    id: Some(father),
-                    ..Default::default()
-                },
-            )
+            .update::<Network, _, _>(hc, NetwCondition::p_key(father))
             .await?;
     }
 

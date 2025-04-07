@@ -15,11 +15,21 @@ pub struct Addresses {
 }
 
 #[derive(Debug, MapQuery, Default, Clone, Updatable, Deserialize)]
-pub struct Addr {
+pub struct AddrCondition {
     pub ip: Option<IpNet>,
     pub network_id: Option<Uuid>,
     pub node_id: Option<Uuid>,
     pub status: Option<StatusAddr>,
+}
+
+impl AddrCondition {
+    pub fn p_key(ip: IpNet, network_id: Uuid) -> Self {
+        Self {
+            ip: Some(ip),
+            network_id: Some(network_id),
+            ..Default::default()
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, sqlx::Type, PartialEq, Clone, Copy, Default)]
