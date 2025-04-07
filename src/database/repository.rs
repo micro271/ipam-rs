@@ -20,6 +20,11 @@ pub trait Repository {
         offset: Option<i32>,
     ) -> impl Future<Output = ResultRepository<Vec<T>>>;
 
+    fn get_one<T: Table + From<PgRow>>(
+        &self,
+        primary_key: impl MapQuery,
+    ) -> impl Future<Output = ResultRepository<T>>;
+
     fn insert<T: Table>(&self, data: T) -> impl Future<Output = ResultRepository<QueryResult>>;
 
     fn insert_many<T: Table>(

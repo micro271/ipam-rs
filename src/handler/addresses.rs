@@ -113,16 +113,11 @@ pub async fn update(
             .await?
             .remove(0);
 
-        if network_target.kind != Kind::Network {
+        if network_target.kind != Kind::Network
+            || network_target.subnet.contains(&updater.ip.unwrap_or(ip))
+        {
             return Err(ResponseError::builder()
-                .detail("The network target isn't to make for addresses".to_string())
-                .status(StatusCode::BAD_REQUEST)
-                .build());
-        }
-
-        if network_target.subnet.contains(&updater.ip.unwrap_or(ip)) {
-            return Err(ResponseError::builder()
-                .detail("The ip isn't belong to the network target".to_string())
+                .detail("The network cannot be assigned one ip address or the ip isn't belong to the network".to_string())
                 .status(StatusCode::BAD_REQUEST)
                 .build());
         }

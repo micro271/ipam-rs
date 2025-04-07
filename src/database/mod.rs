@@ -58,6 +58,16 @@ impl Repository for RepositoryInjection<Postgres> {
             .into())
     }
 
+    async fn get_one<T: Table + From<PgRow>>(
+        &self,
+        primary_key: impl MapQuery,
+    ) -> ResultRepository<T> {
+        let mut query = T::query_select();
+        let query = SqlOperations::get(&mut query, primary_key, None, None);
+
+        Ok(query.fetch_one(&self.0).await?.into())
+    }
+
     async fn get<T: Table + From<PgRow>>(
         &self,
         column_data: impl MapQuery,
