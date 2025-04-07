@@ -114,10 +114,6 @@ impl NetworkSubnetList {
         }
     }
 
-    pub fn set_default_values(&mut self, values: DefaultValuesNetwork) {
-        self.default = values;
-    }
-
     pub fn batch(self, window: usize) -> NetworkSubnetBatch {
         NetworkSubnetBatch::new(self, window)
     }

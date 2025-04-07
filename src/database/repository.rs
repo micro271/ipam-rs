@@ -48,10 +48,6 @@ impl QueryResult {
     pub fn new(n: u64) -> Self {
         Self { row_affect: n }
     }
-
-    fn row_affect(&self) -> u64 {
-        self.row_affect
-    }
 }
 
 impl From<sqlx::postgres::PgQueryResult> for QueryResult {

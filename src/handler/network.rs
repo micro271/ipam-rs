@@ -229,7 +229,7 @@ pub async fn subnetting(
 
     if let Err(e) = {
         let mut update_hostc = father.update_host_count();
-        update_hostc.less_free_more_used(len as u32);
+        update_hostc.less_free_more_used(len.try_into().unwrap());
 
         transaction
             .update::<Network, _, _>(

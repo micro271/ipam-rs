@@ -39,8 +39,9 @@ pub async fn create(
             .build()
     })??;
 
-    Ok(state.insert(User::from(user)).await?.into())
+    Ok(state.insert::<User>(user.into()).await?.into())
 }
+
 #[instrument(level = Level::INFO)]
 pub async fn update(
     State(state): State<RepositoryType>,

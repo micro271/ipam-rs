@@ -7,9 +7,11 @@ use super::{
     extractors::IsAdministrator,
 };
 use crate::{
-    database::{repository::Repository, transaction::Transaction},
+    database::{
+        repository::Repository, transaction::BuilderPgTransaction, transaction::Transaction as _,
+    },
     models::network::{
-        Kind, Network, NetworkFilter,
+        Kind, Network, NetworkFilter, UpdateHostCount,
         addresses::{Addr, Addresses, StatusAddr},
     },
     response::ResponseQuery,
@@ -98,14 +100,62 @@ pub async fn update(
     Query(IpNetParamNonOption { ip }): Query<IpNetParamNonOption>,
     Json(updater): Json<Addr>,
 ) -> Result<StatusCode, ResponseError> {
-    let mut transaction = state.transaction().await?;
+    if updater.ip.is_some_and(|x| x != ip) || updater.network_id.is_some_and(|x| x != network_id) {
+        let network_target: Network = state
+            .get(
+                NetworkFilter {
+                    id: updater.network_id.or(Some(network_id)),
+                    ..Default::default()
+                },
+                None,
+                None,
+            )
+            .await?
+            .remove(0);
 
-    if updater.network_id.is_some_and(|x| x != network_id) || updater.ip.is_some_and(|x| x != ip) {
-        if let Some(id) = updater.network_id {
-            let netw = transaction
-                .get::<Network>(
+        if network_target.kind != Kind::Network {
+            return Err(ResponseError::builder()
+                .detail("The network target isn't to make for addresses".to_string())
+                .status(StatusCode::BAD_REQUEST)
+                .build());
+        }
+
+        if network_target.subnet.contains(&updater.ip.unwrap_or(ip)) {
+            return Err(ResponseError::builder()
+                .detail("The ip isn't belong to the network target".to_string())
+                .status(StatusCode::BAD_REQUEST)
+                .build());
+        }
+
+        let mut to_delete = state
+            .get::<Addresses>(
+                Addr {
+                    network_id: Some(network_target.id),
+                    ip: updater.ip.or(Some(ip)),
+                    ..Default::default()
+                },
+                None,
+                None,
+            )
+            .await
+            .ok()
+            .map(|mut x| x.remove(0));
+
+        if to_delete
+            .as_ref()
+            .is_some_and(|x| x.status != StatusAddr::Unknown)
+        {
+            return Err(ResponseError::builder().build());
+        }
+
+        let mut transaction = state.transaction().await?;
+
+        if let Err(e) = {
+            let to_update: Addresses = transaction
+                .get(
                     Addr {
-                        network_id: Some(id),
+                        ip: Some(ip),
+                        network_id: Some(network_id),
                         ..Default::default()
                     },
                     None,
@@ -114,56 +164,71 @@ pub async fn update(
                 .await?
                 .remove(0);
 
-            if netw.kind != Kind::Network {
-                return Err(ResponseError::builder()
-                    .detail("This network doesn't split into simple IPs.".to_string())
-                    .status(StatusCode::BAD_REQUEST)
-                    .build());
+            if to_update.status != StatusAddr::Unknown && network_target.id != network_id {
+                let condition_network_increase_free_hc = NetworkFilter {
+                    id: Some(network_id),
+                    ..Default::default()
+                };
+
+                let network_to_increase_free_hc = transaction
+                    .get::<Network>(condition_network_increase_free_hc, None, None)
+                    .await?
+                    .remove(0);
+
+                update_host_count(
+                    &mut transaction,
+                    network_to_increase_free_hc,
+                    1,
+                    UpdateHostCount::less_used_more_free,
+                )
+                .await?;
+
+                update_host_count(
+                    &mut transaction,
+                    network_target,
+                    1,
+                    UpdateHostCount::less_free_more_used,
+                )
+                .await?;
             }
 
-            if !netw.subnet.contains(&updater.ip.unwrap_or(ip)) {
-                return Err(ResponseError::builder()
-                    .detail(format!(
-                        "The ip {:?} does't belong to network {:?}",
-                        updater.ip.unwrap_or(ip),
-                        netw.subnet,
-                    ))
-                    .build());
+            if let Some(addr) = to_delete.as_mut() {
+                transaction
+                    .delete::<Addresses, _>(Addr {
+                        ip: Some(addr.ip),
+                        network_id: Some(addr.network_id),
+                        ..Default::default()
+                    })
+                    .await?;
+                addr.ip = ip;
+                addr.network_id = network_id;
             }
+
+            let condition_addr_to_update = Addr {
+                ip: updater.ip.or(Some(ip)),
+                network_id: updater.network_id.or(Some(network_id)),
+                ..Default::default()
+            };
+
+            transaction
+                .update::<Addresses, _, _>(updater, condition_addr_to_update)
+                .await?;
+
+            if let Some(e) = to_delete {
+                transaction.insert(e).await?;
+            }
+
+            Result::Ok::<(), ResponseError>(())
+        } {
+            transaction.rollback().await?;
+            return Err(e);
         }
 
-        let network_id_to_replace = updater.network_id.or(Some(network_id));
-        let ip_to_replace = updater.ip.or(Some(ip));
-
-        let to_replace = Addr {
-            network_id: network_id_to_replace,
-            ip: ip_to_replace,
-            ..Default::default()
-        };
-
-        if let Ok(mut addr) = transaction
-            .get::<Addresses>(to_replace.clone(), None, None)
-            .await
-        {
-            let addr = addr.remove(0);
-
-            if addr.status != StatusAddr::Unknown {
-                return Err(ResponseError::builder()
-                    .detail("Tht ip address target is not unknown status".to_string())
-                    .status(StatusCode::FORBIDDEN)
-                    .build());
-            }
-
-            if let Err(e) = transaction.delete::<Addresses, _>(to_replace).await {
-                return Err(transaction
-                    .rollback()
-                    .await
-                    .map(|()| ResponseError::from(e))?);
-            }
-        }
-
-        transaction
-            .update::<Addresses, _, _>(
+        transaction.commit().await?;
+        Ok(StatusCode::OK)
+    } else {
+        state
+            .update::<Addresses, _>(
                 updater,
                 Addr {
                     ip: Some(ip),
@@ -172,38 +237,6 @@ pub async fn update(
                 },
             )
             .await?;
-
-        let new_address = Addresses {
-            ip,
-            network_id,
-            status: StatusAddr::Unknown,
-            node_id: None,
-        };
-
-        transaction.insert(new_address).await?;
-
-        transaction.commit().await?;
-
-        Ok(StatusCode::OK)
-    } else {
-        let condition = Addr {
-            ip: Some(ip),
-            network_id: Some(network_id),
-            ..Default::default()
-        };
-
-        if let Err(e) = transaction
-            .update::<Addresses, _, _>(updater, condition)
-            .await
-        {
-            return Err(transaction
-                .rollback()
-                .await
-                .map(|()| ResponseError::from(e))?);
-        }
-
-        transaction.commit().await?;
-
         Ok(StatusCode::OK)
     }
 }
@@ -254,4 +287,51 @@ pub async fn delete(
         .await?;
 
     Ok(del.into())
+}
+
+async fn update_host_count<F>(
+    transaction: &mut BuilderPgTransaction<'_>,
+    mut network: Network,
+    n: u32,
+    mut action: F,
+) -> Result<(), ResponseError>
+where
+    F: FnMut(&mut UpdateHostCount, u32),
+{
+    let mut hc = network.update_host_count();
+    action(&mut hc, n);
+
+    transaction
+        .update::<Network, _, _>(
+            hc,
+            NetworkFilter {
+                id: Some(network.id),
+                ..Default::default()
+            },
+        )
+        .await?;
+
+    while let Some(father) = network.father {
+        let condition = NetworkFilter {
+            id: Some(father),
+            ..Default::default()
+        };
+
+        network = transaction.get(condition, None, None).await?.remove(0);
+
+        let mut hc = network.update_host_count();
+        action(&mut hc, n);
+
+        transaction
+            .update::<Network, _, _>(
+                hc,
+                NetworkFilter {
+                    id: Some(father),
+                    ..Default::default()
+                },
+            )
+            .await?;
+    }
+
+    Ok(())
 }
