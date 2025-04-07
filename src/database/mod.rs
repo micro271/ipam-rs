@@ -2,7 +2,6 @@ pub mod repository;
 pub mod sql;
 pub mod transaction;
 
-use futures::stream::StreamExt;
 use repository::{
     MapQuery, QueryResult, Repository, ResultRepository, Table, TypeTable, Updatable,
     error::RepositoryError,
@@ -80,19 +79,17 @@ impl Repository for RepositoryInjection<Postgres> {
         tracing::trace!("3 input (offset) - {:?}", offset);
 
         let mut query = T::query_select();
-        let mut vec_resp = Vec::new();
-        let mut query = SqlOperations::get(&mut query, column_data, limit, offset).fetch(&self.0);
+        let query = SqlOperations::get(&mut query, column_data, limit, offset)
+            .fetch_all(&self.0)
+            .await?
+            .into_iter()
+            .map(T::from)
+            .collect::<Vec<T>>();
 
-        while let Some(Ok(e)) = query.next().await {
-            vec_resp.push(T::from(e));
-        }
-
-        tracing::debug!("sql query result - {:?}", vec_resp);
-
-        if vec_resp.is_empty() {
+        if query.is_empty() {
             Err(RepositoryError::RowNotFound)
         } else {
-            Ok(vec_resp)
+            Ok(query)
         }
     }
 
