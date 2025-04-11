@@ -84,10 +84,7 @@ pub async fn update(
     Json(updater): Json<UpdateNetwork>,
 ) -> ResponseDefault<()> {
     if updater.network.is_some() {
-        let old = state
-            .get::<Network>(Some([("id", id.into())].into()), None, None)
-            .await?
-            .remove(0);
+        let old = state.get_one::<Network>(NetwCondition::p_key(id)).await?;
 
         if old.children != 0 {
             tracing::debug!("The network {:?} have subnets", old.subnet);
@@ -105,7 +102,7 @@ pub async fn update(
     }
 
     let resp = state
-        .update::<Network, _>(updater, Some([("id", id.into())].into()))
+        .update::<Network, _>(updater, NetwCondition::p_key(id))
         .await?;
 
     Ok(resp.into())

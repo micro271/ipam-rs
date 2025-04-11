@@ -1,7 +1,7 @@
 use super::{Level, PaginationParams, RepositoryType, ResponseDefault, State, instrument};
 use crate::{
     database::repository::Repository,
-    models::vlan::{UpdateVlan, Vlan},
+    models::vlan::{UpdateVlan, Vlan, VlanCondition},
     response::ResponseQuery,
 };
 use axum::{
@@ -27,7 +27,7 @@ pub async fn get(
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> ResponseDefault<Vec<Vlan>> {
     let resp = state
-        .get::<Vlan>(Some([("id", id.into())].into()), limit, offset)
+        .get::<Vlan>(VlanCondition::p_key(id), limit, offset)
         .await?;
 
     let metadata = Some(json!({
@@ -51,7 +51,7 @@ pub async fn update(
     Json(vlan): Json<UpdateVlan>,
 ) -> ResponseDefault<()> {
     Ok(state
-        .update::<Vlan, _>(vlan, Some([("id", id.into())].into()))
+        .update::<Vlan, _>(vlan, VlanCondition::p_key(id))
         .await?
         .into())
 }
@@ -61,8 +61,5 @@ pub async fn delete(
     State(state): State<RepositoryType>,
     Path(id): Path<VlanId>,
 ) -> ResponseDefault<()> {
-    Ok(state
-        .delete::<Vlan>(Some([("id", id.into())].into()))
-        .await?
-        .into())
+    Ok(state.delete::<Vlan>(VlanCondition::p_key(id)).await?.into())
 }

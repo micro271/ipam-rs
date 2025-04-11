@@ -1,6 +1,6 @@
 use crate::{
     database::repository::{Repository, error::RepositoryError},
-    models::user::{Role, User},
+    models::user::{Role, User, UserCondition},
 };
 use libipam::services::authentication::{Claim, encrypt};
 use serde::{Deserialize, Serialize};
@@ -16,18 +16,7 @@ pub struct Claims {
 impl Claim for Claims {}
 
 pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryError> {
-    if let Ok(e) = db
-        .get::<User>(
-            Some(std::collections::HashMap::from([(
-                "role",
-                Role::Admin.into(),
-            )])),
-            None,
-            None,
-        )
-        .await
-        .map(|mut x| x.remove(0))
-    {
+    if let Ok(e) = db.get_one::<User>(UserCondition::role(Role::Admin)).await {
         tracing::info!(
             "The admin user already exists [ username: {}, password: {}, create_at: {:?} ]",
             e.username,

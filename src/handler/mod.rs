@@ -22,7 +22,7 @@ use axum::{
 use entries::params::PaginationParams;
 use extractors::IsAdministrator;
 use libipam::response_error::ResponseError;
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 use tracing::{Level, instrument};
 use uuid::Uuid;
 

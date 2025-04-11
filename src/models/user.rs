@@ -1,3 +1,4 @@
+use macros::MapQuery;
 use time::OffsetDateTime;
 
 use super::{Deserialize, FromPgRow, Serialize, Table, Updatable, Uuid};
@@ -16,6 +17,36 @@ pub struct User {
 
     #[offset_timestamp((-3,0,0))]
     pub last_login: Option<time::OffsetDateTime>,
+}
+
+#[derive(Debug, MapQuery, Default)]
+pub struct UserCondition {
+    pub id: Option<Uuid>,
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub role: Option<Role>,
+    pub is_active: Option<bool>,
+}
+
+impl UserCondition {
+    pub fn p_key(id: Uuid) -> Self {
+        Self {
+            id: Some(id),
+            ..Default::default()
+        }
+    }
+    pub fn role(role: Role) -> Self {
+        Self {
+            role: Some(role),
+            ..Default::default()
+        }
+    }
+    pub fn username(username: String) -> Self {
+        Self {
+            username: Some(username),
+            ..Default::default()
+        }
+    }
 }
 
 impl User {

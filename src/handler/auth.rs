@@ -1,9 +1,12 @@
 use super::{
-    HashMap, IsAdministrator, Json, Level, Path, Repository, RepositoryType, ResponseError, Role,
-    State, StatusCode, Uri, Uuid, entries, entries::models::UserEntry, instrument, models,
+    IsAdministrator, Json, Level, Path, Repository, RepositoryType, ResponseError, Role, State,
+    StatusCode, Uri, Uuid, entries, entries::models::UserEntry, instrument, models,
 };
 use crate::{
-    models::{network::addresses::Addresses, user::User},
+    models::{
+        network::addresses::Addresses,
+        user::{User, UserCondition},
+    },
     response::ResponseQuery,
     services::Claims,
 };
@@ -49,7 +52,7 @@ pub async fn update(
     Json(updater): Json<UpdateUser>,
 ) -> Result<ResponseQuery<Addresses, Value>, ResponseError> {
     let update = state
-        .update::<User, _>(updater, Some(HashMap::from([("id", id.into())])))
+        .update::<User, _>(updater, UserCondition::p_key(id))
         .await?;
 
     Ok(ResponseQuery::new(
@@ -65,14 +68,11 @@ pub async fn delete(
     State(state): State<RepositoryType>,
     Path(id): Path<Uuid>,
 ) -> Result<ResponseQuery<Addresses, Value>, ResponseError> {
-    let user = state
-        .get::<User>(Some([("id", id.into())].into()), None, None)
-        .await?
-        .remove(0);
+    let user = state.get_one::<User>(UserCondition::p_key(id)).await?;
 
     if user.is_admin() {
         let user = state
-            .get::<User>(Some([("role", Role::Admin.into())].into()), None, None)
+            .get::<User>(UserCondition::role(Role::Admin), None, None)
             .await?;
 
         if user.len() <= 1 {
@@ -81,9 +81,7 @@ pub async fn delete(
                 .build());
         }
     }
-    let resp = state
-        .delete::<Addresses>(Some([("id", id.into())].into()))
-        .await?;
+    let resp = state.delete::<Addresses>(UserCondition::p_key(id)).await?;
 
     Ok(ResponseQuery::new(
         None,
@@ -100,13 +98,8 @@ pub async fn login(
     Json(entries::models::UserEntry { username, password }): Json<entries::models::UserEntry>,
 ) -> Result<Response, ResponseError> {
     let resp = state
-        .get::<User>(
-            Some([("username", username.clone().into())].into()),
-            None,
-            None,
-        )
-        .await?
-        .remove(0);
+        .get_one::<User>(UserCondition::username(username.clone()))
+        .await?;
 
     if let Some(Ok(e)) =
         verify_passwd(password, &resp.password).then_some(create_token(Claims::from(resp)))
@@ -119,7 +112,7 @@ pub async fn login(
                     last_login,
                     ..Default::default()
                 },
-                Some([("username", username.into())].into()),
+                UserCondition::username(username),
             )
             .await?;
 

@@ -1,5 +1,6 @@
 use super::{FromPgRow, Table, Updatable};
 use libipam::types::vlan::VlanId;
+use macros::MapQuery;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone, Table, FromPgRow)]
@@ -13,4 +14,19 @@ pub struct Vlan {
 pub struct UpdateVlan {
     pub id: Option<VlanId>,
     pub description: Option<String>,
+}
+
+#[derive(Debug, Default, MapQuery)]
+pub struct VlanCondition {
+    pub id: Option<VlanId>,
+    pub description: Option<String>,
+}
+
+impl VlanCondition {
+    pub fn p_key(id: VlanId) -> Self {
+        Self {
+            id: Some(id),
+            description: None,
+        }
+    }
 }
