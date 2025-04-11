@@ -3,7 +3,7 @@ use super::{
     ResponseDefault, State, Uuid, entries, instrument,
 };
 use crate::{
-    models::node::{Node, NodeFilter, UpdateNode},
+    models::node::{Node, NodeCondition, UpdateNode},
     response::ResponseQuery,
 };
 use axum::http::StatusCode;
@@ -27,13 +27,7 @@ pub async fn update(
     Json(new): Json<UpdateNode>,
 ) -> ResponseDefault<()> {
     Ok(state
-        .update::<Node, _>(
-            new,
-            NodeFilter {
-                id: Some(id),
-                ..Default::default()
-            },
-        )
+        .update::<Node, _>(new, NodeCondition::p_key(id))
         .await?
         .into())
 }
@@ -41,7 +35,7 @@ pub async fn update(
 #[instrument(level = Level::DEBUG)]
 pub async fn get(
     State(state): State<RepositoryType>,
-    Query(params): Query<NodeFilter>,
+    Query(params): Query<NodeCondition>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> ResponseDefault<Vec<Node>> {
     let data = state.get::<Node>(params, limit, offset).await?;
@@ -66,11 +60,5 @@ pub async fn delete(
     _: IsAdministrator,
     Path(id): Path<Uuid>,
 ) -> ResponseDefault<()> {
-    Ok(state
-        .delete::<Node>(NodeFilter {
-            id: Some(id),
-            ..Default::default()
-        })
-        .await?
-        .into())
+    Ok(state.delete::<Node>(NodeCondition::p_key(id)).await?.into())
 }

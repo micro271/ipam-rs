@@ -26,7 +26,7 @@ pub struct Node {
 }
 
 #[derive(Debug, Deserialize, Clone, MapQuery, Default)]
-pub struct NodeFilter {
+pub struct NodeCondition {
     pub id: Option<Uuid>,
     pub hostname: Option<String>,
     pub description: Option<String>,
@@ -34,4 +34,13 @@ pub struct NodeFilter {
     pub label: Option<String>,
     pub room_name: Option<Uuid>,
     pub mount_point: Option<String>,
+}
+
+impl NodeCondition {
+    pub fn p_key(id: Uuid) -> Self {
+        Self {
+            id: Some(id),
+            ..Default::default()
+        }
+    }
 }

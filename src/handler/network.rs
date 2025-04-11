@@ -121,15 +121,35 @@ pub async fn delete(
 
     let for_delete = state.get_one::<Network>(NetwCondition::p_key(id)).await?;
 
-    if let Some(father) = for_delete.father {
-        let resp = state
-            .delete::<Network>(NetwCondition {
-                father: Some(father),
-                ..Default::default()
-            })
-            .await?;
+    let mut transaction = state.transaction().await?;
 
-        Ok(resp.into())
+    if let Some(father) = for_delete.father {
+        let res = {
+            let resp = transaction
+                .delete::<Network, _>(NetwCondition::father(father))
+                .await?;
+
+            let father = state
+                .get_one::<Network>(NetwCondition::p_key(father))
+                .await?;
+
+            let mut hc = father.update_host_count();
+            hc.new_calculate();
+
+            transaction
+                .update::<Network, _, _>(hc, NetwCondition::p_key(father.id))
+                .await?;
+
+            Result::Ok::<QueryResult, ResponseError>(resp)
+        };
+
+        match res {
+            Ok(e) => Ok(e.into()),
+            Err(e) => {
+                transaction.rollback().await?;
+                return Err(e);
+            }
+        }
     } else {
         let resp = state.delete::<Network>(NetwCondition::p_key(id)).await?;
 
@@ -150,9 +170,8 @@ pub async fn subnetting(
     }): Json<CreateSubnet>,
 ) -> ResponseDefault<()> {
     let father = state
-        .get::<Network>(NetwCondition::p_key(father), None, None)
-        .await?
-        .remove(0);
+        .get_one::<Network>(NetwCondition::p_key(father))
+        .await?;
 
     let subnet = father.subnets(prefix).map_err(|x| {
         ResponseError::builder()

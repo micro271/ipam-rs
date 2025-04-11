@@ -25,6 +25,13 @@ impl NetwCondition {
             ..Default::default()
         }
     }
+
+    pub fn father(father: Uuid) -> Self {
+        Self {
+            father: Some(father),
+            ..Default::default()
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Updatable)]
@@ -66,17 +73,14 @@ impl UpdateHostCount {
         Self { subnet, used, free }
     }
 
-    pub fn new_calculate(subnet: IpNet) -> Self {
-        let bits = subnet.max_prefix_len();
-        let prefix = subnet.prefix_len();
+    pub fn new_calculate(&mut self) {
+        let bits = self.subnet.max_prefix_len();
+        let prefix = self.subnet.prefix_len();
 
         let free = HostCount::new(bits, prefix).unwrap();
 
-        Self {
-            subnet,
-            used: 0.try_into().unwrap(),
-            free,
-        }
+        self.used = 0.try_into().unwrap();
+        self.free = free;
     }
 
     pub fn less_free_more_used(&mut self, n: u32) {
