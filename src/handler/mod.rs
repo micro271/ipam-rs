@@ -8,10 +8,8 @@ pub mod node;
 pub mod vlan;
 
 use crate::{
-    database::{
-        RepositoryInjection,
-        repository::{QueryResult, Repository},
-    },
+    AppState,
+    database::repository::{QueryResult, Repository},
     models::{self, user::Role},
     response::ResponseQuery,
 };
@@ -26,7 +24,7 @@ use std::sync::Arc;
 use tracing::{Level, instrument};
 use uuid::Uuid;
 
-type RepositoryType = Arc<RepositoryInjection<sqlx::postgres::Postgres>>;
+pub type RepositoryType = Arc<AppState>;
 
 type ResponseDefault<T> = Result<ResponseQuery<T, serde_json::Value>, ResponseError>;
 

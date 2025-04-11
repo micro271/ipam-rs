@@ -8,7 +8,8 @@ use super::{
 };
 use crate::{
     database::{
-        repository::Repository, transaction::BuilderPgTransaction, transaction::Transaction as _,
+        repository::Repository,
+        transaction::{BuilderPgTransaction, Transaction as _},
     },
     models::network::{
         Kind, NetwCondition, Network, UpdateHostCount,
@@ -49,6 +50,8 @@ pub async fn create_all_ip_addresses(
     }
 
     let len;
+
+    _ = state.heavy_task().acquire().await;
 
     match network.addresses() {
         Ok(e) if e.len() > BATCH_SIZE => {
