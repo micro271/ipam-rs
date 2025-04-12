@@ -176,7 +176,7 @@ pub async fn subnetting(
             .status(StatusCode::BAD_REQUEST)
     })?;
 
-    _ = state.heavy_task().acquire().await;
+    let _permit = state.heavy_task().acquire().await;
 
     let mut transaction = state.transaction().await?;
     let len = subnet.len();

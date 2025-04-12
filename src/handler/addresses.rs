@@ -51,7 +51,7 @@ pub async fn create_all_ip_addresses(
 
     let len;
 
-    _ = state.heavy_task().acquire().await;
+    let _permit = state.heavy_task().acquire().await;
 
     match network.addresses() {
         Ok(e) if e.len() > BATCH_SIZE => {
