@@ -130,7 +130,7 @@ fn impl_updatable(input: &syn::DeriveInput) -> TokenStream {
     }
     .iter()
     .filter(|x| {
-        x.attrs
+        !x.attrs
             .iter()
             .any(|x| x.path().is_ident("IgnoreFieldToUpdate"))
     })
