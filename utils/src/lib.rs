@@ -78,7 +78,7 @@ where
     ) -> Result<Self, Self::Rejection> {
         T::find(&parts.headers).map(Token).ok_or(
             crate::response_error::ResponseError::unauthorized(
-                &parts.uri,
+                Some(parts.uri.to_string()),
                 Some("Token doesn't present".to_string()),
             ),
         )

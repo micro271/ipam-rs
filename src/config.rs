@@ -35,7 +35,7 @@ impl Config {
                     }),
                 allow_origin: var("ALLOW_ORIGIN")
                     .ok()
-                    .filter(|x| !x.is_empty() && !x.contains('*'))
+                    .filter(|x| !x.is_empty() && !x.eq("*"))
                     .map(|x| {
                         x.split_whitespace()
                             .filter_map(|x| x.parse::<HeaderValue>().ok())

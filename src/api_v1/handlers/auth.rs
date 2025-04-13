@@ -48,6 +48,7 @@ pub async fn create(
 #[instrument(level = Level::INFO)]
 pub async fn update(
     State(state): State<StateType>,
+    _: IsAdministrator,
     Path(id): Path<Uuid>,
     Json(updater): Json<UpdateUser>,
 ) -> Result<ResponseQuery<Addresses, Value>, ResponseError> {
@@ -140,7 +141,7 @@ pub async fn login(
             .unwrap_or_default())
     } else {
         Err(ResponseError::unauthorized(
-            &uri,
+            Some(uri.to_string()),
             Some("invalid username or password".to_string()),
         ))
     }
@@ -152,16 +153,19 @@ pub async fn verify_token(
     mut req: Request,
     next: Next,
 ) -> Result<axum::response::Response, ResponseError> {
-    let uri = req.uri().clone();
+    let uri = req.uri().to_string();
     let claim = tokio::task::spawn_blocking(move || {
         authentication::verify_token::<Claims, _>(token.get()).map_err(|_| {
-            ResponseError::unauthorized(&uri, Some("Username or password invalid".to_string()))
+            ResponseError::unauthorized(
+                uri.into(),
+                Some("Username or password invalid".to_string()),
+            )
         })
     })
     .await
-    .map_err(|_| {
+    .map_err(|e| {
         ResponseError::builder()
-            .detail("Thread Pool Error".to_string())
+            .detail(e.to_string())
             .instance(req.uri().to_string())
             .title("Login error".to_string())
             .status(StatusCode::INTERNAL_SERVER_ERROR)

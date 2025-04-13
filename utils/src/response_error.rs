@@ -1,5 +1,4 @@
 use axum::http::{Response, StatusCode};
-
 use serde::{Deserialize, Serialize};
 use time::{OffsetDateTime, UtcOffset};
 
@@ -8,11 +7,9 @@ pub struct ResponseError {
     #[serde(skip_serializing_if = "Option::is_none")]
     r#type: Option<String>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    title: Option<String>,
+    title: String,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    status: Option<u16>,
+    status: u16,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     detail: Option<String>,
@@ -20,9 +17,20 @@ pub struct ResponseError {
     #[serde(skip_serializing_if = "Option::is_none")]
     instance: Option<String>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(with = "time::serde::rfc3339::option")]
-    timestamp: Option<OffsetDateTime>,
+    timestamp: OffsetDateTime,
+}
+
+impl std::default::Default for ResponseError {
+    fn default() -> Self {
+        Self {
+            r#type: None,
+            title: StatusCode::BAD_REQUEST.to_string(),
+            status: StatusCode::BAD_REQUEST.as_u16(),
+            detail: None,
+            instance: None,
+            timestamp: OffsetDateTime::now_utc().to_offset(UtcOffset::from_hms(-3, 0, 0).unwrap()),
+        }
+    }
 }
 
 impl ResponseError {
@@ -36,58 +44,51 @@ impl ResponseError {
     ) -> Self {
         Self {
             r#type: Some(r#type),
-            title: Some(title),
-            status: Some(status.as_u16()),
+            title: title,
+            status: status.as_u16(),
             detail: Some(detail),
             instance: Some(instance),
-            timestamp: Some(
-                OffsetDateTime::now_utc()
-                    .to_offset(offset.unwrap_or(UtcOffset::from_hms(-3, 0, 0).unwrap())),
-            ),
+            timestamp: OffsetDateTime::now_utc().to_offset(offset.unwrap_or(UtcOffset::UTC)),
         }
     }
 
-    pub fn builder() -> Builder {
-        Builder::default()
+    pub fn builder() -> ResponseErrorBuilder {
+        ResponseErrorBuilder::default()
     }
 
-    pub fn unauthorized(uri: &axum::http::Uri, detail: Option<String>) -> Self {
+    pub fn unauthorized(uri: Option<String>, detail: Option<String>) -> Self {
         Self {
-            r#type: None,
-            title: Some(StatusCode::UNAUTHORIZED.to_string()),
-            status: Some(StatusCode::UNAUTHORIZED.as_u16()),
+            title: StatusCode::UNAUTHORIZED.to_string(),
+            status: StatusCode::UNAUTHORIZED.as_u16(),
             detail,
-            instance: Some(uri.to_string()),
-            timestamp: Some(
-                time::OffsetDateTime::now_utc()
-                    .to_offset(time::UtcOffset::from_hms(-3, 0, 0).unwrap()),
-            ),
+            instance: uri,
+            ..Default::default()
         }
     }
 
     pub(self) fn create(
-        Builder {
+        ResponseErrorBuilder {
             r#type,
             title,
             status,
             detail,
             instance,
             offset,
-        }: Builder,
+        }: ResponseErrorBuilder,
     ) -> ResponseError {
         Self {
             r#type,
-            title,
-            status: status.or(Some(400)),
+            title: title.unwrap_or(StatusCode::BAD_REQUEST.to_string()),
+            status: status.unwrap_or(StatusCode::BAD_REQUEST.as_u16()),
             detail,
             instance,
-            timestamp: Some(OffsetDateTime::now_utc().to_offset(offset.unwrap_or(UtcOffset::UTC))),
+            timestamp: OffsetDateTime::now_utc().to_offset(offset.unwrap_or(UtcOffset::UTC)),
         }
     }
 }
 
-impl From<Builder> for ResponseError {
-    fn from(value: Builder) -> Self {
+impl From<ResponseErrorBuilder> for ResponseError {
+    fn from(value: ResponseErrorBuilder) -> Self {
         ResponseError::create(value)
     }
 }
@@ -96,7 +97,7 @@ impl axum::response::IntoResponse for ResponseError {
     fn into_response(self) -> axum::response::Response {
         Response::builder()
             .header(axum::http::header::CONTENT_TYPE, "application/problem+json")
-            .status(StatusCode::from_u16(self.status.unwrap()).unwrap())
+            .status(StatusCode::from_u16(self.status).unwrap())
             .body(serde_json::json!(self).to_string())
             .unwrap_or_default()
             .into_response()
@@ -104,7 +105,7 @@ impl axum::response::IntoResponse for ResponseError {
 }
 
 #[derive(Debug, Default)]
-pub struct Builder {
+pub struct ResponseErrorBuilder {
     r#type: Option<String>,
     title: Option<String>,
     status: Option<u16>,
@@ -113,7 +114,7 @@ pub struct Builder {
     offset: Option<UtcOffset>,
 }
 
-impl Builder {
+impl ResponseErrorBuilder {
     pub fn r#type(mut self, r#type: String) -> Self {
         self.r#type = Some(r#type);
         self
@@ -144,7 +145,7 @@ impl Builder {
         self
     }
 
-    pub fn offset_hms(mut self, (hours, minutes, seconds): (i8, i8, i8)) -> Self {
+    pub fn offset_hms(mut self, hours: i8, minutes: i8, seconds: i8) -> Self {
         self.offset = UtcOffset::from_hms(hours, minutes, seconds).ok();
         self
     }
@@ -154,7 +155,7 @@ impl Builder {
     }
 }
 
-impl From<ResponseError> for Builder {
+impl From<ResponseError> for ResponseErrorBuilder {
     fn from(value: ResponseError) -> Self {
         let ResponseError {
             r#type,
@@ -164,13 +165,13 @@ impl From<ResponseError> for Builder {
             instance,
             timestamp,
         } = value;
-        Builder {
+        ResponseErrorBuilder {
             r#type,
-            title,
-            status,
+            title: Some(title),
+            status: Some(status),
             detail,
             instance,
-            offset: timestamp.map(|x| x.offset()),
+            offset: Some(timestamp.offset()),
         }
     }
 }

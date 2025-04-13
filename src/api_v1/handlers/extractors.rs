@@ -14,7 +14,7 @@ where
             match parts.extensions.get::<Role>() {
                 Some(e) if e == &Role::Admin => Ok(Self),
                 _ => Err(ResponseError::unauthorized(
-                    &parts.uri,
+                    Some(parts.uri.to_string()),
                     Some("This function is only allowed for the Admin role".to_string()),
                 )),
             }

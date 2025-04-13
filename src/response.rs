@@ -1,6 +1,7 @@
 use axum::{
-    http::{HeaderMap, StatusCode},
-    response::{IntoResponse, Response},
+    body::Body,
+    http::{HeaderMap, Response, StatusCode},
+    response::IntoResponse,
 };
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -56,7 +57,7 @@ impl Metadata for Value {
 }
 
 impl<T: Serialize, M: Metadata> IntoResponse for ResponseQuery<T, M> {
-    fn into_response(self) -> Response {
+    fn into_response(self) -> Response<Body> {
         let mut response = Response::builder();
 
         if let Some(headers) = self.headers.filter(|x| !x.is_empty()) {
