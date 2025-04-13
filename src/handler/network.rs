@@ -7,7 +7,7 @@ use std::net::{Ipv4Addr, Ipv6Addr};
 
 use super::{
     BATCH_SIZE, IsAdministrator, Json, Level, PaginationParams, Path, Query, QueryResult,
-    Repository, RepositoryType, ResponseDefault, ResponseError, State, StatusCode, Uuid,
+    Repository, ResponseDefault, ResponseError, State, StateType, StatusCode, Uuid,
     addresses::update_host_count,
     entries::{self, models::CreateSubnet},
     instrument, models,
@@ -19,7 +19,7 @@ use serde_json::json;
 
 #[instrument(level = Level::INFO)]
 pub async fn create(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     _: IsAdministrator,
     Json(mut network): Json<NetworkCreateEntry>,
 ) -> ResponseDefault<()> {
@@ -56,7 +56,7 @@ pub async fn create(
 
 #[instrument(level = Level::DEBUG)]
 pub async fn get(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     Query(param): Query<ParamNetwork>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> ResponseDefault<Vec<Network>> {
@@ -78,7 +78,7 @@ pub async fn get(
 
 #[instrument(level = Level::DEBUG)]
 pub async fn update(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     _: IsAdministrator,
     Path(id): Path<Uuid>,
     Json(updater): Json<UpdateNetwork>,
@@ -110,7 +110,7 @@ pub async fn update(
 
 #[instrument(level = Level::INFO)]
 pub async fn delete(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     _: IsAdministrator,
     Path(id): Path<Uuid>,
 ) -> ResponseDefault<()> {
@@ -156,7 +156,7 @@ pub async fn delete(
 
 #[instrument(level = Level::DEBUG)]
 pub async fn subnetting(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     _: IsAdministrator,
     Path(father): Path<Uuid>,
     Json(CreateSubnet {

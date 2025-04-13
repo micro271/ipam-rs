@@ -1,6 +1,6 @@
 use super::{
-    IsAdministrator, Json, Level, PaginationParams, Path, Query, Repository, RepositoryType,
-    ResponseDefault, State, Uuid, entries, instrument,
+    IsAdministrator, Json, Level, PaginationParams, Path, Query, Repository, ResponseDefault,
+    State, StateType, Uuid, entries, instrument,
 };
 use crate::{
     models::node::{Node, NodeCondition, UpdateNode},
@@ -12,7 +12,7 @@ use serde_json::json;
 
 #[instrument(level = Level::DEBUG)]
 pub async fn create(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     _: IsAdministrator,
     Json(node): Json<NodeCreateEntry>,
 ) -> ResponseDefault<()> {
@@ -21,7 +21,7 @@ pub async fn create(
 
 #[instrument(level = Level::DEBUG)]
 pub async fn update(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     _: IsAdministrator,
     Path(id): Path<Uuid>,
     Json(new): Json<UpdateNode>,
@@ -34,7 +34,7 @@ pub async fn update(
 
 #[instrument(level = Level::DEBUG)]
 pub async fn get(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     Query(params): Query<NodeCondition>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> ResponseDefault<Vec<Node>> {
@@ -56,7 +56,7 @@ pub async fn get(
 
 #[instrument(level = Level::INFO)]
 pub async fn delete(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     _: IsAdministrator,
     Path(id): Path<Uuid>,
 ) -> ResponseDefault<()> {

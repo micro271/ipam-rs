@@ -1,5 +1,5 @@
 use super::{
-    BATCH_SIZE, Json, Path, Query, RepositoryType, ResponseDefault, State,
+    BATCH_SIZE, Json, Path, Query, ResponseDefault, State, StateType,
     entries::{
         models::AddrCrateEntry,
         params::{IpNetParamNonOption, PaginationParams, ParamAddrFilter},
@@ -24,7 +24,7 @@ use serde_json::json;
 use uuid::Uuid;
 
 pub async fn insert(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     _: IsAdministrator,
     Json(new_addr): Json<AddrCrateEntry>,
 ) -> ResponseDefault<()> {
@@ -32,7 +32,7 @@ pub async fn insert(
 }
 
 pub async fn create_all_ip_addresses(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     _: IsAdministrator,
     Path(network_id): Path<Uuid>,
 ) -> ResponseDefault<()> {
@@ -90,7 +90,7 @@ pub async fn create_all_ip_addresses(
 }
 
 pub async fn update(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     _: IsAdministrator,
     Path(network_id): Path<Uuid>,
     Query(IpNetParamNonOption { ip }): Query<IpNetParamNonOption>,
@@ -194,7 +194,7 @@ pub async fn update(
 }
 
 pub async fn get(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     Query(PaginationParams { limit, offset }): Query<PaginationParams>,
     Path(network_id): Path<Uuid>,
     Query(ParamAddrFilter {
@@ -225,7 +225,7 @@ pub async fn get(
 }
 
 pub async fn delete(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     _: IsAdministrator,
     Path(network_id): Path<Uuid>,
     Query(ip): Query<IpNet>,

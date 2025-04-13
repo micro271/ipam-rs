@@ -1,3 +1,4 @@
+mod app_state;
 mod config;
 mod database;
 mod handler;
@@ -6,6 +7,7 @@ mod response;
 mod services;
 mod trace_layer;
 
+use app_state::AppState;
 use axum::{
     Router,
     http::{Method, header},
@@ -15,7 +17,6 @@ use axum::{
 use config::Config;
 use database::RepositoryInjection;
 use handler::{addresses, auth, network, node, vlan};
-use sqlx::Postgres;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
 use tower_http::{
@@ -66,10 +67,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db = RepositoryInjection::new(database_url).await?;
     services::create_default_user(&db).await?;
 
-    let state = Arc::new(AppState {
-        db,
-        heavy_task: Semaphore::new(1),
-    });
+    let state = Arc::new(AppState::new(db, Semaphore::new(1)));
 
     let network = Router::new()
         .route("/subnet/{father}", post(network::subnetting))
@@ -119,29 +117,4 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     serve(lst, app).await?;
 
     Ok(())
-}
-
-#[derive(Debug)]
-struct AppState {
-    db: RepositoryInjection<Postgres>,
-    heavy_task: Semaphore,
-}
-
-impl AppState {
-    pub fn heavy_task(&self) -> &Semaphore {
-        &self.heavy_task
-    }
-}
-
-impl std::ops::Deref for AppState {
-    type Target = RepositoryInjection<Postgres>;
-    fn deref(&self) -> &Self::Target {
-        &self.db
-    }
-}
-
-impl std::ops::DerefMut for AppState {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.db
-    }
 }

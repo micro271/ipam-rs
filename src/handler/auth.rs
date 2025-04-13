@@ -1,5 +1,5 @@
 use super::{
-    IsAdministrator, Json, Level, Path, Repository, RepositoryType, ResponseError, Role, State,
+    IsAdministrator, Json, Level, Path, Repository, ResponseError, Role, State, StateType,
     StatusCode, Uri, Uuid, entries, entries::models::UserEntry, instrument, models,
 };
 use crate::{
@@ -21,7 +21,7 @@ use serde_json::{Value, json};
 
 #[instrument(level = Level::DEBUG)]
 pub async fn create(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     uri: Uri,
     _: IsAdministrator,
     Json(mut user): Json<UserEntry>,
@@ -47,7 +47,7 @@ pub async fn create(
 
 #[instrument(level = Level::INFO)]
 pub async fn update(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     Path(id): Path<Uuid>,
     Json(updater): Json<UpdateUser>,
 ) -> Result<ResponseQuery<Addresses, Value>, ResponseError> {
@@ -65,7 +65,7 @@ pub async fn update(
 
 #[instrument(level = Level::DEBUG)]
 pub async fn delete(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     Path(id): Path<Uuid>,
 ) -> Result<ResponseQuery<Addresses, Value>, ResponseError> {
     let user = state.get_one::<User>(UserCondition::p_key(id)).await?;
@@ -93,7 +93,7 @@ pub async fn delete(
 
 #[instrument(level = Level::INFO)]
 pub async fn login(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     uri: Uri,
     Json(entries::models::UserEntry { username, password }): Json<entries::models::UserEntry>,
 ) -> Result<Response, ResponseError> {

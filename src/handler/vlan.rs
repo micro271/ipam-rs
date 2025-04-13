@@ -1,4 +1,4 @@
-use super::{Level, PaginationParams, RepositoryType, ResponseDefault, State, instrument};
+use super::{Level, PaginationParams, ResponseDefault, State, StateType, instrument};
 use crate::{
     database::repository::Repository,
     models::vlan::{UpdateVlan, Vlan, VlanCondition},
@@ -13,16 +13,13 @@ use libipam::types::vlan::VlanId;
 use serde_json::json;
 
 #[instrument(level = Level::DEBUG)]
-pub async fn insert(
-    State(state): State<RepositoryType>,
-    Json(vlan): Json<Vlan>,
-) -> ResponseDefault<()> {
+pub async fn insert(State(state): State<StateType>, Json(vlan): Json<Vlan>) -> ResponseDefault<()> {
     Ok(state.insert(vlan).await?.into())
 }
 
 #[instrument(level = Level::DEBUG)]
 pub async fn get(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     Path(id): Path<VlanId>,
     Query(PaginationParams { offset, limit }): Query<PaginationParams>,
 ) -> ResponseDefault<Vec<Vlan>> {
@@ -46,7 +43,7 @@ pub async fn get(
 
 #[instrument(level = Level::DEBUG)]
 pub async fn update(
-    State(state): State<RepositoryType>,
+    State(state): State<StateType>,
     Path(id): Path<VlanId>,
     Json(vlan): Json<UpdateVlan>,
 ) -> ResponseDefault<()> {
@@ -57,9 +54,6 @@ pub async fn update(
 }
 
 #[instrument(level = Level::INFO)]
-pub async fn delete(
-    State(state): State<RepositoryType>,
-    Path(id): Path<VlanId>,
-) -> ResponseDefault<()> {
+pub async fn delete(State(state): State<StateType>, Path(id): Path<VlanId>) -> ResponseDefault<()> {
     Ok(state.delete::<Vlan>(VlanCondition::p_key(id)).await?.into())
 }

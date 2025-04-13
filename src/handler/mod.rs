@@ -8,7 +8,7 @@ pub mod node;
 pub mod vlan;
 
 use crate::{
-    AppState,
+    app_state::StateType,
     database::repository::{QueryResult, Repository},
     models::{self, user::Role},
     response::ResponseQuery,
@@ -20,11 +20,8 @@ use axum::{
 use entries::params::PaginationParams;
 use extractors::IsAdministrator;
 use libipam::response_error::ResponseError;
-use std::sync::Arc;
 use tracing::{Level, instrument};
 use uuid::Uuid;
-
-pub type RepositoryType = Arc<AppState>;
 
 type ResponseDefault<T> = Result<ResponseQuery<T, serde_json::Value>, ResponseError>;
 
