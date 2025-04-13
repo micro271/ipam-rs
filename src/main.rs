@@ -1,3 +1,4 @@
+mod api_v1;
 mod app_state;
 mod config;
 mod database;
@@ -11,12 +12,12 @@ use app_state::AppState;
 use axum::{
     Router,
     http::{Method, header},
-    routing::{delete, get, patch, post},
+    routing::post,
     serve,
 };
 use config::Config;
 use database::RepositoryInjection;
-use handler::{addresses, auth, network, node, vlan};
+use handler::auth;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
 use tower_http::{
@@ -69,45 +70,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let state = Arc::new(AppState::new(db, Semaphore::new(1)));
 
-    let network = Router::new()
-        .route("/subnet/{father}", post(network::subnetting))
-        .route("/", post(network::create).get(network::get))
-        .route("/{id}", delete(network::delete).patch(network::update));
-
-    let addrs = Router::new().route("/", post(addresses::insert)).route(
-        "/{network_id}",
-        get(addresses::get)
-            .delete(addresses::delete)
-            .patch(addresses::update)
-            .post(addresses::create_all_ip_addresses),
-    );
-
-    let node = Router::new().route(
-        "/",
-        post(node::create)
-            .get(node::get)
-            .patch(node::update)
-            .delete(node::delete),
-    );
-
-    let user = Router::new()
-        .route("/", post(auth::create))
-        .route("/{id}", patch(auth::update).delete(auth::delete));
-
-    let vlan = Router::new().route("/", post(vlan::insert)).route(
-        "/{id}",
-        get(vlan::get).delete(vlan::delete).patch(vlan::update),
-    );
-
-    let api_v1 = Router::new()
-        .nest("/networks", network)
-        .nest("/nodes", node)
-        .nest("/users", user)
-        .nest("/vlans", vlan)
-        .nest("/addrs", addrs);
-
     let app = Router::new()
-        .nest("/api/v1", api_v1)
+        .nest("/api/v1", api_v1::api_v1())
         .layer(axum::middleware::from_fn(auth::verify_token))
         .route("/login", post(auth::login))
         .with_state(Arc::clone(&state))
