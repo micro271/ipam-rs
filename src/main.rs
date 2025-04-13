@@ -1,8 +1,8 @@
 mod api_v1;
+mod api_v2;
 mod app_state;
 mod config;
 mod database;
-mod handler;
 mod models;
 mod response;
 mod services;
@@ -17,7 +17,6 @@ use axum::{
 };
 use config::Config;
 use database::RepositoryInjection;
-use handler::auth;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
 use tower_http::{
@@ -59,24 +58,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ])
         });
 
-    let trace_layer = TraceLayer::new_for_http()
-        .make_span_with(trace_layer::make_span)
-        .on_request(tower_http::trace::DefaultOnRequest::new())
-        .on_response(trace_layer::on_response)
-        .on_failure(tower_http::trace::DefaultOnFailure::new());
-
     let db = RepositoryInjection::new(database_url).await?;
+
     services::create_default_user(&db).await?;
 
     let state = Arc::new(AppState::new(db, Semaphore::new(1)));
 
     let app = Router::new()
         .nest("/api/v1", api_v1::api_v1())
-        .layer(axum::middleware::from_fn(auth::verify_token))
-        .route("/login", post(auth::login))
+        .layer(axum::middleware::from_fn(
+            api_v1::handlers::auth::verify_token,
+        ))
+        .route("/login", post(api_v1::handlers::auth::login))
         .with_state(Arc::clone(&state))
         .layer(cors)
-        .layer(trace_layer);
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(trace_layer::make_span)
+                .on_request(tower_http::trace::DefaultOnRequest::new())
+                .on_response(trace_layer::on_response)
+                .on_failure(tower_http::trace::DefaultOnFailure::new()),
+        );
 
     serve(lst, app).await?;
 

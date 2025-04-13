@@ -1,11 +1,12 @@
-use crate::{
-    app_state::StateType,
-    handler::{addresses, auth, network, node, vlan},
-};
+pub mod handlers;
+
+use crate::app_state::StateType;
 use axum::{
     Router,
     routing::{delete, get, patch, post},
 };
+
+use self::handlers::{addresses, auth, network, node, vlan};
 
 pub fn api_v1() -> Router<StateType> {
     let network = Router::new()
