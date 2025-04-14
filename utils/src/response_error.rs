@@ -2,6 +2,19 @@ use axum::http::{Response, StatusCode};
 use serde::{Deserialize, Serialize};
 use time::{OffsetDateTime, UtcOffset};
 
+/// This type represents the standard response according to the rfc 7807
+///
+///      `Content-Type: application/json+problem`
+///
+/// fields:
+///     type: A string uri that  identifies the problem type
+///     title: A short summary of the problem as a string
+///     status: A type number that represents the status code of the reqwest according to rfc 7231
+///     detail: an string that providing specific details about the occurence of the problem
+///     instance: type String that identified the specific occurence of the problem
+///
+/// The fields `title`, `status` and `timestamp` are required, as it have an default values
+/// The fields `type`, `detail`, and `instance` aren't requirend and will be ignored if not provide
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ResponseError {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -21,6 +34,9 @@ pub struct ResponseError {
 }
 
 impl std::default::Default for ResponseError {
+    /// The StatusCode as default is BAD_REQUEST
+    /// The title is the StatusCode as String
+    /// The timestamp is the current with an offset of -3 hours
     fn default() -> Self {
         Self {
             r#type: None,
@@ -52,6 +68,16 @@ impl ResponseError {
         }
     }
 
+    /// Obtain the ResponseErrorBuilder that allow create an ResponseError
+    ///
+    /// ```
+    /// let builder = ResponseError::builer()
+    ///     .title("This is an generic problem")
+    ///     .detail("An specific detail")
+    ///     .status(StatusCode::INTERNAL_SERVER_ERROR)
+    ///     .offset_hms(-3,0,0)/* or .offset(time::UtcOffset::from_hms(-3,0.0))*/
+    ///     .build() // <- ResponseError
+    /// ```
     pub fn builder() -> ResponseErrorBuilder {
         ResponseErrorBuilder::default()
     }
@@ -65,17 +91,19 @@ impl ResponseError {
             ..Default::default()
         }
     }
+}
 
-    pub(self) fn create(
-        ResponseErrorBuilder {
+impl From<ResponseErrorBuilder> for ResponseError {
+    fn from(value: ResponseErrorBuilder) -> Self {
+        let ResponseErrorBuilder {
             r#type,
             title,
             status,
             detail,
             instance,
             offset,
-        }: ResponseErrorBuilder,
-    ) -> ResponseError {
+        } = value;
+
         Self {
             r#type,
             title: title.unwrap_or(StatusCode::BAD_REQUEST.to_string()),
@@ -84,12 +112,6 @@ impl ResponseError {
             instance,
             timestamp: OffsetDateTime::now_utc().to_offset(offset.unwrap_or(UtcOffset::UTC)),
         }
-    }
-}
-
-impl From<ResponseErrorBuilder> for ResponseError {
-    fn from(value: ResponseErrorBuilder) -> Self {
-        ResponseError::create(value)
     }
 }
 
@@ -104,6 +126,22 @@ impl axum::response::IntoResponse for ResponseError {
     }
 }
 
+/// This is the builder for `ResponseError`, allowing you to create a `Response Error`
+/// using the builer Pattern
+///
+/// This type imeplement the `Default` trait, so you will get a `ResponseErrorBuild`
+/// with all fields set to `None`
+///
+/// You can then fill in the values by calling the corresponding builder methos.
+///
+/// ```
+/// let builder = ResponseErrorBuilder::new()
+///     .title("Title of the problem")
+///     .instance("midom.com/my/api")
+///     .detail("An specific detail of the problem")
+///     .status(StatusCode::BAD_REQUEST)
+///     .build()
+/// ```
 #[derive(Debug, Default)]
 pub struct ResponseErrorBuilder {
     r#type: Option<String>,
@@ -115,6 +153,9 @@ pub struct ResponseErrorBuilder {
 }
 
 impl ResponseErrorBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
     pub fn r#type(mut self, r#type: String) -> Self {
         self.r#type = Some(r#type);
         self
@@ -151,7 +192,7 @@ impl ResponseErrorBuilder {
     }
 
     pub fn build(self) -> ResponseError {
-        ResponseError::create(self)
+        self.into()
     }
 }
 

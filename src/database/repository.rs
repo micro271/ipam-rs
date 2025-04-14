@@ -138,8 +138,8 @@ pub mod error {
             match self {
                 RepositoryError::Sqlx(txt) => write!(f, "Sqlx error: {txt}"),
                 Self::RowNotFound => write!(f, "Row not found"),
-                Self::ColumnNotFound(e) => write!(f, "The column {e} is invalid"),
-                Self::UpdaterEmpty => write!(f, "There isn't element to change"),
+                Self::ColumnNotFound(e) => write!(f, "The column {e} not found"),
+                Self::UpdaterEmpty => write!(f, "There are not values to change"),
             }
         }
     }
@@ -150,6 +150,7 @@ pub mod error {
         fn from(value: sqlx::Error) -> Self {
             match value {
                 sqlx::Error::ColumnNotFound(e) => Self::ColumnNotFound(e),
+                sqlx::Error::RowNotFound => Self::RowNotFound,
                 e => Self::Sqlx(e.to_string()),
             }
         }

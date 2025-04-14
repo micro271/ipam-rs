@@ -1,6 +1,6 @@
 use super::{
-    IsAdministrator, Json, Level, Path, Repository, ResponseError, Role, State, StateType,
-    StatusCode, Uri, Uuid, entries, entries::models::UserEntry, instrument, models,
+    IsAdministrator, Json, Path, Repository, ResponseError, Role, State, StateType, StatusCode,
+    Uri, Uuid, entries, entries::models::UserEntry, models,
 };
 use crate::{
     models::{
@@ -19,10 +19,8 @@ use libipam::{
 use models::user::UpdateUser;
 use serde_json::{Value, json};
 
-#[instrument(level = Level::DEBUG)]
 pub async fn create(
     State(state): State<StateType>,
-    uri: Uri,
     _: IsAdministrator,
     Json(mut user): Json<UserEntry>,
 ) -> Result<ResponseQuery<(), Value>, ResponseError> {
@@ -45,7 +43,6 @@ pub async fn create(
     Ok(state.insert::<User>(user.into()).await?.into())
 }
 
-#[instrument(level = Level::INFO)]
 pub async fn update(
     State(state): State<StateType>,
     _: IsAdministrator,
@@ -64,7 +61,6 @@ pub async fn update(
     ))
 }
 
-#[instrument(level = Level::DEBUG)]
 pub async fn delete(
     State(state): State<StateType>,
     Path(id): Path<Uuid>,
@@ -92,7 +88,6 @@ pub async fn delete(
     ))
 }
 
-#[instrument(level = Level::INFO)]
 pub async fn login(
     State(state): State<StateType>,
     uri: Uri,
@@ -147,7 +142,6 @@ pub async fn login(
     }
 }
 
-#[instrument(level = Level::DEBUG)]
 pub async fn verify_token(
     libipam::Token(token): libipam::Token<TokenAuth>,
     mut req: Request,

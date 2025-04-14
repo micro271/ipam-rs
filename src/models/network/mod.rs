@@ -127,6 +127,10 @@ impl NetworkSubnetList {
         }
     }
 
+    pub fn set_default_values(&mut self, default: DefaultValuesNetwork) {
+        self.default = default;
+    }
+
     pub fn batch(self, window: usize) -> NetworkSubnetBatch {
         NetworkSubnetBatch::new(self, window)
     }
@@ -166,6 +170,22 @@ pub struct DefaultValuesNetwork {
     pub status: Option<StatusNetwork>,
     pub kind: Option<Kind>,
     pub description: Option<String>,
+}
+
+impl DefaultValuesNetwork {
+    pub fn new(
+        father: Uuid,
+        status: Option<StatusNetwork>,
+        kind: Option<Kind>,
+        description: Option<String>,
+    ) -> Self {
+        Self {
+            father: Some(father),
+            status,
+            kind,
+            description,
+        }
+    }
 }
 
 pub struct NetworkSubnetBatch {

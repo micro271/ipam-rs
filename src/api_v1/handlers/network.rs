@@ -1,23 +1,22 @@
 use crate::{
     database::transaction::Transaction as _,
-    models::network::{NetwCondition, UpdateHostCount},
+    models::network::{DefaultValuesNetwork, NetwCondition, UpdateHostCount},
     response::ResponseQuery,
 };
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 use super::{
-    BATCH_SIZE, IsAdministrator, Json, Level, PaginationParams, Path, Query, QueryResult,
-    Repository, ResponseDefault, ResponseError, State, StateType, StatusCode, Uuid,
+    BATCH_SIZE, IsAdministrator, Json, PaginationParams, Path, Query, QueryResult, Repository,
+    ResponseDefault, ResponseError, State, StateType, StatusCode, Uuid,
     addresses::update_host_count,
     entries::{self, models::CreateSubnet},
-    instrument, models,
+    models,
 };
 
 use entries::{models::NetworkCreateEntry, params::ParamNetwork};
 use models::network::{Network, UpdateNetwork};
 use serde_json::json;
 
-#[instrument(level = Level::INFO)]
 pub async fn create(
     State(state): State<StateType>,
     _: IsAdministrator,
@@ -54,7 +53,6 @@ pub async fn create(
     Ok(state.insert::<Network>(network.into()).await?.into())
 }
 
-#[instrument(level = Level::DEBUG)]
 pub async fn get(
     State(state): State<StateType>,
     Query(param): Query<ParamNetwork>,
@@ -76,7 +74,6 @@ pub async fn get(
     ))
 }
 
-#[instrument(level = Level::DEBUG)]
 pub async fn update(
     State(state): State<StateType>,
     _: IsAdministrator,
@@ -108,7 +105,6 @@ pub async fn update(
     Ok(resp.into())
 }
 
-#[instrument(level = Level::INFO)]
 pub async fn delete(
     State(state): State<StateType>,
     _: IsAdministrator,
@@ -144,7 +140,7 @@ pub async fn delete(
             Ok(e) => Ok(e.into()),
             Err(e) => {
                 transaction.rollback().await?;
-                return Err(e);
+                Err(e)
             }
         }
     } else {
@@ -154,7 +150,6 @@ pub async fn delete(
     }
 }
 
-#[instrument(level = Level::DEBUG)]
 pub async fn subnetting(
     State(state): State<StateType>,
     _: IsAdministrator,
@@ -170,11 +165,18 @@ pub async fn subnetting(
         .get_one::<Network>(NetwCondition::p_key(father))
         .await?;
 
-    let subnet = father.subnets(prefix).map_err(|x| {
+    let mut subnet = father.subnets(prefix).map_err(|x| {
         ResponseError::builder()
             .detail(x.to_string())
             .status(StatusCode::BAD_REQUEST)
     })?;
+
+    subnet.set_default_values(DefaultValuesNetwork::new(
+        father.id,
+        status,
+        kind,
+        description,
+    ));
 
     let _permit = state.heavy_task().acquire().await;
 

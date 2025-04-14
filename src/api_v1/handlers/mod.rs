@@ -20,7 +20,6 @@ use axum::{
 use entries::params::PaginationParams;
 use extractors::IsAdministrator;
 use libipam::response_error::ResponseError;
-use tracing::{Level, instrument};
 use uuid::Uuid;
 
 type ResponseDefault<T> = Result<ResponseQuery<T, serde_json::Value>, ResponseError>;

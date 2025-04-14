@@ -1,6 +1,6 @@
 use super::{
-    IsAdministrator, Json, Level, PaginationParams, Path, Query, Repository, ResponseDefault,
-    State, StateType, Uuid, entries, instrument,
+    IsAdministrator, Json, PaginationParams, Path, Query, Repository, ResponseDefault, State,
+    StateType, Uuid, entries,
 };
 use crate::{
     models::node::{Node, NodeCondition, UpdateNode},
@@ -10,7 +10,6 @@ use axum::http::StatusCode;
 use entries::models::NodeCreateEntry;
 use serde_json::json;
 
-#[instrument(level = Level::DEBUG)]
 pub async fn create(
     State(state): State<StateType>,
     _: IsAdministrator,
@@ -19,7 +18,6 @@ pub async fn create(
     Ok(state.insert::<Node>(node.into()).await?.into())
 }
 
-#[instrument(level = Level::DEBUG)]
 pub async fn update(
     State(state): State<StateType>,
     _: IsAdministrator,
@@ -32,7 +30,6 @@ pub async fn update(
         .into())
 }
 
-#[instrument(level = Level::DEBUG)]
 pub async fn get(
     State(state): State<StateType>,
     Query(params): Query<NodeCondition>,
@@ -54,7 +51,6 @@ pub async fn get(
     ))
 }
 
-#[instrument(level = Level::INFO)]
 pub async fn delete(
     State(state): State<StateType>,
     _: IsAdministrator,
