@@ -40,14 +40,6 @@ impl HostCount {
         Self::new_from_bits_with_sub(bits, prefix, sub)
     }
 
-    pub fn new_from_bits_with_add(bits: u8, prefix: u8, add: u32) -> Option<Self> {
-        Self::new(bits, prefix).map(|x| x.add(add))
-    }
-
-    pub fn new_from_ipnet_with_add(ipnet: IpNet, add: u32) -> Option<Self> {
-        Self::new_from_bits_with_add(ipnet.max_prefix_len(), ipnet.prefix_len(), add)
-    }
-
     pub fn new_max() -> Self {
         HostCount(Self::MAX)
     }
