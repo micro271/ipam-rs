@@ -89,7 +89,7 @@ pub async fn update(
                 .detail("the network have child".into())
                 .status(StatusCode::BAD_REQUEST)
                 .build());
-        } else if (*old.used + *old.free) != *old.free {
+        } else if (old.used.as_i32() + old.free.as_i32()) != old.free.as_i32() {
             tracing::debug!("The network {:?} have devices", old.subnet);
             return Err(ResponseError::builder()
                 .detail("the network have devices".into())

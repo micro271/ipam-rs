@@ -8,6 +8,10 @@ pub struct HostCount(i32);
 impl HostCount {
     const MAX: i32 = 0x00FFFFFF;
 
+    pub fn as_i32(&self) -> i32 {
+        self.0
+    }
+
     pub fn new(bits: u8, prefix: u8) -> Option<Self> {
         2_i32
             .checked_pow(bits.checked_sub(prefix)? as u32)
@@ -36,21 +40,12 @@ impl HostCount {
         Self::new_from_bits_with_sub(bits, prefix, sub)
     }
 
-    pub fn new_from_bits_with_add(bits: u8, prefix: u8, sub: u32) -> Option<Self> {
-        let avl = match 2u32.pow(bits.checked_sub(prefix)? as u32) {
-            n @ 0..=2 => n,
-            n => n - 2,
-        };
-
-        avl.checked_add(sub)
-            .map(|x| Self((x as i32).min(Self::MAX)))
+    pub fn new_from_bits_with_add(bits: u8, prefix: u8, add: u32) -> Option<Self> {
+        Self::new(bits, prefix).map(|x| x.add(add))
     }
 
-    pub fn new_from_ipnet_with_add(ipnet: IpNet, sub: u32) -> Option<Self> {
-        let bits = ipnet.max_prefix_len();
-        let prefix = ipnet.prefix_len();
-
-        Self::new_from_bits_with_add(bits, prefix, sub)
+    pub fn new_from_ipnet_with_add(ipnet: IpNet, add: u32) -> Option<Self> {
+        Self::new_from_bits_with_add(ipnet.max_prefix_len(), ipnet.prefix_len(), add)
     }
 
     pub fn new_max() -> Self {
@@ -99,13 +94,6 @@ impl TryFrom<i32> for HostCount {
 impl From<IpNet> for HostCount {
     fn from(value: IpNet) -> Self {
         Self::new(value.max_prefix_len(), value.prefix_len()).unwrap()
-    }
-}
-
-impl std::ops::Deref for HostCount {
-    type Target = i32;
-    fn deref(&self) -> &Self::Target {
-        &self.0
     }
 }
 
