@@ -73,11 +73,8 @@ impl UpdateHostCount {
         Self { subnet, used, free }
     }
 
-    pub fn new_calculate(&mut self) {
-        let bits = self.subnet.max_prefix_len();
-        let prefix = self.subnet.prefix_len();
-
-        let free = HostCount::new(bits, prefix).unwrap();
+    pub fn new_reset_count(&mut self) {
+        let free = HostCount::from(self.subnet);
 
         self.used = 0.try_into().unwrap();
         self.free = free;
@@ -89,8 +86,7 @@ impl UpdateHostCount {
         }
 
         self.free = if self.free.is_max() {
-            HostCount::new_from_ipnet_with_sub(self.subnet, n)
-                .unwrap_or(HostCount::try_from(0).unwrap())
+            HostCount::new_from_ipnet_with_sub(self.subnet, n).unwrap_or_default()
         } else {
             self.free.sub(n)
         };
@@ -115,10 +111,10 @@ pub struct NetworkSubnetList {
 }
 
 impl NetworkSubnetList {
-    pub fn new(iter_subnet: SubnetList, default_values: Option<DefaultValuesNetwork>) -> Self {
+    pub fn new(iter: SubnetList, father: Uuid) -> Self {
         Self {
-            iter: iter_subnet,
-            default: default_values.unwrap_or_default(),
+            iter,
+            default: DefaultValuesNetwork::new(father, None, None, None),
         }
     }
 
@@ -281,9 +277,10 @@ impl Network {
     pub fn subnets(&self, prefix: u8) -> Result<NetworkSubnetList, SubnettingError> {
         Ok(NetworkSubnetList::new(
             SubnetList::new(self.subnet, prefix)?,
-            None,
+            self.id,
         ))
     }
+
     pub fn update_host_count(&self) -> UpdateHostCount {
         UpdateHostCount::new(self.subnet, self.used, self.free)
     }

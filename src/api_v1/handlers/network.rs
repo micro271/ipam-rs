@@ -83,16 +83,11 @@ pub async fn update(
     if updater.network.is_some() {
         let old = state.get_one::<Network>(NetwCondition::p_key(id)).await?;
 
-        if old.children != 0 {
+        if old.children != 0 || old.used.as_i32() != 0 {
             tracing::debug!("The network {:?} have subnets", old.subnet);
+
             return Err(ResponseError::builder()
-                .detail("the network have child".into())
-                .status(StatusCode::BAD_REQUEST)
-                .build());
-        } else if (old.used.as_i32() + old.free.as_i32()) != old.free.as_i32() {
-            tracing::debug!("The network {:?} have devices", old.subnet);
-            return Err(ResponseError::builder()
-                .detail("the network have devices".into())
+                .detail("the network have items".into())
                 .status(StatusCode::BAD_REQUEST)
                 .build());
         }
@@ -127,7 +122,7 @@ pub async fn delete(
                 .await?;
 
             let mut hc = father.update_host_count();
-            hc.new_calculate();
+            hc.new_reset_count();
 
             transaction
                 .update::<Network, _, _>(hc, NetwCondition::p_key(father.id))

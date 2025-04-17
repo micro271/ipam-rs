@@ -5,6 +5,12 @@ use serde::{Deserialize, Serialize};
 #[sqlx(transparent)]
 pub struct HostCount(i32);
 
+impl std::default::Default for HostCount {
+    fn default() -> Self {
+        Self(0)
+    }
+}
+
 impl HostCount {
     const MAX: i32 = 0x00FFFFFF;
 
