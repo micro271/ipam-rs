@@ -25,13 +25,6 @@ impl NetwCondition {
             ..Default::default()
         }
     }
-
-    pub fn father(father: Uuid) -> Self {
-        Self {
-            father: Some(father),
-            ..Default::default()
-        }
-    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Updatable)]
@@ -71,13 +64,6 @@ pub struct UpdateHostCount {
 impl UpdateHostCount {
     pub fn new(subnet: IpNet, used: HostCount, free: HostCount) -> Self {
         Self { subnet, used, free }
-    }
-
-    pub fn new_reset_count(&mut self) {
-        let free = HostCount::from(self.subnet);
-
-        self.used = 0.try_into().unwrap();
-        self.free = free;
     }
 
     pub fn less_free_more_used(&mut self, n: u32) {

@@ -7,10 +7,16 @@ pub struct VlanId(i16);
 impl VlanId {
     pub const MAX: i16 = 0x0FFF;
 
+    /// # Errors
+    ///
+    /// Return `Err` if value es greater then 4096
     pub fn new(value: i16) -> Result<Self, OutOfRange> {
         value.try_into()
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` if the id is greater than 4096, as a VLAN id is between 1 and 4096
     pub fn set_vlan(&mut self, id: i16) -> Result<(), OutOfRange> {
         if (2..=Self::MAX).contains(&id) {
             self.0 = id;
@@ -36,10 +42,10 @@ impl std::cmp::PartialEq<i16> for VlanId {
 impl TryFrom<i16> for VlanId {
     type Error = OutOfRange;
     fn try_from(value: i16) -> Result<Self, Self::Error> {
-        if !(2..=Self::MAX).contains(&value) {
-            Err(OutOfRange)
-        } else {
+        if (2..=Self::MAX).contains(&value) {
             Ok(Self(value))
+        } else {
+            Err(OutOfRange)
         }
     }
 }

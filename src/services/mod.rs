@@ -29,7 +29,7 @@ pub async fn create_default_user(db: &impl Repository) -> Result<(), RepositoryE
     let user = User {
         id: Uuid::new_v4(),
         username: std::env::var("IPAM_USER_ROOT").unwrap_or("admin".into()),
-        password: encrypt(std::env::var("IPAM_PASSWORD_ROOT").unwrap_or("admin".into())).unwrap(),
+        password: encrypt(&std::env::var("IPAM_PASSWORD_ROOT").unwrap_or("admin".into())).unwrap(),
         role: Role::Admin,
         create_at: time::OffsetDateTime::now_utc(),
         is_active: true,

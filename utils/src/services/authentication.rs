@@ -6,15 +6,23 @@ const ALGORITHM_JWT: Algorithm = Algorithm::HS256;
 
 pub trait Claim: std::fmt::Debug {}
 
-pub fn verify_passwd<T: AsRef<[u8]>>(pass: T, pass_db: &str) -> bool {
+pub fn verify_passwd<T: AsRef<[u8]>>(pass: &T, pass_db: &str) -> bool {
     verify(pass.as_ref(), pass_db).unwrap_or(false)
 }
 
-pub fn encrypt<T: AsRef<[u8]>>(pass: T) -> Result<String, error::Error> {
+/// # Errors
+///
+/// Will return `Err` if the encryptor fails
+pub fn encrypt<T: AsRef<[u8]>>(pass: &T) -> Result<String, error::Error> {
     Ok(hash(pass.as_ref(), DEFAULT_COST)?)
 }
 
-pub fn create_token<T>(claim: T) -> Result<String, error::Error>
+/// # Errors
+///
+/// Will return `Err` if:
+///     - the environment variable `SECRET_KEY` is not present
+///     - The encode fails
+pub fn create_token<T>(claim: &T) -> Result<String, error::Error>
 where
     T: Serialize + Claim,
 {
@@ -22,11 +30,16 @@ where
 
     Ok(encode(
         &Header::new(ALGORITHM_JWT),
-        &claim,
+        claim,
         &EncodingKey::from_secret(secret.as_ref()),
     )?)
 }
 
+/// # Errors
+///
+/// Will return `Err` if:
+///     - The environment variable is not present.
+///     - The validation fails because the token is either expired or has been modified
 pub fn verify_token<T, B: AsRef<str>>(token: B) -> Result<T, error::Error>
 where
     T: DeserializeOwned + Claim,

@@ -36,10 +36,10 @@ impl GetToken for TokenCookie {
             .find(|(key, _)| key.eq(&axum::http::header::COOKIE))
             .and_then(|(_, value)| value.to_str().ok())
             .and_then(|x| {
-                x.split(";")
+                x.split(';')
                     .map(str::trim)
                     .find(|x| x.starts_with(TOKEN_PEER_KEY))
-                    .and_then(|x| x.split("=").nth(1).map(|x| Self(x.to_string())))
+                    .and_then(|x| x.split('=').nth(1).map(|x| Self(x.to_string())))
             })
     }
     fn get(self) -> String {

@@ -19,13 +19,17 @@ pub struct SubnetList {
 }
 
 impl SubnetList {
+    /// # Errors
+    ///
+    /// Will return `Err` if:
+    ///     - the prefinx is greater than network's prefix
+    ///     - the parameter `network` is ipv6, as the application cannot create an list of ipv6
     pub fn new(network: IpNet, prefix: u8) -> Result<Self, SubnettingError> {
         let network_prefix = network.prefix_len();
 
         if prefix <= network_prefix {
             return Err(SubnettingError(format!(
-                "The prefix subnet {} is smaller than {}",
-                prefix, network_prefix
+                "The prefix subnet {prefix} is smaller than {network_prefix}"
             )));
         }
 
@@ -38,9 +42,9 @@ impl SubnetList {
             }
         };
 
-        let subnets = 2u32.pow((prefix - network_prefix) as u32);
+        let subnets = 2u32.pow(u32::from(prefix - network_prefix));
 
-        let hosts = 2_u32.pow((32 - prefix) as u32);
+        let hosts = 2_u32.pow(u32::from(32 - prefix));
 
         let end = start + (hosts * (subnets));
         Ok(Self {

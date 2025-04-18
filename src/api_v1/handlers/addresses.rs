@@ -139,20 +139,14 @@ pub async fn update(
                     .get_one::<Network>(NetwCondition::p_key(network_id))
                     .await?;
 
-                update_host_count(
-                    &mut transaction,
-                    network_to_increase_free_hc,
-                    1,
-                    UpdateHostCount::less_used_more_free,
-                )
+                update_host_count(&mut transaction, network_to_increase_free_hc, |x| {
+                    x.less_used_more_free(1);
+                })
                 .await?;
 
-                update_host_count(
-                    &mut transaction,
-                    network_target,
-                    1,
-                    UpdateHostCount::less_free_more_used,
-                )
+                update_host_count(&mut transaction, network_target, |x| {
+                    x.less_free_more_used(1);
+                })
                 .await?;
             }
 
@@ -240,14 +234,13 @@ pub async fn delete(
 pub async fn update_host_count<F>(
     transaction: &mut BuilderPgTransaction<'_>,
     mut network: Network,
-    n: u32,
     mut action: F,
 ) -> Result<(), ResponseError>
 where
-    F: FnMut(&mut UpdateHostCount, u32),
+    F: FnMut(&mut UpdateHostCount),
 {
     let mut hc = network.update_host_count();
-    action(&mut hc, n);
+    action(&mut hc);
 
     transaction
         .update::<Network, _, _>(hc, NetwCondition::p_key(network.id))
@@ -260,7 +253,7 @@ where
             .remove(0);
 
         let mut hc = network.update_host_count();
-        action(&mut hc, n);
+        action(&mut hc);
 
         transaction
             .update::<Network, _, _>(hc, NetwCondition::p_key(father))

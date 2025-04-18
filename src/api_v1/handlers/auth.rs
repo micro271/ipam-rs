@@ -25,7 +25,7 @@ pub async fn create(
     Json(mut user): Json<UserEntry>,
 ) -> Result<ResponseQuery<(), Value>, ResponseError> {
     user.password = tokio::task::spawn_blocking(move || {
-        encrypt(user.password).map_err(|_| {
+        encrypt(&user.password).map_err(|_| {
             ResponseError::builder()
                 .detail("Encrypt error".to_string())
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
@@ -98,7 +98,7 @@ pub async fn login(
         .await?;
 
     if let Some(Ok(e)) =
-        verify_passwd(password, &resp.password).then_some(create_token(Claims::from(resp)))
+        verify_passwd(&password, &resp.password).then_some(create_token(&Claims::from(resp)))
     {
         let last_login = Some(time::OffsetDateTime::now_utc());
 

@@ -1,6 +1,6 @@
 use crate::{
     database::transaction::Transaction as _,
-    models::network::{DefaultValuesNetwork, NetwCondition, UpdateHostCount},
+    models::network::{DefaultValuesNetwork, NetwCondition},
     response::ResponseQuery,
 };
 use std::net::{Ipv4Addr, Ipv6Addr};
@@ -83,7 +83,7 @@ pub async fn update(
     if updater.network.is_some() {
         let old = state.get_one::<Network>(NetwCondition::p_key(id)).await?;
 
-        if old.children != 0 || old.used.as_i32() != 0 {
+        if old.children != 0 || old.used.as_u32() != 0 {
             tracing::debug!("The network {:?} have subnets", old.subnet);
 
             return Err(ResponseError::builder()
@@ -111,38 +111,14 @@ pub async fn delete(
 
     let mut transaction = state.transaction().await?;
 
-    if let Some(father) = for_delete.father {
-        let res = {
-            let resp = transaction
-                .delete::<Network, _>(NetwCondition::father(father))
-                .await?;
+    let network_used = for_delete.used.as_u32();
 
-            let father = state
-                .get_one::<Network>(NetwCondition::p_key(father))
-                .await?;
+    update_host_count(&mut transaction, for_delete, |x| {
+        x.less_used_more_free(network_used);
+    })
+    .await?;
 
-            let mut hc = father.update_host_count();
-            hc.new_reset_count();
-
-            transaction
-                .update::<Network, _, _>(hc, NetwCondition::p_key(father.id))
-                .await?;
-
-            Result::Ok::<QueryResult, ResponseError>(resp)
-        };
-
-        match res {
-            Ok(e) => Ok(e.into()),
-            Err(e) => {
-                transaction.rollback().await?;
-                Err(e)
-            }
-        }
-    } else {
-        let resp = state.delete::<Network>(NetwCondition::p_key(id)).await?;
-
-        Ok(resp.into())
-    }
+    Ok(QueryResult::new(1).into())
 }
 
 pub async fn subnetting(
@@ -178,12 +154,9 @@ pub async fn subnetting(
     let mut transaction = state.transaction().await?;
     let len = subnet.len();
 
-    if let Err(e) = update_host_count(
-        &mut transaction,
-        father,
-        len.try_into().unwrap(),
-        UpdateHostCount::less_free_more_used,
-    )
+    if let Err(e) = update_host_count(&mut transaction, father, |x| {
+        x.less_free_more_used(len.try_into().unwrap());
+    })
     .await
     {
         transaction.rollback().await?;

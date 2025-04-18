@@ -16,6 +16,7 @@ use time::{OffsetDateTime, UtcOffset};
 /// The fields `title`, `status` and `timestamp` are required, as it have an default values
 /// The fields `type`, `detail`, and `instance` aren't requirend and will be ignored if not provide
 #[derive(Debug, Serialize, Deserialize)]
+#[must_use]
 pub struct ResponseError {
     #[serde(skip_serializing_if = "Option::is_none")]
     r#type: Option<String>,
@@ -34,8 +35,8 @@ pub struct ResponseError {
 }
 
 impl std::default::Default for ResponseError {
-    /// The StatusCode as default is BAD_REQUEST
-    /// The title is the StatusCode as String
+    /// The `StatusCode` as default is `BAD_REQUEST`
+    /// The title is the `StatusCode` as `String`
     /// The timestamp is the current with an offset of -3 hours
     fn default() -> Self {
         Self {
@@ -60,7 +61,7 @@ impl ResponseError {
     ) -> Self {
         Self {
             r#type: Some(r#type),
-            title: title,
+            title,
             status: status.as_u16(),
             detail: Some(detail),
             instance: Some(instance),
@@ -68,7 +69,7 @@ impl ResponseError {
         }
     }
 
-    /// Obtain the ResponseErrorBuilder that allow create an ResponseError
+    /// Obtain the `ResponseErrorBuilder` that allow create an `ResponseError`
     ///
     /// ```
     /// let builder = ResponseError::builer()
@@ -143,6 +144,7 @@ impl axum::response::IntoResponse for ResponseError {
 ///     .build()
 /// ```
 #[derive(Debug, Default)]
+#[must_use]
 pub struct ResponseErrorBuilder {
     r#type: Option<String>,
     title: Option<String>,
@@ -156,6 +158,7 @@ impl ResponseErrorBuilder {
     pub fn new() -> Self {
         Self::default()
     }
+
     pub fn r#type(mut self, r#type: String) -> Self {
         self.r#type = Some(r#type);
         self
