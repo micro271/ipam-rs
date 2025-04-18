@@ -27,7 +27,6 @@ impl HostCount {
     ///     - The IP's bits or the prefix's bits are greater than 128
     ///     - The host's number is greater than `HostCount::MAX`
     ///     - The type parameter `T` fails the parse to u8
-    #[must_use]
     pub fn new_with_operation<T>(bits: T, prefix: T, op: &Operation) -> Result<Self, HostCountError>
     where
         T: TryInto<u8>,
@@ -114,6 +113,18 @@ impl TryFrom<i32> for HostCount {
     }
 }
 
+impl From<u8> for HostCount {
+    fn from(value: u8) -> Self {
+        Self(value.into())
+    }
+}
+
+impl From<u16> for HostCount {
+    fn from(value: u16) -> Self {
+        Self(value.into())
+    }
+}
+
 impl From<IpNet> for HostCount {
     fn from(value: IpNet) -> Self {
         Self::new(value.max_prefix_len(), value.prefix_len()).unwrap()
@@ -160,6 +171,45 @@ impl std::fmt::Display for HostCountError {
             HostCountError::PrefixOutRange => write!(f, "Prefix is longer then 128 bits"),
             HostCountError::BitsHostTooLarge => write!(f, ""),
         }
+    }
+}
+
+impl<T> std::ops::Add<T> for HostCount
+where
+    T: Into<HostCount>,
+{
+    type Output = HostCount;
+    fn add(self, rhs: T) -> Self::Output {
+        rhs.into()
+            .0
+            .checked_add(self.0)
+            .filter(|x| Self::MAX.gt(x))
+            .map_or(Self::new_max(), Self)
+    }
+}
+
+impl<T> std::ops::Sub<T> for HostCount
+where
+    T: Into<HostCount>,
+{
+    type Output = HostCount;
+    fn sub(self, rhs: T) -> Self::Output {
+        self.0
+            .checked_sub(rhs.into().0)
+            .filter(|x| 0.le(x))
+            .map_or(Self(0), Self)
+    }
+}
+
+impl std::ops::AddAssign for HostCount {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
+}
+
+impl std::ops::SubAssign for HostCount {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
     }
 }
 
