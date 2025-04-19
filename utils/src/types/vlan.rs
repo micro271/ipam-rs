@@ -81,7 +81,7 @@ impl std::error::Error for OutOfRange {}
 
 #[cfg(test)]
 mod test {
-    use crate::type_net::vlan::VlanId;
+    use crate::types::vlan::VlanId;
 
     #[test]
     fn vlan_negative_error() {

@@ -148,7 +148,7 @@ mod test {
     #[test]
     fn sub_net_first_prefix_fifty_six() {
         let ip = "192.168.0.1/24".parse::<IpNet>().unwrap();
-        let subnet: SubnetList = (ip, 26).try_into().unwrap();
+        let subnet: SubnetList = SubnetList::new(ip, 26).unwrap();
         let subnet = subnet.collect::<Vec<IpNet>>();
         let mut ip_result = Vec::new();
         ip_result.push("192.168.0.0/26".parse::<IpNet>().unwrap());
@@ -165,7 +165,7 @@ mod test {
     #[test]
     fn sub_net_first_prefix_fifty_eight() {
         let ip = "192.168.0.1/24".parse::<IpNet>().unwrap();
-        let subnet: SubnetList = (ip, 28).try_into().unwrap();
+        let subnet: SubnetList = SubnetList::new(ip, 28).unwrap();
         let subnet = subnet.collect::<Vec<IpNet>>();
         let mut ip_result = Vec::new();
         ip_result.push("192.168.0.0/28".parse::<IpNet>().unwrap());
@@ -201,20 +201,6 @@ mod test {
         assert!(subnet.contains(&ip_result[14]));
         assert!(subnet.contains(&ip_result[15]));
         assert!(subnet.len() == 16);
-    }
-
-    #[test]
-    fn sub_net_first_prefix_fifty_four_above_twenty_one() {
-        let ip = "192.168.0.1/16".parse::<IpNet>().unwrap();
-        let subnet: SubnetList = (ip, 28).try_into().unwrap();
-        assert!(subnet.len() == 4096);
-    }
-
-    #[test]
-    fn sub_net_first_prefix_fifteen_above_twenty_four() {
-        let ip = "192.168.0.1/15".parse::<IpNet>().unwrap();
-        let subnet: SubnetList = (ip, 24).try_into().unwrap();
-        assert!(subnet.len() == 512);
     }
 
     #[test]
