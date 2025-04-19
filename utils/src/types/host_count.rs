@@ -1,6 +1,10 @@
 use ipnet::IpNet;
 use serde::{Deserialize, Serialize};
 
+const MAX_HC: i32 = 0x00FF_FFFF;
+const MAX_BITS_LENGTH_HC: u8 = 128;
+const MIN_HC: i32 = 0;
+
 #[derive(Deserialize, Serialize, Debug, Clone, Copy, sqlx::Type, Default)]
 #[sqlx(transparent)]
 #[must_use]
@@ -14,21 +18,17 @@ pub enum Operation {
 }
 
 #[inline]
-fn validate_u8<T: TryInto<u8>>(num_to_validate: T) -> Result<u8, HostCountError> {
+fn validate_u8<T: TryInto<u8>>(
+    num_to_validate: T,
+    err: HostCountError,
+) -> Result<u8, HostCountError> {
     num_to_validate
         .try_into()
         .map_err(|_| HostCountError::ParseOutOfRange)
-        .and_then(|x| {
-            (x <= HostCount::MAX_BITS_LENGTH)
-                .then_some(x)
-                .ok_or(HostCountError::BitsOutRange)
-        })
+        .and_then(|x| (x <= MAX_BITS_LENGTH_HC).then_some(x).ok_or(err))
 }
 
 impl HostCount {
-    const MAX: i32 = 0x00FF_FFFF;
-    const MAX_BITS_LENGTH: u8 = 128;
-
     #[must_use]
     pub fn as_i32(&self) -> i32 {
         self.0
@@ -45,8 +45,8 @@ impl HostCount {
     where
         T: TryInto<u8>,
     {
-        let bits: u8 = validate_u8(bits)?;
-        let prefix: u8 = validate_u8(prefix)?;
+        let bits: u8 = validate_u8(bits, HostCountError::BitsOutRange)?;
+        let prefix: u8 = validate_u8(prefix, HostCountError::PrefixOutRange)?;
 
         2i32.checked_pow(u32::from(
             bits.checked_sub(prefix)
@@ -55,18 +55,17 @@ impl HostCount {
         .ok_or(HostCountError::Overflow)
         .map(|x| if x > 2 { x - 2 } else { x })
         .and_then(|x| match op {
-            Operation::Any => match x {
-                Self::MAX.. => Err(HostCountError::Overflow),
-                _ => Ok(Self(x)),
-            },
+            Operation::Any => (MAX_HC >= x)
+                .then_some(Self(x))
+                .ok_or(HostCountError::Overflow),
             Operation::Add(n) => x
                 .checked_add(n)
-                .filter(|x| Self::MAX.ge(x))
+                .filter(|x| MAX_HC.ge(x))
                 .map(Self)
                 .ok_or(HostCountError::Overflow),
             Operation::Sub(n) => x
                 .checked_sub(n)
-                .filter(|x| 0.le(x))
+                .filter(|x| MIN_HC.le(x))
                 .map(Self)
                 .ok_or(HostCountError::Underflow),
         })
@@ -82,7 +81,7 @@ impl HostCount {
         match Self::new_with_operation(bits, prefix, Operation::Sub(sub)) {
             Ok(e) => Some(e),
             Err(HostCountError::Overflow) => Self::new_max().into(),
-            Err(HostCountError::Underflow) => Self(0).into(),
+            Err(HostCountError::Underflow) => Self(MIN_HC).into(),
             _ => None,
         }
     }
@@ -93,17 +92,17 @@ impl HostCount {
     }
 
     pub fn new_max() -> Self {
-        HostCount(Self::MAX)
+        HostCount(MAX_HC)
     }
 
     #[must_use]
     pub fn max() -> i32 {
-        Self::MAX
+        MAX_HC
     }
 
     #[must_use]
     pub fn is_max(&self) -> bool {
-        self.0 == Self::MAX
+        self.0 == MAX_HC
     }
 }
 
@@ -112,7 +111,7 @@ impl TryFrom<i32> for HostCount {
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
             ..0 => Err(HostCountError::Underflow),
-            ovr if ovr > Self::MAX + 1 => Err(HostCountError::Overflow),
+            ovr if ovr > MAX_HC + 1 => Err(HostCountError::Overflow),
             e => Ok(Self(e)),
         }
     }
@@ -150,7 +149,7 @@ impl std::ops::Add<i32> for HostCount {
         } else {
             self.0
                 .checked_add(rhs)
-                .filter(|x| Self::MAX.ge(x))
+                .filter(|x| MAX_HC.ge(x))
                 .map_or(Self::new_max(), Self)
         }
     }
@@ -172,7 +171,7 @@ impl std::ops::Sub<i32> for HostCount {
             self.0
                 .checked_sub(rhs)
                 .filter(|x| 0.le(x))
-                .map_or(Self(0), Self)
+                .map_or(Self(MIN_HC), Self)
         }
     }
 }
@@ -221,7 +220,6 @@ pub enum HostCountError {
     PrefixLTBits,
     PrefixOutRange,
     BitsOutRange,
-    BitsHostTooLarge,
     Overflow,
     Underflow,
 }
@@ -232,14 +230,17 @@ impl std::fmt::Display for HostCountError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             HostCountError::ParseOutOfRange => {
-                write!(f, "The host's number is longer then {}", HostCount::max())
+                write!(f, "The host's number is longer than {}", HostCount::max())
             }
-            HostCountError::PrefixLTBits => write!(f, "Prefix is longer then bits"),
-            HostCountError::BitsOutRange => write!(f, "Ip's bits is longer then 128 bits"),
-            HostCountError::PrefixOutRange => write!(f, "Prefix is longer then 128 bits"),
-            HostCountError::BitsHostTooLarge => write!(f, ""),
-            HostCountError::Overflow => write!(f, ""),
-            HostCountError::Underflow => write!(f, ""),
+            HostCountError::PrefixLTBits => write!(f, "Prefix is smaller than bits"),
+            HostCountError::BitsOutRange => write!(f, "Ip's bits length is greater than 128 bits"),
+            HostCountError::PrefixOutRange => {
+                write!(f, "The prefix's length is greater than 128 bits")
+            }
+            HostCountError::Overflow => {
+                write!(f, "The value exceeds the maximum allowed value {MAX_HC}")
+            }
+            HostCountError::Underflow => write!(f, "The value is smaller than 0"),
         }
     }
 }
@@ -277,9 +278,9 @@ mod test {
 
     #[test]
     fn host_counter_addition_overflow() {
-        let pref: HostCount = HostCount::MAX.try_into().unwrap();
-        assert_eq!(pref.as_i32(), HostCount::MAX);
-        assert_eq!(HostCount::MAX, pref.as_i32());
+        let pref: HostCount = HostCount::max().try_into().unwrap();
+        assert_eq!(pref.as_i32(), HostCount::max());
+        assert_eq!(HostCount::max(), pref.as_i32());
     }
 
     #[test]
@@ -308,7 +309,7 @@ mod test {
     #[test]
     fn host_counter_sub_i32() {
         let pref = HostCount(0);
-        let pref = pref - (-HostCount::MAX);
+        let pref = pref - (-HostCount::max());
         assert_eq!(pref, HostCount::new_max());
         assert_ne!(pref, HostCount(0));
     }
@@ -316,6 +317,13 @@ mod test {
     #[test]
     fn host_counter_sub_assign_i32() {
         let mut pref = HostCount(0);
+        pref -= 500;
+        assert_eq!(pref, HostCount(0));
+    }
+
+    #[test]
+    fn host_counter_sub_assign_i32_two() {
+        let mut pref = HostCount(500);
         pref -= 500;
         assert_eq!(pref, HostCount(0));
     }
