@@ -71,6 +71,13 @@ impl HostCount {
         })
     }
 
+    pub fn new_with_operation_with_ipnet(
+        ipnet: IpNet,
+        op: Operation,
+    ) -> Result<HostCount, HostCountError> {
+        Self::new_with_operation(ipnet.max_prefix_len(), ipnet.prefix_len(), op)
+    }
+
     #[must_use]
     pub fn new(bits: u8, prefix: u8) -> Option<Self> {
         Self::new_with_operation(bits, prefix, Operation::Any).ok()

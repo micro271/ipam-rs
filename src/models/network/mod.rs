@@ -5,7 +5,10 @@ use addresses::{AddrRange, AddrRangeError};
 use ipnet::IpNet;
 use libipam::{
     services::ipam::{SubnetList, SubnettingError},
-    types::{host_count::HostCount, vlan::VlanId},
+    types::{
+        host_count::{HostCount, Operation},
+        vlan::VlanId,
+    },
 };
 use macros::MapQuery;
 
@@ -66,27 +69,38 @@ impl UpdateHostCount {
         Self { subnet, used, free }
     }
 
-    pub fn less_free_more_used(&mut self, n: u32) {
+    pub fn less_free_more_used(&mut self, n: i32) {
+        // This AddAssign trait's method is infallible
+        // we never want the value exeeds the maximum allowed
         if !self.used.is_max() {
-            self.used = self.used.add(n);
+            // if the value is maximum allowed we do not need to increase it
+            self.used += n;
         }
 
-        self.free = if self.free.is_max() {
-            HostCount::new_from_ipnet_with_sub(self.subnet, n).unwrap_or_default()
-        } else {
-            self.free.sub(n)
+        self.free = match HostCount::new_with_operation_with_ipnet(self.subnet, Operation::Sub(n)) {
+            Err(e) => {
+                tracing::error!("{e}");
+                // The method from SubAssign trait is infallible; if the result is an underflow, the value is truncated to 0
+                // we always need one value, even it is incorrect
+                // However, even though the value is incorrect, we are still going to write an entry.
+                self.free - n // We decrease this value because it's not necessarily zero.
+            }
+            Ok(e) => e,
         };
     }
 
-    pub fn less_used_more_free(&mut self, n: u32) {
-        self.used = if self.used.is_max() {
-            HostCount::new_from_ipnet_with_sub(self.subnet, n).unwrap_or(HostCount::new_max())
-        } else {
-            self.used.sub(n)
+    pub fn less_used_more_free(&mut self, n: i32) {
+        self.used = match HostCount::new_with_operation_with_ipnet(self.subnet, Operation::Sub(n)) {
+            Ok(e) => e,
+            Err(e) => {
+                tracing::error!("{e}");
+                self.free - n
+            }
         };
 
         if !self.free.is_max() {
-            self.free = self.free.add(n);
+            // if the value is maximum allowed we do not need to increase it
+            self.free += n;
         }
     }
 }

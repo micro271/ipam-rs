@@ -83,7 +83,7 @@ pub async fn update(
     if updater.network.is_some() {
         let old = state.get_one::<Network>(NetwCondition::p_key(id)).await?;
 
-        if old.children != 0 || old.used.as_u32() != 0 {
+        if old.children != 0 || old.used.as_i32() != 0 {
             tracing::debug!("The network {:?} have subnets", old.subnet);
 
             return Err(ResponseError::builder()
@@ -111,7 +111,7 @@ pub async fn delete(
 
     let mut transaction = state.transaction().await?;
 
-    let network_used = for_delete.used.as_u32();
+    let network_used = for_delete.used.as_i32();
 
     update_host_count(&mut transaction, for_delete, |x| {
         x.less_used_more_free(network_used);
